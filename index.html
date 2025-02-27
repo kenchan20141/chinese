@@ -1572,7 +1572,25 @@ function loadNewQuestion() {
         database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ currentQuestion: processedQuestion });
     });
 
-    
+
+    if (window.isTank) {
+            const healAmount = 2;
+            const playerPath = isHost? 'player1' : 'player2';
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
+                firebase.database.ServerValue.increment(healAmount)
+            );
+            // 显示盾牌图案
+            const myHealthElement = document.getElementById('myHealth');
+            const shieldIcon = document.createElement('span');
+            shieldIcon.className ='shield-icon';
+            shieldIcon.innerHTML = '🛡️';
+            myHealthElement.insertAdjacentHTML('beforeend', shieldIcon.outerHTML);
+            // 短暂显示后移除盾牌图案
+            setTimeout(() => {
+                const shield = myHealthElement.querySelector('.shield-icon');
+                if (shield) shield.remove();
+            }, 1000);
+        }
 }
 
 function displayQuestion(question) {
