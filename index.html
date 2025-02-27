@@ -783,9 +783,18 @@
     text-shadow: 0 0 10px rgba(0,255,0,0.5);
 }
 
-    .shield-icon {
-    font-size: 1.5rem; /* 调整图标大小 */
-    margin-left: 5px; /* 调整图标与气血文字的间距 */
+ .shield-icon {
+    display: inline-block;
+    animation: shieldPop 0.6s ease-out;
+    position: absolute;
+    right: -25px;
+    bottom: 3px;
+}
+
+@keyframes shieldPop {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.5); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
     /* 新增减伤提示动画 */
@@ -1105,11 +1114,11 @@ if (playerClass && playerClass.type === 'tank') {
     );
     
     // 显示盾牌图案
-    const myHealthElement = document.getElementById('myHealth');
-    const shieldIcon = document.createElement('span');
-    shieldIcon.className ='shield-icon';
-    shieldIcon.innerHTML = '🛡️';
-    myHealthElement.appendChild(shieldIcon);
+    const myHealthLabel = document.getElementById('myHealth').parentNode;
+const shieldIcon = document.createElement('span');
+shieldIcon.className = 'shield-icon';
+shieldIcon.innerHTML = '🛡️';
+myHealthLabel.insertBefore(shieldIcon, myHealthLabel.querySelector('.health-bar'));
     
     // 短暂显示后移除盾牌图案
     setTimeout(() => {
