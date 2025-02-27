@@ -774,8 +774,19 @@
 }
 
 #healText {
-  animation: healFade 1s ease-out;
-  pointer-events: none;
+    display: none;
+    position: absolute;
+    bottom: 80px; /* 根据己方血条位置调整 */
+    right: 1rem; /* 调整到气血后面的位置 */
+    font-size: 1.5rem; /* 缩小字体大小 */
+    color: #00ff00;
+    text-shadow: 0 0 10px rgba(0,255,0,0.5);
+}
+
+    .shield-icon
+    .shield-icon {
+    font-size: 1.5rem; /* 调整图标大小 */
+    margin-left: 5px; /* 调整图标与气血文字的间距 */
 }
 
     /* 新增减伤提示动画 */
@@ -1085,21 +1096,28 @@ else if(playerClass.type === 'tank' && !isCorrect) {
 }
 
     // 新增铁甲宗治疗代码 ▼▼▼
-    if (playerClass && playerClass.type === 'tank') {
-        const currentHealth = parseInt(document.getElementById('myHealth').textContent);
-        const healAmount = Math.max(1, Math.ceil(currentHealth * 0.02)); // 至少恢复1点
-        
-        // 更新数据库
-        const playerPath = isHost ? 'player1' : 'player2';
-        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-            firebase.database.ServerValue.increment(healAmount)
-        );
-        
-        // 显示治疗提示
-        const healDisplay = document.getElementById('healText');
-        healDisplay.style.display = 'block';
-        setTimeout(() => healDisplay.style.display = 'none', 1000);
-    }
+if (playerClass && playerClass.type === 'tank') {
+    const currentHealth = parseInt(document.getElementById('myHealth').textContent);
+    const healAmount = Math.max(1, Math.ceil(currentHealth * 0.02)); // 至少恢复1点
+    
+    // 更新数据库
+    const playerPath = isHost? 'player1' : 'player2';
+    database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
+        firebase.database.ServerValue.increment(healAmount)
+    );
+    
+    // 显示盾牌图案
+    const myHealthElement = document.getElementById('myHealth');
+    const shieldIcon = document.createElement('span');
+    shieldIcon.className ='shield-icon';
+    shieldIcon.innerHTML = '🛡️';
+    myHealthElement.appendChild(shieldIcon);
+    
+    // 短暂显示后移除盾牌图案
+    setTimeout(() => {
+        shieldIcon.remove();
+    }, 1000);
+}
 
     
 if(effectElement.className) {
