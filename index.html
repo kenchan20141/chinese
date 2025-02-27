@@ -1539,6 +1539,29 @@ function startGame(room) {
             displayQuestion(question);
         }
     }, 500);
+
+    if (playerClass && playerClass.type === 'tank') {
+    const healAmount = 2; // 固定恢复2点气血
+    
+    // 更新数据库
+    const playerPath = isHost? 'player1' : 'player2';
+    database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
+        firebase.database.ServerValue.increment(healAmount)
+    );
+    
+    // 显示盾牌图案
+    const myHealthElement = document.getElementById('myHealth');
+    const shieldIcon = document.createElement('span');
+    shieldIcon.className ='shield-icon';
+    shieldIcon.innerHTML = '🛡️';
+    myHealthElement.appendChild(shieldIcon);
+    
+    // 短暂显示后移除盾牌图案
+    setTimeout(() => {
+        shieldIcon.remove();
+    }, 1000);
+}
+    
 }
 
 function shuffleArray(array) {
@@ -1571,27 +1594,6 @@ function loadNewQuestion() {
         database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ currentQuestion: processedQuestion });
     });
 
-if (playerClass && playerClass.type === 'tank') {
-    const healAmount = 2; // 固定恢复2点气血
-    
-    // 更新数据库
-    const playerPath = isHost? 'player1' : 'player2';
-    database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-        firebase.database.ServerValue.increment(healAmount)
-    );
-    
-    // 显示盾牌图案
-    const myHealthElement = document.getElementById('myHealth');
-    const shieldIcon = document.createElement('span');
-    shieldIcon.className ='shield-icon';
-    shieldIcon.innerHTML = '🛡️';
-    myHealthElement.appendChild(shieldIcon);
-    
-    // 短暂显示后移除盾牌图案
-    setTimeout(() => {
-        shieldIcon.remove();
-    }, 1000);
-}
     
 }
 
