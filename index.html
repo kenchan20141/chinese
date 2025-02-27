@@ -1094,7 +1094,8 @@ if(playerClass.type === 'warrior' && isCorrect) {
     effectElement.style.position = 'fixed';
     effectElement.style.top = '50%';
 } 
-else  // 新增：记录玩家选择的是铁甲宗
+
+    // 新增：记录玩家选择的是铁甲宗
     if (playerClass && playerClass.type === 'tank') {
         window.isTank = true;
     } else {
