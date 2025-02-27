@@ -1094,7 +1094,12 @@ if(playerClass.type === 'warrior' && isCorrect) {
     effectElement.style.position = 'fixed';
     effectElement.style.top = '50%';
 } 
-else if(playerClass.type === 'tank' && !isCorrect) {
+else  // 新增：记录玩家选择的是铁甲宗
+    if (playerClass && playerClass.type === 'tank') {
+        window.isTank = true;
+    } else {
+        window.isTank = false;
+    }
     effectElement.className = 'shield-animation';
     effectElement.innerHTML = '🛡️';
     effectElement.style.fontSize = '4rem';
