@@ -1359,6 +1359,21 @@ function updateHealthDisplay(room) {
         myHealthBar.style.background = 'linear-gradient(90deg, var(--main-red) 0%, #ff6b6b 100%)';
         document.getElementById('myHealth').textContent = `${myHealth}%`;
     }
+
+const user = firebase.auth().currentUser;
+    const myName = user ? user.displayName : '玩家';
+    const opponentName = '對手'; // 可從 room 數據中獲取對手的 displayName
+    document.getElementById('myHealthContainer').innerHTML = `
+        <div>${myName} 氣血: <span id="myHealth">${Math.max(isHost ? room.player1.health : room.player2?.health || 100, 0)}</span></div>
+        <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
+    `;
+    document.getElementById('enemyHealthContainer').innerHTML = `
+        <div>${opponentName} 氣血: <span id="opponentHealth">${Math.max(isHost ? room.player2?.health || 100 : room.player1.health, 0)}</span></div>
+        <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
+    `;
+    document.getElementById('myHealthBar').style.width = Math.max(isHost ? room.player1.health : room.player2?.health || 100, 0) + '%';
+    document.getElementById('opponentHealthBar').style.width = Math.max(isHost ? room.player2?.health || 100 : room.player1.health, 0) + '%';
+    
 }
     
 
