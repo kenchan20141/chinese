@@ -463,16 +463,17 @@
         }
 
         #gameArea {
-            background: rgba(45, 41, 38, 0.95);
-            border: 3px solid var(--gold);
-            border-radius: 15px;
-            padding: 1rem;
-            max-width: 100%;
-            margin: 1rem auto;
-            min-height: calc(100vh - 40px);
-            position: relative;
-            display: none;
-        }
+    background: rgba(45, 41, 38, 0.95);
+    border: 3px solid var(--gold);
+    border-radius: 15px;
+    padding: 1rem;
+    max-width: 100%;
+    margin: 1rem auto;
+    min-height: calc(100vh - 40px);
+    position: relative;
+    display: none;
+    z-index: 10000; /* 確保在 CANVAS 之上 */
+}
 
         .health-bar {
             width: 100%;
@@ -1045,7 +1046,7 @@ function createParticles() {
             const a = data[index + 3];
             if (a > 0) {
                 const color = `rgba(${r},${g},${b},${a / 255})`;
-                particles.push(new Particle(x, y, 5, color));
+                particles.push(new Particle(x, y, 10, color));
             }
         }
     }
@@ -1081,6 +1082,7 @@ function animate() {
         });
     } else {
         // 3 秒後隱藏 Canvas，顯示主頁
+        console.log('動畫結束，切換到主頁'); // 添加日誌檢查
         canvas.style.display = 'none';
         document.getElementById('gameArea').style.display = 'block';
         return; // 停止動畫
@@ -1092,9 +1094,11 @@ function animate() {
 // 啟動動畫
 function startAnimation() {
     animationStartTime = Date.now();
-    drawImage(); // 先繪製圖片以獲取像素數據
-    createParticles();
-    animate();
+    drawImage(); // 先繪製圖片
+    setTimeout(() => {
+        createParticles(); // 延遲生成粒子
+        animate();
+    }, 100); // 延遲 100 毫秒
 }
 
 // 圖片加載完成後啟動動畫
