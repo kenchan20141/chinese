@@ -855,6 +855,10 @@
         <div class="footer">
             <div class="decor-line"></div>
             <p>⚔️ 選擇你的征戰之路 ⚔️</p>
+            <button id="showLeaderboardBtn" class="action-btn" style="background: linear-gradient(45deg, #f1c40f, #f39c12); margin-top: 1rem;">
+    <i class="fas fa-trophy"></i>
+    <span>查看排行榜</span>
+</button>
         </div>
     </div>
 
@@ -1752,9 +1756,56 @@ const buttonContainer = document.createElement('div');
 
     buttonContainer.appendChild(rematchBtn);
     buttonContainer.appendChild(mainMenuBtn);
+    const user = auth.currentUser;
+if (user) {
+    const userId = user.uid;
+    const isWinner = (winnerType === 'player1' && isHost) || (winnerType === 'player2' && !isHost);
+    const scoreChange = isWinner ? 10 : -5; // 贏加10分，輸扣5分
+
+    const userRef = database.ref('leaderboard/' + userId);
+    userRef.transaction((currentData) => {
+        if (currentData) {
+            currentData.score = (currentData.score || 0) + scoreChange;
+        } else {
+            currentData = {
+                name: user.displayName || "匿名玩家",
+                score: scoreChange
+            };
+        }
+        return currentData;
+    });
+}
     victoryOverlay.appendChild(buttonContainer);
 }
 
+document.getElementById('showLeaderboardBtn').onclick = function() {
+    const leaderboardRef = database.ref('leaderboard');
+    leaderboardRef.orderByChild('score').limitToLast(10).once('value', (snapshot) => {
+        const leaderboard = [];
+        snapshot.forEach((childSnapshot) => {
+            const data = childSnapshot.val();
+            leaderboard.push(data);
+        });
+        leaderboard.reverse(); // 降序排列
+
+        // 顯示排行榜
+        let leaderboardHTML = '<h2 style="text-align: center; color: var(--gold);">🏆 排行榜 - 前十名</h2><ul>';
+        leaderboard.forEach((entry, index) => {
+            leaderboardHTML += `<li style="font-size: 1.2rem; padding: 0.5rem;">${index + 1}. ${entry.name} - ${entry.score} 分</li>`;
+        });
+        leaderboardHTML += '</ul>';
+        
+        const leaderboardDiv = document.createElement('div');
+        leaderboardDiv.style.cssText = `
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
+            border-radius: 15px; max-width: 400px; z-index: 10000; color: white;
+        `;
+        leaderboardDiv.innerHTML = leaderboardHTML + '<button onclick="this.parentElement.remove()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #e74c3c; border: none; border-radius: 5px; color: white;">關閉</button>';
+        document.body.appendChild(leaderboardDiv);
+    });
+};
+    
 
 function handleRematchRequest() {
     if (isRematching) return;
