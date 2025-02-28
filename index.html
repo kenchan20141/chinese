@@ -1054,14 +1054,16 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
     `;
     
     // 更新数据库
-    const playerPath = isHost ? 'player1' : 'player2';
-    database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-        class: className,
-        health: 100,
-        attack: playerClass.attack,
-        defense: playerClass.defense,
-        dodge: playerClass.dodge
-    });
+   const playerPath = isHost ? 'player1' : 'player2';
+const userId = firebase.auth().currentUser ? firebase.auth().currentUser.uid : localStorage.getItem('tempUserId');
+database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+    userId: userId,
+    class: className,
+    health: 100,
+    attack: playerClass.attack,
+    defense: playerClass.defense,
+    dodge: playerClass.dodge
+});
 
 // 顯示彈出圖片並在動畫結束後隱藏
     const popupImage = selectedCard.querySelector('.popup-image');
@@ -1607,12 +1609,58 @@ function joinWaitingQueue() {
             waitingRef.child(userId).set({
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
-            checkForMatch();
+            listenForMatch(userId); // 改為監聽隊列變化
         } else {
             alert("您已在等待中，請稍候！");
         }
     });
 }
+
+function listenForMatch(userId) {
+    const waitingRef = database.ref('waitingRooms');
+    waitingRef.on('value', (snapshot) => {
+        const waitingPlayers = [];
+        snapshot.forEach((childSnapshot) => {
+            waitingPlayers.push(childSnapshot.key);
+        });
+
+        if (waitingPlayers.length >= 2) {
+            const player1 = waitingPlayers[0];
+            const player2 = waitingPlayers[1];
+
+            // 隨機生成房間編號
+            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+            const roomRef = database.ref('rooms/' + roomId);
+            roomRef.set({
+                player1: { userId: player1, health: 100, class: null, currentQuestion: null },
+                player2: { userId: player2, health: 100, class: null, currentQuestion: null },
+                gameStarted: false,
+                gameEnded: false,
+                winner: null
+            });
+
+            // 移除配對成功的玩家
+            waitingRef.child(player1).remove();
+            waitingRef.child(player2).remove();
+
+            // 停止監聽
+            waitingRef.off('value');
+
+            // 根據當前用戶進入遊戲
+            if (userId === player1) {
+                currentRoomId = roomId;
+                isHost = true;
+                startGameSession();
+            } else if (userId === player2) {
+                currentRoomId = roomId;
+                isHost = false;
+                startGameSession();
+            }
+        }
+    });
+}
+
+    
 
 function checkForMatch() {
     const waitingRef = database.ref('waitingRooms');
@@ -1662,6 +1710,17 @@ function startGameSession() {
     document.getElementById('waitingArea').style.display = 'block';
     document.getElementById('displayRoomId').textContent = currentRoomId;
     listenToRoomChanges();
+    monitorClassSelection(); // 自動觸發職業選擇監聽
+}
+
+    function monitorClassSelection() {
+    const classCards = document.querySelectorAll('.class-card');
+    classCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const className = card.getAttribute('data-class');
+            selectClass(className);
+        });
+    });
 }
 
 function listenToRoomChanges() {
@@ -1678,12 +1737,15 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        if (room.player1?.class && room.player2?.class) {
-            document.getElementById('waitingArea').style.display = 'none';
-            document.getElementById('classSelection').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            startGame(room);
-        }
+       if (room.player1?.class && room.player2?.class && !room.gameStarted) {
+    database.ref(`rooms/${currentRoomId}`).update({ gameStarted: true });
+}
+if (room.gameStarted) {
+    document.getElementById('waitingArea').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+    startGame(room);
+}
 
         updateHealthDisplay(room);
 
