@@ -1564,19 +1564,22 @@ function loadNewQuestion() {
         const processedQuestion = {
             question: originalQuestion.question,
             options: shuffledOptions,
-            correctIndex: newCorrectIndex
+            correctIndex: newCorrectIndex,
+            id: Date.now() // 生成唯一ID
         };
 
-        const playerPath = isHost? 'player1' : 'player2';
+        currentQuestionId = processedQuestion.id; // 更新當前問題ID
+
+        const playerPath = isHost ? 'player1' : 'player2';
         database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ currentQuestion: processedQuestion });
         
-        isAnswered = false; // 重置答题状态，以便可以选择新问题的答案
+        isAnswered = false; // 重置答題狀態
     });
 }
 
 function displayQuestion(question) {
     this.answered = false; // 重置答題狀態
-    window.currentQuestion = question; // 必須用window保存
+    window.currentQuestion = question;
     document.getElementById('question').textContent = question.question;
     const optionsDiv = document.getElementById('options');
     optionsDiv.innerHTML = '';
@@ -1584,7 +1587,12 @@ function displayQuestion(question) {
     question.options.forEach((option, index) => {
         const button = document.createElement('button');
         button.textContent = option;
-        button.onclick = () => checkAnswer(index === question.correctIndex);
+        button.setAttribute('data-question-id', question.id); // 設置問題ID
+        button.onclick = () => {
+            if (!answeredQuestions.has(question.id)) { // 檢查是否已回答
+                checkAnswer(index === question.correctIndex, question.id);
+            }
+        };
         optionsDiv.appendChild(button);
     });
     startTimer();
