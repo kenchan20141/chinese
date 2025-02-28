@@ -1389,28 +1389,41 @@ firebase.initializeApp(firebaseConfig);
 document.getElementById('registerBtn').onclick = function() {
     const email = prompt("請輸入郵箱");
     const password = prompt("請輸入密碼");
-    const displayName = prompt("請輸入您的顯示名稱"); // 提示輸入顯示名稱
+    const displayName = prompt("請輸入您的顯示名稱");
     if (!email || !password || !displayName) {
         alert("郵箱、密碼和顯示名稱不能為空");
         return;
     }
-    auth.createUserWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-            const user = userCredential.user;
-            // 更新用戶的顯示名稱
-            user.updateProfile({
-                displayName: displayName
-            }).then(() => {
-                alert("註冊成功：" + displayName);
-                document.getElementById('loginBtn').style.display = 'none'; // 隱藏登入按鈕
-                document.getElementById('registerBtn').style.display = 'none'; // 隱藏註冊按鈕
-            }).catch((error) => {
-                alert("設置顯示名稱失敗：" + error.message);
-            });
-        })
-        .catch((error) => {
-            alert("註冊失敗：" + error.message);
-        });
+
+    // 檢查顯示名稱是否已被使用
+    const displayNamesRef = database.ref('displayNames');
+    displayNamesRef.child(displayName).once('value', (snapshot) => {
+        if (snapshot.exists()) {
+            alert("該顯示名稱已被使用，請選擇其他名稱");
+        } else {
+            // 顯示名稱未被使用，繼續註冊
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    // 更新用戶的顯示名稱
+                    user.updateProfile({
+                        displayName: displayName
+                    }).then(() => {
+                        // 將顯示名稱添加到 displayNames 節點
+                        displayNamesRef.child(displayName).set(true);
+                        alert("註冊成功：" + displayName);
+                        document.getElementById('loginBtn').style.display = 'none';
+                        document.getElementById('registerBtn').style.display = 'none';
+                        document.getElementById('logoutContainer').style.display = 'block';
+                    }).catch((error) => {
+                        alert("設置顯示名稱失敗：" + error.message);
+                    });
+                })
+                .catch((error) => {
+                    alert("註冊失敗：" + error.message);
+                });
+        }
+    });
 };
 
        document.getElementById('logoutBtn').onclick = function() {
