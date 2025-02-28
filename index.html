@@ -1396,7 +1396,7 @@ appId: "1:948613965375:web:ae966d7dd461e328093a8a"
 
 };
 firebase.initializeApp(firebaseConfig);
-   document.getElementById('loginBtn').onclick = function() {
+  
 
 document.getElementById('registerBtn').onclick = function() {
     const email = prompt("請輸入郵箱");
@@ -1447,7 +1447,7 @@ document.getElementById('registerBtn').onclick = function() {
 };
 
       
-       
+        document.getElementById('loginBtn').onclick = function() {
     const email = prompt("請輸入郵箱");
     const password = prompt("請輸入密碼");
     auth.signInWithEmailAndPassword(email, password)
