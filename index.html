@@ -1372,13 +1372,29 @@ appId: "1:948613965375:web:ae966d7dd461e328093a8a"
 
 };
 firebase.initializeApp(firebaseConfig);
-    document.getElementById('loginBtn').onclick = function() {
+   document.getElementById('loginBtn').onclick = function() {
     const email = prompt("請輸入郵箱");
     const password = prompt("請輸入密碼");
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
             const user = userCredential.user;
-            alert("登入成功：" + user.email);
+            if (!user.displayName) { // 如果用戶沒有顯示名稱
+                const displayName = prompt("請輸入您的顯示名稱"); // 提示輸入名稱
+                if (displayName) { // 如果用戶輸入了名稱
+                    user.updateProfile({
+                        displayName: displayName // 更新用戶的顯示名稱
+                    }).then(() => {
+                        alert("登入成功：" + displayName); // 顯示新設定的名稱
+                    }).catch((error) => {
+                        alert("設置顯示名稱失敗：" + error.message);
+                    });
+                } else { // 如果用戶沒輸入名稱
+                    alert("顯示名稱不能為空");
+                    return; // 停止後續操作
+                }
+            } else { // 如果已有顯示名稱
+                alert("登入成功：" + user.displayName);
+            }
             document.getElementById('loginBtn').style.display = 'none'; // 登入後隱藏按鈕
         })
         .catch((error) => {
@@ -1768,7 +1784,7 @@ if (user) {
             currentData.score = (currentData.score || 0) + scoreChange;
         } else {
             currentData = {
-                name: user.displayName || "匿名玩家",
+                name: user.displayName, // 直接使用 displayName，不需要後備值
                 score: scoreChange
             };
         }
