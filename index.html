@@ -1577,8 +1577,7 @@ function loadNewQuestion() {
 
         const playerPath = isHost? 'player1' : 'player2';
         database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ currentQuestion: processedQuestion });
-        
-        isAnswered = false; // 重置答题状态，以便可以选择新问题的答案
+    
     });
 }
 
