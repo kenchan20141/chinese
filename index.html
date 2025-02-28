@@ -1591,78 +1591,29 @@ function joinRoomWithId(roomId) {
 
 
 function joinWaitingQueue() {
-    let userId;
-    const user = firebase.auth().currentUser;
-    if (user) {
-        userId = user.uid; // 已登入，使用 uid
-    } else {
-        userId = 'anonymous_' + Math.random().toString(36).substr(2, 9); // 未登入，生成臨時 ID
-        localStorage.setItem('tempUserId', userId); // 儲存臨時 ID
+    let userId = firebase.auth().currentUser?.uid || localStorage.getItem('tempUserId');
+    if (!userId) {
+        userId = 'anonymous_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('tempUserId', userId);
     }
 
     const waitingRef = database.ref('waitingRooms');
-
-    // 檢查是否已在等待隊列中
     waitingRef.child(userId).once('value', (snapshot) => {
         if (!snapshot.exists()) {
-            // 加入等待隊列
             waitingRef.child(userId).set({
                 timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                console.log(`用戶 ${userId} 已加入等待隊列`);
+                listenForMatch(userId);
             });
-            listenForMatch(userId); // 改為監聽隊列變化
         } else {
-            alert("您已在等待中，請稍候！");
+            console.log(`用戶 ${userId} 已在等待隊列中`);
+            listenForMatch(userId); // 即使已在隊列中，繼續監聽
         }
     });
 }
 
 function listenForMatch(userId) {
-    const waitingRef = database.ref('waitingRooms');
-    waitingRef.on('value', (snapshot) => {
-        const waitingPlayers = [];
-        snapshot.forEach((childSnapshot) => {
-            waitingPlayers.push(childSnapshot.key);
-        });
-
-        if (waitingPlayers.length >= 2) {
-            const player1 = waitingPlayers[0];
-            const player2 = waitingPlayers[1];
-
-            // 隨機生成房間編號
-            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-            const roomRef = database.ref('rooms/' + roomId);
-            roomRef.set({
-                player1: { userId: player1, health: 100, class: null, currentQuestion: null },
-                player2: { userId: player2, health: 100, class: null, currentQuestion: null },
-                gameStarted: false,
-                gameEnded: false,
-                winner: null
-            });
-
-            // 移除配對成功的玩家
-            waitingRef.child(player1).remove();
-            waitingRef.child(player2).remove();
-
-            // 停止監聽
-            waitingRef.off('value');
-
-            // 根據當前用戶進入遊戲
-            if (userId === player1) {
-                currentRoomId = roomId;
-                isHost = true;
-                startGameSession();
-            } else if (userId === player2) {
-                currentRoomId = roomId;
-                isHost = false;
-                startGameSession();
-            }
-        }
-    });
-}
-
-    
-
-function checkForMatch() {
     const waitingRef = database.ref('waitingRooms');
     waitingRef.orderByChild('timestamp').limitToFirst(2).once('value', (snapshot) => {
         const waitingPlayers = [];
@@ -1670,11 +1621,10 @@ function checkForMatch() {
             waitingPlayers.push(childSnapshot.key);
         });
 
-        if (waitingPlayers.length >= 2) {
+        if (waitingPlayers.length >= 2 && waitingPlayers.includes(userId)) {
             const player1 = waitingPlayers[0];
             const player2 = waitingPlayers[1];
 
-            // 隨機生成房間編號
             const roomId = Math.floor(1000 + Math.random() * 9000).toString();
             const roomRef = database.ref('rooms/' + roomId);
             roomRef.set({
@@ -1683,26 +1633,33 @@ function checkForMatch() {
                 gameStarted: false,
                 gameEnded: false,
                 winner: null
+            }).then(() => {
+                // 確保房間創建成功後再移除玩家
+                Promise.all([
+                    waitingRef.child(player1).remove(),
+                    waitingRef.child(player2).remove()
+                ]).then(() => {
+                    if (userId === player1) {
+                        currentRoomId = roomId;
+                        isHost = true;
+                        startGameSession();
+                    } else if (userId === player2) {
+                        currentRoomId = roomId;
+                        isHost = false;
+                        startGameSession();
+                    }
+                });
             });
-
-            // 移除配對成功的玩家
-            waitingRef.child(player1).remove();
-            waitingRef.child(player2).remove();
-
-            // 根據當前用戶進入遊戲
-            const userId = firebase.auth().currentUser ? firebase.auth().currentUser.uid : localStorage.getItem('tempUserId');
-if (userId === player1) {
-    currentRoomId = roomId;
-    isHost = true;
-    startGameSession();
-} else if (userId === player2) {
-    currentRoomId = roomId;
-    isHost = false;
-    startGameSession();
-}
+        } else {
+            // 如果隊列中玩家不足或不包含當前用戶，延遲再次檢查
+            setTimeout(() => listenForMatch(userId), 1000);
         }
     });
 }
+
+    
+
+
 
 function startGameSession() {
     document.getElementById('roomControl').style.display = 'none';
@@ -1710,7 +1667,6 @@ function startGameSession() {
     document.getElementById('waitingArea').style.display = 'block';
     document.getElementById('displayRoomId').textContent = currentRoomId;
     listenToRoomChanges();
-    monitorClassSelection(); // 自動觸發職業選擇監聽
 }
 
     function monitorClassSelection() {
