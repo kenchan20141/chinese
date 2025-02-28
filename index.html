@@ -856,6 +856,13 @@
     </button>
 </div>
 
+     <div id="logoutContainer" style="display: none; margin-top: 1rem;">
+    <button id="logoutBtn" class="action-btn" style="background: linear-gradient(45deg, #e74c3c, #c0392b);">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>登出</span>
+    </button>
+</div>
+
         <!-- 新增頁腳 -->
         <div class="footer">
             <div class="decor-line"></div>
@@ -1405,6 +1412,21 @@ document.getElementById('registerBtn').onclick = function() {
             alert("註冊失敗：" + error.message);
         });
 };
+
+       document.getElementById('logoutBtn').onclick = function() {
+    auth.signOut()
+        .then(() => {
+            alert("已登出");
+            // 顯示登入和註冊按鈕
+            document.getElementById('loginBtn').style.display = 'inline-block';
+            document.getElementById('registerBtn').style.display = 'inline-block';
+            // 隱藏登出按鈕
+            document.getElementById('logoutContainer').style.display = 'none';
+        })
+        .catch((error) => {
+            alert("登出失敗：" + error.message);
+        });
+};
        
     const email = prompt("請輸入郵箱");
     const password = prompt("請輸入密碼");
@@ -1435,6 +1457,19 @@ document.getElementById('registerBtn').onclick = function() {
         });
 };
     const auth = firebase.auth();
+    auth.onAuthStateChanged((user) => {
+    if (user) {
+        // 用戶已登入
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('registerBtn').style.display = 'none';
+        document.getElementById('logoutContainer').style.display = 'block';
+    } else {
+        // 用戶未登入
+        document.getElementById('loginBtn').style.display = 'inline-block';
+        document.getElementById('registerBtn').style.display = 'inline-block';
+        document.getElementById('logoutContainer').style.display = 'none';
+    }
+});
 const database = firebase.database();
 
 let currentRoomId = null;
