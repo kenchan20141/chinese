@@ -1013,14 +1013,14 @@ class Particle {
         this.y = y;
         this.size = size;
         this.color = color;
-        this.vx = (Math.random() - 0.5) * 5; // 隨機水平速度
-        this.vy = (Math.random() - 0.5) * 5; // 隨機垂直速度
+        this.vx = (Math.random() - 0.5) * 2; // 減小速度範圍
+        this.vy = (Math.random() - 0.5) * 2; // 減小速度範圍
     }
 
     update() {
         this.x += this.vx;
         this.y += this.vy;
-        this.size -= 0.2; // 粒子逐漸縮小
+        this.size -= 0.1; // 減慢縮小速度
     }
 
     draw() {
@@ -1068,6 +1068,7 @@ let animationStartTime;
 function animate() {
     const currentTime = Date.now();
     const elapsed = (currentTime - animationStartTime) / 1000; // 已過時間（秒）
+    console.log('Elapsed time:', elapsed); // 添加日誌檢查時間
 
     if (elapsed < 1) {
         // 前 1 秒顯示圖片
@@ -1080,9 +1081,10 @@ function animate() {
             p.update();
             p.draw();
         });
+        console.log('Drawing particles, count:', particles.length); // 檢查粒子數量
     } else {
         // 3 秒後隱藏 Canvas，顯示主頁
-        console.log('動畫結束，切換到主頁'); // 添加日誌檢查
+        console.log('Switching to main page'); // 確認切換執行
         canvas.style.display = 'none';
         document.getElementById('gameArea').style.display = 'block';
         return; // 停止動畫
@@ -1095,10 +1097,10 @@ function animate() {
 function startAnimation() {
     animationStartTime = Date.now();
     drawImage(); // 先繪製圖片
-    setTimeout(() => {
-        createParticles(); // 延遲生成粒子
-        animate();
-    }, 100); // 延遲 100 毫秒
+    requestAnimationFrame(() => {
+        createParticles(); // 在下一幀生成粒子
+        animate(); // 開始動畫
+    });
 }
 
 // 圖片加載完成後啟動動畫
@@ -1114,11 +1116,6 @@ img.onerror = function() {
     document.getElementById('gameArea').style.display = 'block'; // 直接顯示主頁
 };
 
-// 窗口大小改變時調整 Canvas
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
 
 
 // 窗口大小改變時調整 Canvas
