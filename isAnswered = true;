@@ -1083,6 +1083,11 @@ function displayQuestion(question) {
 
 function checkAnswer(isCorrect) {
 
+    if (isAnswered) {
+    return;
+}
+isAnswered = true;
+
 // 在伤害计算后添加：
 let effectElement = document.createElement('div');
 if(playerClass.type === 'warrior' && isCorrect) {
