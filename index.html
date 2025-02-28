@@ -1348,8 +1348,8 @@ function updateHealthDisplay(room) {
     const myHealthBar = document.getElementById('myHealthBar');
 
     const user = firebase.auth().currentUser;
-    const myName = user ? user.displayName : '玩家';
-    const opponentName = '對手'; // 可從 room 數據中獲取對手的 displayName
+const myName = user ? user.displayName : '匿名玩家';
+const opponentName = '對手';
     document.getElementById('myHealthContainer').innerHTML = `
         <div>${myName} 氣血: <span id="myHealth">${Math.max(isHost ? room.player1.health : room.player2?.health || 100, 0)}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
@@ -1586,15 +1586,19 @@ function joinRoomWithId(roomId) {
     listenToRoomChanges();
 }
 
-    function joinWaitingQueue() {
+
+
+function joinWaitingQueue() {
+    let userId;
     const user = firebase.auth().currentUser;
-    if (!user) {
-        alert("請先登入！");
-        return;
+    if (user) {
+        userId = user.uid; // 已登入，使用 uid
+    } else {
+        userId = 'anonymous_' + Math.random().toString(36).substr(2, 9); // 未登入，生成臨時 ID
+        localStorage.setItem('tempUserId', userId); // 儲存臨時 ID
     }
 
     const waitingRef = database.ref('waitingRooms');
-    const userId = user.uid;
 
     // 檢查是否已在等待隊列中
     waitingRef.child(userId).once('value', (snapshot) => {
@@ -1638,16 +1642,16 @@ function checkForMatch() {
             waitingRef.child(player2).remove();
 
             // 根據當前用戶進入遊戲
-            const userId = firebase.auth().currentUser.uid;
-            if (userId === player1) {
-                currentRoomId = roomId;
-                isHost = true;
-                startGameSession();
-            } else if (userId === player2) {
-                currentRoomId = roomId;
-                isHost = false;
-                startGameSession();
-            }
+            const userId = firebase.auth().currentUser ? firebase.auth().currentUser.uid : localStorage.getItem('tempUserId');
+if (userId === player1) {
+    currentRoomId = roomId;
+    isHost = true;
+    startGameSession();
+} else if (userId === player2) {
+    currentRoomId = roomId;
+    isHost = false;
+    startGameSession();
+}
         }
     });
 }
@@ -2067,6 +2071,7 @@ function handleRematchRequest() {
 
 
 function listenToRoomChanges() {
+    const userId = firebase.auth().currentUser ? firebase.auth().currentUser.uid : localStorage.getItem('tempUserId');
     const roomRef = database.ref('rooms/' + currentRoomId);
     roomRef.off('value');
 
