@@ -1083,7 +1083,14 @@ function displayQuestion(question) {
 
 function checkAnswer(isCorrect) {
 
+// 在函数开头添加检查，确保已经选择过答案时直接返回
+    if (isAnswered) {
+        return;
+    }
+    isAnswered = true;
+    
 // 在伤害计算后添加：
+    let isAnswered = false; 
 let effectElement = document.createElement('div');
 if(playerClass.type === 'warrior' && isCorrect) {
     effectElement.className = 'sword-animation';
@@ -1575,18 +1582,28 @@ function loadNewQuestion() {
 }
 
 function displayQuestion(question) {
-    this.answered = false; // 重置答題狀態
-    window.currentQuestion = question; // 必須用window保存
+    // 确保每次显示新问题时，将答题状态重置为false
+    isAnswered = false; 
     document.getElementById('question').textContent = question.question;
+
     const optionsDiv = document.getElementById('options');
     optionsDiv.innerHTML = '';
-    
+
     question.options.forEach((option, index) => {
         const button = document.createElement('button');
         button.textContent = option;
-        button.onclick = () => checkAnswer(index === question.correctIndex);
+
+        // 点击处理逻辑
+        button.onclick = () => {
+            if (!isAnswered) {
+                isAnswered = true; // 设置为已选择状态
+                checkAnswer(index === question.correctIndex);
+            }
+        };
+
         optionsDiv.appendChild(button);
     });
+
     startTimer();
 }
 
