@@ -1401,30 +1401,32 @@ document.getElementById('registerBtn').onclick = function() {
         .then((snapshot) => {
             if (snapshot.exists()) {
                 alert("該顯示名稱已被使用，請選擇其他名稱");
+                return Promise.reject("顯示名稱已存在");
             } else {
                 // 顯示名稱未被使用，繼續註冊
                 return auth.createUserWithEmailAndPassword(email, password);
             }
         })
         .then((userCredential) => {
-            if (userCredential) {
-                const user = userCredential.user;
-                // 更新用戶的顯示名稱
-                return user.updateProfile({
-                    displayName: displayName
-                }).then(() => {
-                    // 將顯示名稱添加到 displayNames 節點
-                    return displayNamesRef.child(displayName).set(true);
-                }).then(() => {
-                    alert("註冊成功：" + displayName);
-                    document.getElementById('loginBtn').style.display = 'none';
-                    document.getElementById('registerBtn').style.display = 'none';
-                    document.getElementById('logoutContainer').style.display = 'block';
-                });
-            }
+            const user = userCredential.user;
+            // 更新用戶的顯示名稱
+            return user.updateProfile({
+                displayName: displayName
+            }).then(() => {
+                // 將顯示名稱添加到 displayNames 節點
+                return displayNamesRef.child(displayName).set(true);
+            });
+        })
+        .then(() => {
+            alert("註冊成功：" + displayName);
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('registerBtn').style.display = 'none';
+            document.getElementById('logoutContainer').style.display = 'block';
         })
         .catch((error) => {
-            if (error.code === 'auth/email-already-in-use') {
+            if (error === "顯示名稱已存在") {
+                // 由於名稱重複，已在第一個 .then 中處理
+            } else if (error.code === 'auth/email-already-in-use') {
                 alert("該郵箱已被註冊");
             } else {
                 alert("註冊失敗：" + error.message);
