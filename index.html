@@ -70,6 +70,26 @@
     max-height: 80vh; /* 限制高度為螢幕高度的80% */
 }
         
+/* 隨機配對按鈕樣式 */
+.random-match-btn {
+    background: linear-gradient(45deg, #f39c12, #e67e22);
+    box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+}
+
+/* 等待配對界面樣式 */
+#waitingMatch {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(45, 41, 38, 0.95);
+    border: 3px solid var(--gold);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+}
+
+
         
 
 
@@ -189,6 +209,10 @@
     #roomControl {
         animation: fadeInUp 0.8s ease-out; /* 初始进场动画 */
     }
+        <!-- 在 #roomControl 後添加等待界面 -->
+<div id="waitingMatch" style="display: none; text-align: center; font-size: 2rem; color: var(--gold);">
+    正在尋找對手...
+</div>
 
     #gameArea {
         animation: fadeInUp 0.5s ease-out; /* 游戏区浮现效果 */
@@ -835,6 +859,11 @@
                 <i class="fas fa-shield-alt"></i>
                 <span>加入征伐</span>
                 <div class="btn-glow"></div>
+                <!-- 新增隨機配對按鈕 -->
+    <button onclick="randomMatch()" class="action-btn random-match-btn">
+        <i class="fas fa-random"></i>
+        <span>隨機配對</span>
+        <div class="btn-glow"></div>
             </button>
         </div>
 
@@ -1539,6 +1568,80 @@ function toggleMusic() {
     document.querySelector('.music-control').textContent = isMusicPlaying ? '🎵' : '🔇';
 }
 
+// 確保這些全局變量已經定義（如果已存在則無需重複添加）
+let currentRoomId = null;
+let isHost = false;
+
+// 隨機配對功能
+function randomMatch() {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        alert("請先登入");
+        return;
+    }
+
+    // 隱藏房間控制界面，顯示等待界面
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('waitingMatch').style.display = 'block';
+
+    // 將玩家加入等待列表
+    const waitingRef = database.ref('waitingRooms');
+    waitingRef.push({
+        userId: user.uid,
+        displayName: user.displayName
+    }).then((ref) => {
+        // 當玩家斷線時自動移除
+        ref.onDisconnect().remove();
+    });
+}
+
+// 監聽等待列表並實現配對
+database.ref('waitingRooms').on('value', (snapshot) => {
+    const waitingList = snapshot.val();
+    if (waitingList) {
+        const players = Object.entries(waitingList);
+        if (players.length >= 2) {
+            // 取出前兩個玩家
+            const [player1, player2] = players.slice(0, 2);
+
+            // 生成隨機房間號
+            const newRoomId = Math.floor(1000 + Math.random() * 9000);
+            database.ref('rooms/' + newRoomId).set({
+                player1: { userId: player1[1].userId, health: 100, class: null, currentQuestion: null },
+                player2: { userId: player2[1].userId, health: 100, class: null, currentQuestion: null },
+                gameStarted: false,
+                gameEnded: false,
+                winner: null
+            }).then(() => {
+                // 通知玩家進入房間
+                database.ref('users/' + player1[1].userId).set({ roomId: newRoomId, isHost: true });
+                database.ref('users/' + player2[1].userId).set({ roomId: newRoomId, isHost: false });
+
+                // 移除這兩個玩家從等待列表
+                database.ref(`waitingRooms/${player1[0]}`).remove();
+                database.ref(`waitingRooms/${player2[0]}`).remove();
+            });
+        }
+    }
+});
+
+// 監聽自己的房間分配
+const user = firebase.auth().currentUser;
+if (user) {
+    database.ref('users/' + user.uid).on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.roomId) {
+            currentRoomId = data.roomId;
+            isHost = data.isHost;
+            document.getElementById('waitingMatch').style.display = 'none';
+            document.getElementById('classSelection').style.display = 'block';
+            listenToRoomChanges(); // 開始監聽房間變化
+        }
+    });
+}
+
+
+    
 function createRoom() {
     currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
     isHost = true;
