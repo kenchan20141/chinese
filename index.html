@@ -187,7 +187,10 @@
 
     /* 修改现有元素样式 */
     #roomControl {
-        animation: fadeInUp 0.8s ease-out; /* 初始进场动画 */
+    display: none; /* 添加這行 */
+    position: relative;
+    background: linear-gradient(45deg, rgba(45, 41, 38, 0.95), rgba(25, 22, 20, 0.95)),
+                url('https://i.ibb.co/tM82mXtr/3.png');
     }
 
     #gameArea {
@@ -800,6 +803,7 @@
     </style>
 </head>
 <body>
+    <canvas id="animationCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;"></canvas>
     <button class="music-control" onclick="toggleMusic()">🎵</button>
     
  <div id="roomControl">
@@ -981,6 +985,77 @@
     
 <script>
 
+// Canvas 動畫代碼
+window.onload = function() {
+    const canvas = document.getElementById('animationCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 設置 Canvas 大小為全屏
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const img = new Image();
+    img.src = 'https://i.ibb.co/tM82mXtr/3.png';
+    img.crossOrigin = 'Anonymous'; // 解決跨域問題
+    img.onload = function() {
+        // 繪製全屏圖片
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // 定義粒子類
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.vx = Math.random() * 2 - 1; // 隨機速度
+                this.vy = Math.random() * 2 - 1;
+                this.alpha = 1; // 透明度
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= 0.01; // 透明度逐漸減小
+            }
+            draw() {
+                ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // 創建粒子
+        const particles = [];
+        const particleCount = 1000;
+        for (let i = 0; i < particleCount; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const imageData = ctx.getImageData(x, y, 1, 1).data;
+            const color = `${imageData[0]}, ${imageData[1]}, ${imageData[2]}`;
+            particles.push(new Particle(x, y, color));
+        }
+
+        // 動畫控制
+        let animationStartTime = Date.now();
+        function animate() {
+            const elapsedTime = (Date.now() - animationStartTime) / 1000; // 秒
+            if (elapsedTime < 3) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(particle => {
+                    particle.update();
+                    particle.draw();
+                });
+                requestAnimationFrame(animate);
+            } else {
+                // 動畫結束，隱藏 Canvas，顯示主頁
+                canvas.style.display = 'none';
+                document.getElementById('roomControl').style.display = 'block';
+            }
+        }
+        animate();
+    };
+};
+    
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
 let opponentJoinedMessage = null;
     let isRematching = false;
