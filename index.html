@@ -1398,6 +1398,38 @@ appId: "1:948613965375:web:ae966d7dd461e328093a8a"
 firebase.initializeApp(firebaseConfig);
   
 
+// 「登入」按鈕事件
+document.getElementById('loginBtn').onclick = function() {
+    const email = prompt("請輸入郵箱");
+    const password = prompt("請輸入密碼");
+    auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            const user = userCredential.user;
+            if (!user.displayName) {
+                const displayName = prompt("請輸入您的顯示名稱");
+                if (displayName) {
+                    user.updateProfile({
+                        displayName: displayName
+                    }).then(() => {
+                        alert("登入成功：" + displayName);
+                    }).catch((error) => {
+                        alert("設置顯示名稱失敗：" + error.message);
+                    });
+                } else {
+                    alert("顯示名稱不能為空");
+                    return;
+                }
+            } else {
+                alert("登入成功：" + user.displayName);
+            }
+            document.getElementById('loginBtn').style.display = 'none';
+        })
+        .catch((error) => {
+            alert("登入失敗：" + error.message);
+        });
+};
+
+// 「注冊」按鈕事件（新位置）
 document.getElementById('registerBtn').onclick = function() {
     const email = prompt("請輸入郵箱");
     const password = prompt("請輸入密碼");
@@ -1407,7 +1439,6 @@ document.getElementById('registerBtn').onclick = function() {
         return;
     }
 
-    // 檢查顯示名稱是否已被使用
     const displayNamesRef = database.ref('displayNames');
     displayNamesRef.child(displayName).once('value')
         .then((snapshot) => {
@@ -1415,17 +1446,14 @@ document.getElementById('registerBtn').onclick = function() {
                 alert("該顯示名稱已被使用，請選擇其他名稱");
                 return Promise.reject("顯示名稱已存在");
             } else {
-                // 顯示名稱未被使用，繼續註冊
                 return auth.createUserWithEmailAndPassword(email, password);
             }
         })
         .then((userCredential) => {
             const user = userCredential.user;
-            // 更新用戶的顯示名稱
             return user.updateProfile({
                 displayName: displayName
             }).then(() => {
-                // 將顯示名稱添加到 displayNames 節點
                 return displayNamesRef.child(displayName).set(true);
             });
         })
@@ -1437,43 +1465,12 @@ document.getElementById('registerBtn').onclick = function() {
         })
         .catch((error) => {
             if (error === "顯示名稱已存在") {
-                // 由於名稱重複，已在第一個 .then 中處理
+                // 已處理
             } else if (error.code === 'auth/email-already-in-use') {
                 alert("該郵箱已被註冊");
             } else {
                 alert("註冊失敗：" + error.message);
             }
-        });
-};
-
-      
-        document.getElementById('loginBtn').onclick = function() {
-    const email = prompt("請輸入郵箱");
-    const password = prompt("請輸入密碼");
-    auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-            const user = userCredential.user;
-            if (!user.displayName) { // 如果用戶沒有顯示名稱
-                const displayName = prompt("請輸入您的顯示名稱"); // 提示輸入名稱
-                if (displayName) { // 如果用戶輸入了名稱
-                    user.updateProfile({
-                        displayName: displayName // 更新用戶的顯示名稱
-                    }).then(() => {
-                        alert("登入成功：" + displayName); // 顯示新設定的名稱
-                    }).catch((error) => {
-                        alert("設置顯示名稱失敗：" + error.message);
-                    });
-                } else { // 如果用戶沒輸入名稱
-                    alert("顯示名稱不能為空");
-                    return; // 停止後續操作
-                }
-            } else { // 如果已有顯示名稱
-                alert("登入成功：" + user.displayName);
-            }
-            document.getElementById('loginBtn').style.display = 'none'; // 登入後隱藏按鈕
-        })
-        .catch((error) => {
-            alert("登入失敗：" + error.message);
         });
 };
 
