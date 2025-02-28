@@ -1561,12 +1561,20 @@ function shuffleArray(array) {
 }
 
 function loadNewQuestion() {
-    const questionsRef = database.ref('questions');
-    questionsRef.once('value').then(snapshot => {
-        const questions = snapshot.val();
-        const randomIndex = Math.floor(Math.random() * questions.length);
-        const originalQuestion = questions[randomIndex];
-        
+    // 假設問題總數為 100，可以從 Firebase 或本地配置中動態獲取
+    const totalQuestions = 622; 
+    const randomId = Math.floor(Math.random() * totalQuestions); // 隨機生成問題 ID
+
+    // 只下載特定問題的數據
+    const questionRef = database.ref(`questions/${randomId}`);
+    questionRef.once('value').then(snapshot => {
+        const originalQuestion = snapshot.val();
+        if (!originalQuestion) {
+            console.error('無法找到該問題數據');
+            return;
+        }
+
+        // 在客戶端處理問題數據（打亂選項等）
         const optionsCopy = [...originalQuestion.options];
         const correctAnswer = optionsCopy[originalQuestion.correctIndex];
         const shuffledOptions = shuffleArray(optionsCopy);
@@ -1576,15 +1584,21 @@ function loadNewQuestion() {
             question: originalQuestion.question,
             options: shuffledOptions,
             correctIndex: newCorrectIndex,
-            id: Date.now() // 生成唯一ID
+            id: Date.now() // 生成唯一 ID 用於客戶端識別
         };
 
-        currentQuestionId = processedQuestion.id; // 更新當前問題ID
-
+        // 更新當前問題 ID 和房間數據
+        currentQuestionId = processedQuestion.id;
         const playerPath = isHost ? 'player1' : 'player2';
-        database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ currentQuestion: processedQuestion });
-        
-        isAnswered = false; // 重置答題狀態
+        database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ 
+            currentQuestion: processedQuestion 
+        });
+
+        // 重置答題狀態並顯示問題
+        isAnswered = false;
+        displayQuestion(processedQuestion);
+    }).catch(error => {
+        console.error('下載問題數據時出錯:', error);
     });
 }
 
