@@ -1149,7 +1149,10 @@ if(effectElement.className) {
          }
     }, 50);
 
+  // 在处理完答案后，确保isAnswered为true
+    isAnswered = true;
 
+    
     // 傷害計算與動畫
 // 修改为：
 // 修改后的伤害计算 ▼▼▼
@@ -1572,18 +1575,28 @@ function loadNewQuestion() {
 }
 
 function displayQuestion(question) {
-    this.answered = false; // 重置答題狀態
-    window.currentQuestion = question; // 必須用window保存
+    // 重置答题状态
+    isAnswered = false; 
     document.getElementById('question').textContent = question.question;
+
     const optionsDiv = document.getElementById('options');
     optionsDiv.innerHTML = '';
-    
+
     question.options.forEach((option, index) => {
         const button = document.createElement('button');
         button.textContent = option;
-        button.onclick = () => checkAnswer(index === question.correctIndex);
+
+        // 点击处理逻辑
+        button.onclick = () => {
+            if (!isAnswered) {
+                isAnswered = true; // 设置为已选择状态
+                checkAnswer(index === question.correctIndex);
+            }
+        };
+
         optionsDiv.appendChild(button);
     });
+
     startTimer();
 }
 
