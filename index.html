@@ -1036,25 +1036,28 @@ window.onload = function() {
         }
 
         // 動畫控制
-        let animationStartTime = Date.now();
-        function animate() {
-            const elapsedTime = (Date.now() - animationStartTime) / 1000; // 秒
-            if (elapsedTime < 3) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                particles.forEach(particle => {
-                    particle.update();
-                    particle.draw();
-                });
-                requestAnimationFrame(animate);
-            } else {
-                // 動畫結束，隱藏 Canvas，顯示主頁
-                canvas.style.display = 'none';
-                document.getElementById('roomControl').style.display = 'block';
-            }
-        }
-        animate();
-    };
-};
+let animationStartTime;
+// 延遲1秒後開始粒子動畫
+setTimeout(() => {
+    animationStartTime = Date.now();
+    animate();
+}, 1000);
+
+function animate() {
+    const elapsedTime = (Date.now() - animationStartTime) / 1000; // 秒
+    if (elapsedTime < 2) { // 修改為2秒
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(particle => {
+            particle.update();
+            particle.draw();
+        });
+        requestAnimationFrame(animate);
+    } else {
+        // 動畫結束，隱藏 Canvas，顯示主頁
+        canvas.style.display = 'none';
+        document.getElementById('roomControl').style.display = 'block';
+    }
+}
     
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
 let opponentJoinedMessage = null;
