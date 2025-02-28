@@ -50,8 +50,8 @@
 
 /* 弹出图片的动画关键帧 */
 @keyframes popImage {
-    0% { transform: scale(0); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
 /* 弹出图片的样式类 */
@@ -60,20 +60,15 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    max-width: 80%;
-    max-height: 80%;
     z-index: 99999;
-    background-color: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     animation: popImage 0.3s ease-out;
-    display: none; /* 初始状态隐藏 */
+    display: none; /* 初始狀態隱藏 */
 }
 
 .popup-image img {
-    width: 100%;
-    height: auto;
+    max-width: 80vw; /* 限制寬度為螢幕寬度的80% */
+    max-height: 80vh; /* 限制高度為螢幕高度的80% */
+    opacity: 0.7; /* 半透明 */
 }
         
         
@@ -875,11 +870,11 @@
     </div>
 
 
-<!-- 新增职业选择界面 -->
+<!-- 新增職業選擇界面 -->
 <div id="classSelection" style="display: none;">
     <h2 style="color: var(--gold); margin-bottom: 2rem;">選擇你的武道流派</h2>
     <div class="class-grid">
-        <!-- 战士 -->
+        <!-- 戰士 -->
         <div class="class-card" onclick="selectClass('warrior')">
             <img src="https://i.ibb.co/p6g4PFH4/1.png" class="class-icon">
             <div class="selected-tick">✓</div>
@@ -888,6 +883,9 @@
             <ul class="class-stats">
                 <li>⚔️ 裂空擊：命中後有30%機率造成雙倍傷害</li>
             </ul>
+            <div class="popup-image" style="display: none;">
+                <img src="https://i.ibb.co/p6g4PFH4/1.png" alt="霸刀流全圖">
+            </div>
         </div>
         <!-- 坦克 -->
         <div class="class-card" onclick="selectClass('tank')">
@@ -898,6 +896,9 @@
             <ul class="class-stats">
                 <li>🛡️ 金鐘罩：每回合自動恢復2點氣血</li>
             </ul>
+            <div class="popup-image" style="display: none;">
+                <img src="https://i.ibb.co/4wksKZsF/image.png" alt="鐵甲宗全圖">
+            </div>
         </div>
         <!-- 刺客 -->
         <div class="class-card" onclick="selectClass('assassin')">
@@ -908,8 +909,11 @@
             <ul class="class-stats">
                 <li>🎯 鬼影步：30%機率完全閃避傷害</li>
             </ul>
+            <div class="popup-image" style="display: none;">
+                <img src="https://i.ibb.co/W4V5bX8X/image.png" alt="影流教全圖">
+            </div>
         </div>
-        <!-- 法师 -->
+        <!-- 法師 -->
         <div class="class-card" onclick="selectClass('mage')">
             <img src="https://i.ibb.co/tM82mXtr/3.png" class="class-icon">
             <div class="selected-tick">✓</div>
@@ -918,6 +922,9 @@
             <ul class="class-stats">
                 <li>🔥 離火訣：錯答傷害扣減30%</li>
             </ul>
+            <div class="popup-image" style="display: none;">
+                <img src="https://i.ibb.co/tM82mXtr/3.png" alt="玄天閣全圖">
+            </div>
         </div>
     </div>
     <div id="selectedClassInfo" style="margin-top: 2rem;"></div>
@@ -1012,25 +1019,6 @@ joinRoomBtn.onclick = function() {
     joinRoom();
 };
 
-function openPopup(element) {
-    const popup = element.querySelector('.popup-image');
-    popup.style.display = 'block';
-}
-
-function closePopup(element) {
-    const popup = element.closest('.popup-image');
-    popup.style.display = 'none';
-}
-    
-
-// 修改class-card的点击事件，添加打开弹出图片的逻辑
-const classCards = document.querySelectorAll('.class-card');
-classCards.forEach(card => {
-    card.addEventListener('click', function() {
-        openPopup(this);
-        selectClass(this.getAttribute('onclick').split("'")[1]); // 调用原有的selectClass函数
-    });
-});
     
     
 function selectClass(className) {
@@ -1076,6 +1064,14 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
         defense: playerClass.defense,
         dodge: playerClass.dodge
     });
+
+// 顯示彈出圖片並在動畫結束後隱藏
+    const popupImage = selectedCard.querySelector('.popup-image');
+    popupImage.style.display = 'block';
+    setTimeout(() => {
+        popupImage.style.display = 'none';
+    }, 300); // 動畫持續時間為0.3秒
+    
 }
 
 
