@@ -1058,9 +1058,6 @@ function displayQuestion(question) {
     
      // 重置答题状态
     isAnswered = false; 
-    if (typeof isAnswered!== 'undefined') {
-    isAnswered = false;
-}
     document.getElementById('question').textContent = question.question;
 
     const optionsDiv = document.getElementById('options');
@@ -1136,10 +1133,6 @@ if(effectElement.className) {
     
     if (answered || gameOver) return;
     answered = true;
-    const buttons = document.querySelectorAll('#options button');
-buttons.forEach((btn) => {
-    btn.style.pointerEvents = 'none';
-});
 
     clearInterval(timer);
     
@@ -1245,17 +1238,15 @@ if (isCorrect) {
     
     if (!gameOver) {
             setTimeout(() => {
-                // 重置按钮样式和互动状态
-                const buttons = document.querySelectorAll('#options button');
+                // 重置按鈕樣式和互動狀態
                 buttons.forEach(btn => {
                     btn.style.cssText = '';
-                    btn.style.pointerEvents = 'auto'; // 重新启用点击
+                    btn.style.pointerEvents = 'auto'; // 重新啟用點擊
                 });
-                answered = false; // 重置回答状态
+                answered = false; // 新增：重置回答狀態
                 loadNewQuestion();
             }, 700);
         }
-
     });
 
  // 修正後的代碼 ▼
