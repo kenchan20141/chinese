@@ -998,27 +998,6 @@ const joinRoomBtn = document.querySelector('button[onclick="joinRoom()"]');
 const roomIdInput = document.getElementById('roomId');
 
     
-// 修改 createRoom 函数的调用方式
-createRoomBtn.onclick = function() {
-    const roomId = roomIdInput.value;
-    if (roomId.trim() === "") {
-        alert("請輸入房間編號！");
-        return;
-    }
-    createRoom();
-};
-
-// 修改 joinRoom 函数的调用方式
-joinRoomBtn.onclick = function() {
-    const roomId = roomIdInput.value;
-    if (roomId.trim() === "") {
-        alert("請輸入房間編號！");
-        return;
-    }
-    joinRoom();
-};
-
-    
     
 function selectClass(className) {
     const classData = {
@@ -1493,14 +1472,26 @@ document.getElementById('logoutBtn').onclick = function() {
 
     
     const auth = firebase.auth();
-    auth.onAuthStateChanged((user) => {
+   auth.onAuthStateChanged((user) => {
     if (user) {
-        // 用戶已登入
         document.getElementById('loginBtn').style.display = 'none';
         document.getElementById('registerBtn').style.display = 'none';
         document.getElementById('logoutContainer').style.display = 'block';
+
+        // 監聽房間分配
+        database.ref('users/' + user.uid).on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.roomId) {
+                currentRoomId = data.roomId;
+                isHost = data.isHost;
+                document.getElementById('waitingMatch')?.remove(); // 移除等待界面
+                document.getElementById('classSelection').style.display = 'block';
+                listenToRoomChanges();
+                // 清理 users 節點，避免重複觸發
+                database.ref('users/' + user.uid).remove();
+            }
+        });
     } else {
-        // 用戶未登入
         document.getElementById('loginBtn').style.display = 'inline-block';
         document.getElementById('registerBtn').style.display = 'inline-block';
         document.getElementById('logoutContainer').style.display = 'none';
@@ -1540,21 +1531,38 @@ function toggleMusic() {
 }
 
 function createRoom() {
-    currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
-    isHost = true;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    document.getElementById('waitingArea').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = currentRoomId;
+    const roomIdInput = document.getElementById('roomId').value.trim();
+    if (roomIdInput === "") {
+        randomMatch(); // 無房間編號，進入隨機配對
+    } else {
+        currentRoomId = roomIdInput;
+        isHost = true;
+        document.getElementById('roomControl').style.display = 'none';
+        document.getElementById('classSelection').style.display = 'block';
+        document.getElementById('waitingArea').style.display = 'block';
+        document.getElementById('displayRoomId').textContent = currentRoomId;
 
-    database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        gameStarted: false,
-        gameEnded: false,
-        winner: null
-    });
-    listenToRoomChanges();
+        database.ref('rooms/' + currentRoomId).set({
+            player1: { health: 100, class: null, currentQuestion: null },
+            player2: { health: 100, class: null, currentQuestion: null },
+            gameStarted: false,
+            gameEnded: false,
+            winner: null
+        });
+        listenToRoomChanges();
+    }
+}
+
+function joinRoom() {
+    const roomIdInput = document.getElementById('roomId').value.trim();
+    if (roomIdInput === "") {
+        randomMatch(); // 無房間編號，進入隨機配對
+    } else {
+        currentRoomId = roomIdInput;
+        document.getElementById('roomControl').style.display = 'none';
+        document.getElementById('classSelection').style.display = 'block';
+        listenToRoomChanges();
+    }
 }
 
 function joinRoom() {
@@ -1563,6 +1571,74 @@ function joinRoom() {
     document.getElementById('classSelection').style.display = 'block';
     listenToRoomChanges();
 }
+
+
+    function randomMatch() {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        alert("請先登入");
+        return;
+    }
+
+    // 顯示等待配對界面
+    document.getElementById('roomControl').style.display = 'none';
+    const waitingMatchDiv = document.createElement('div');
+    waitingMatchDiv.id = 'waitingMatch';
+    waitingMatchDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(45, 41, 38, 0.95);
+        border: 3px solid var(--gold);
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        text-align: center;
+        font-size: 2rem;
+        color: var(--gold);
+    `;
+    waitingMatchDiv.textContent = '正在尋找對手...';
+    document.body.appendChild(waitingMatchDiv);
+
+    // 將玩家加入等待列表
+    const waitingRef = database.ref('waitingRooms');
+    waitingRef.push({
+        userId: user.uid,
+        displayName: user.displayName
+    }).then((ref) => {
+        ref.onDisconnect().remove(); // 斷線時自動移除
+    });
+}
+
+
+    // 監聽等待列表並實現配對
+database.ref('waitingRooms').on('value', (snapshot) => {
+    const waitingList = snapshot.val();
+    if (waitingList) {
+        const players = Object.entries(waitingList);
+        if (players.length >= 2) {
+            const [player1, player2] = players.slice(0, 2);
+            const newRoomId = Math.floor(1000 + Math.random() * 9000).toString();
+            database.ref('rooms/' + newRoomId).set({
+                player1: { userId: player1[1].userId, health: 100, class: null, currentQuestion: null },
+                player2: { userId: player2[1].userId, health: 100, class: null, currentQuestion: null },
+                gameStarted: false,
+                gameEnded: false,
+                winner: null
+            }).then(() => {
+                // 通知玩家進入房間
+                database.ref('users/' + player1[1].userId).set({ roomId: newRoomId, isHost: true });
+                database.ref('users/' + player2[1].userId).set({ roomId: newRoomId, isHost: false });
+                // 移除等待列表中的玩家
+                database.ref(`waitingRooms/${player1[0]}`).remove();
+                database.ref(`waitingRooms/${player2[0]}`).remove();
+            });
+        }
+    }
+});
+
+    
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
