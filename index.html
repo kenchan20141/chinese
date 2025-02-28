@@ -1105,6 +1105,7 @@ img.onload = function() {
 // 錯誤處理：如果圖片載入失敗
 img.onerror = function() {
     console.error('圖片載入失敗，請檢查 URL');
+    alert('圖片載入失敗，將直接顯示主頁');
     canvas.style.display = 'none'; // 隱藏 CANVAS
     document.getElementById('gameArea').style.display = 'block'; // 直接顯示主頁
 };
@@ -1114,8 +1115,7 @@ window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
-    startAnimation();
-};
+
 
 // 窗口大小改變時調整 Canvas
 window.addEventListener('resize', () => {
