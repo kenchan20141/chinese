@@ -1101,29 +1101,6 @@ else if(playerClass.type === 'tank' && !isCorrect) {
     effectElement.style.transform = 'translateX(-50%)';
 }
 
-   // 新增铁甲宗治疗代码 ▼▼▼
-if (playerClass && playerClass.type === 'tank') {
-    const healAmount = 2; // 固定恢复2点气血
-    
-    // 更新数据库
-    const playerPath = isHost? 'player1' : 'player2';
-    database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-        firebase.database.ServerValue.increment(healAmount)
-    );
-    
-    // 显示盾牌图案
-    const myHealthElement = document.getElementById('myHealth');
-    const shieldIcon = document.createElement('span');
-    shieldIcon.className ='shield-icon';
-    shieldIcon.innerHTML = '🛡️';
-    myHealthElement.appendChild(shieldIcon);
-    
-    // 短暂显示后移除盾牌图案
-    setTimeout(() => {
-        shieldIcon.remove();
-    }, 1000);
-}
-
     
 if(effectElement.className) {
     document.body.appendChild(effectElement);
@@ -1586,6 +1563,30 @@ function displayQuestion(question) {
         button.onclick = () => checkAnswer(index === question.correctIndex);
         optionsDiv.appendChild(button);
     });
+    
+    // 新增铁甲宗治疗代码 ▼▼▼
+    if (playerClass && playerClass.type === 'tank') {
+        const healAmount = 2; // 固定恢复2点气血
+        
+        // 更新数据库
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
+            firebase.database.ServerValue.increment(healAmount)
+        );
+        
+        // 显示盾牌图案
+        const myHealthElement = document.getElementById('myHealth');
+        const shieldIcon = document.createElement('span');
+        shieldIcon.className ='shield-icon';
+        shieldIcon.innerHTML = '🛡️';
+        myHealthElement.appendChild(shieldIcon);
+        
+        // 短暂显示后移除盾牌图案
+        setTimeout(() => {
+            shieldIcon.remove();
+        }, 1000);
+    }
+    
     startTimer();
 }
 
