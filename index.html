@@ -950,8 +950,6 @@
     
 <script>
 
-let isTankHealed = false; // 新增变量，用于记录铁甲宗是否已经恢复过气血
-    
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
 let opponentJoinedMessage = null;
     let isRematching = false;
@@ -1056,47 +1054,32 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
 
 
 function displayQuestion(question) {
-    this.answered = false; // 重置答题状态
-    window.currentQuestion = question; // 必须用window保存
+    
+     // 重置答题状态
+    isAnswered = false; 
     document.getElementById('question').textContent = question.question;
+
     const optionsDiv = document.getElementById('options');
     optionsDiv.innerHTML = '';
-    
+
     question.options.forEach((option, index) => {
         const button = document.createElement('button');
         button.textContent = option;
-        button.onclick = () => checkAnswer(index === question.correctIndex);
+
+        // 点击处理逻辑
+        button.onclick = () => {
+            if (!isAnswered) {
+                isAnswered = true; // 设置为已选择状态
+                checkAnswer(index === question.correctIndex);
+            }
+        };
+
         optionsDiv.appendChild(button);
     });
-    
-    // 判断是否为铁甲宗且尚未恢复气血
-    if (playerClass && playerClass.type === 'tank' &&!isTankHealed) {
-        const healAmount = 2; // 固定恢复2点气血
-        
-        // 更新数据库
-        const playerPath = isHost? 'player1' : 'player2';
-        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-            firebase.database.ServerValue.increment(healAmount)
-        );
-        
-        // 显示盾牌图案
-        const myHealthElement = document.getElementById('myHealth');
-        const shieldIcon = document.createElement('span');
-        shieldIcon.className ='shield-icon';
-        shieldIcon.innerHTML = '🛡️';
-        myHealthElement.appendChild(shieldIcon);
-        
-        // 短暂显示后移除盾牌图案
-        setTimeout(() => {
-            shieldIcon.remove();
-        }, 1000);
-        
-        // 将标志变量设置为true，表示已经恢复过气血
-        isTankHealed = true;
-    }
-    
+
     startTimer();
 }
+
 function checkAnswer(isCorrect) {
 
 // 在伤害计算后添加：
@@ -1116,6 +1099,29 @@ else if(playerClass.type === 'tank' && !isCorrect) {
     effectElement.style.position = 'fixed';
     effectElement.style.left = '50%';
     effectElement.style.transform = 'translateX(-50%)';
+}
+
+   // 新增铁甲宗治疗代码 ▼▼▼
+if (playerClass && playerClass.type === 'tank') {
+    const healAmount = 2; // 固定恢复2点气血
+    
+    // 更新数据库
+    const playerPath = isHost? 'player1' : 'player2';
+    database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
+        firebase.database.ServerValue.increment(healAmount)
+    );
+    
+    // 显示盾牌图案
+    const myHealthElement = document.getElementById('myHealth');
+    const shieldIcon = document.createElement('span');
+    shieldIcon.className ='shield-icon';
+    shieldIcon.innerHTML = '🛡️';
+    myHealthElement.appendChild(shieldIcon);
+    
+    // 短暂显示后移除盾牌图案
+    setTimeout(() => {
+        shieldIcon.remove();
+    }, 1000);
 }
 
     
@@ -1229,25 +1235,17 @@ if (isCorrect) {
     // 強制立即檢查遊戲狀態
     checkGameOver();
     
-    // 强制立即检查游戏状态
-        checkGameOver();
-        
-      if (!gameOver) {
-    setTimeout(() => {
-        // 重置按钮样式和互动状态
-        const buttons = document.querySelectorAll('#options button');
-        buttons.forEach(btn => {
-            btn.style.cssText = '';
-            btn.style.pointerEvents = 'auto'; // 重新启用点击
-        });
-        answered = false; // 新增：重置回答状态
-        
-        // 重置铁甲宗恢复标志变量
-        isTankHealed = false; 
-        
-        loadNewQuestion();
-    }, 700);
-          
+    if (!gameOver) {
+            setTimeout(() => {
+                // 重置按鈕樣式和互動狀態
+                buttons.forEach(btn => {
+                    btn.style.cssText = '';
+                    btn.style.pointerEvents = 'auto'; // 重新啟用點擊
+                });
+                answered = false; // 新增：重置回答狀態
+                loadNewQuestion();
+            }, 700);
+        }
     });
 
  // 修正後的代碼 ▼
@@ -1588,30 +1586,6 @@ function displayQuestion(question) {
         button.onclick = () => checkAnswer(index === question.correctIndex);
         optionsDiv.appendChild(button);
     });
-    
-    // 新增铁甲宗治疗代码 ▼▼▼
-    if (playerClass && playerClass.type === 'tank') {
-        const healAmount = 2; // 固定恢复2点气血
-        
-        // 更新数据库
-        const playerPath = isHost? 'player1' : 'player2';
-        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-            firebase.database.ServerValue.increment(healAmount)
-        );
-        
-        // 显示盾牌图案
-        const myHealthElement = document.getElementById('myHealth');
-        const shieldIcon = document.createElement('span');
-        shieldIcon.className ='shield-icon';
-        shieldIcon.innerHTML = '🛡️';
-        myHealthElement.appendChild(shieldIcon);
-        
-        // 短暂显示后移除盾牌图案
-        setTimeout(() => {
-            shieldIcon.remove();
-        }, 1000);
-    }
-    
     startTimer();
 }
 
