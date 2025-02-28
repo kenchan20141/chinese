@@ -774,26 +774,21 @@
 }
 
 #healText {
-  animation: healFade 1s ease-out;
-  pointer-events: none;
-}
-
-    /* 修改盾牌動畫效果 */
-.shield-icon {
-    display: inline-block;
-    animation: shieldPop 0.6s ease-out;
+    display: none;
     position: absolute;
-    right: -25px;
-    bottom: 3px;
+    bottom: 80px; /* 根据己方血条位置调整 */
+    right: 1rem; /* 调整到气血后面的位置 */
+    font-size: 1.5rem; /* 缩小字体大小 */
+    color: #00ff00;
+    text-shadow: 0 0 10px rgba(0,255,0,0.5);
 }
 
-@keyframes shieldPop {
-    0% { transform: scale(0); opacity: 0; }
-    50% { transform: scale(1.5); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
+    .shield-icon
+    .shield-icon {
+    font-size: 1.5rem; /* 调整图标大小 */
+    margin-left: 5px; /* 调整图标与气血文字的间距 */
 }
 
-    
     /* 新增减伤提示动画 */
 @keyframes reduceDamageFade {
   0% { opacity: 0; transform: translate(-50%,-50%) translateY(20px); }
@@ -1100,24 +1095,28 @@ else if(playerClass.type === 'tank' && !isCorrect) {
     effectElement.style.transform = 'translateX(-50%)';
 }
 
-    if (playerClass?.type === 'tank' && !gameOver) {
-    const healAmount = 2;
-    const playerPath = isHost ? 'player1' : 'player2';
+   // 新增铁甲宗治疗代码 ▼▼▼
+if (playerClass && playerClass.type === 'tank') {
+    const healAmount = 2; // 固定恢复2点气血
     
-    // 新增盾牌圖標
-    const myHealthLabel = document.getElementById('myHealth').parentNode;
-    const shieldIcon = document.createElement('span');
-    shieldIcon.className = 'shield-icon';
-    shieldIcon.innerHTML = '🛡️';
-    myHealthLabel.insertBefore(shieldIcon, myHealthLabel.querySelector('.health-bar'));
-    
-    // 更新數據庫與移除圖標
+    // 更新数据库
+    const playerPath = isHost? 'player1' : 'player2';
     database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
         firebase.database.ServerValue.increment(healAmount)
     );
-    setTimeout(() => shieldIcon.remove(), 1000);
+    
+    // 显示盾牌图案
+    const myHealthElement = document.getElementById('myHealth');
+    const shieldIcon = document.createElement('span');
+    shieldIcon.className ='shield-icon';
+    shieldIcon.innerHTML = '🛡️';
+    myHealthElement.appendChild(shieldIcon);
+    
+    // 短暂显示后移除盾牌图案
+    setTimeout(() => {
+        shieldIcon.remove();
+    }, 1000);
 }
- 
 
     
 if(effectElement.className) {
