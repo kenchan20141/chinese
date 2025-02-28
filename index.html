@@ -958,6 +958,8 @@ let answered = false;
 let opponentDefense = 1.0; 
 // 新增变量
 let waitingForOpponent = false; 
+    let isAnswered = false; 
+    let answeredQuestions = new Set();
 
 // 在代码开头部分，获取按钮和输入框元素
 const createRoomBtn = document.querySelector('button[onclick="createRoom()"]');
@@ -994,8 +996,6 @@ function closePopup(element) {
     const popup = element.closest('.popup-image');
     popup.style.display = 'none';
 }
-
-let isAnswered = false; 
     
 
 // 修改class-card的点击事件，添加打开弹出图片的逻辑
