@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html>
     
@@ -958,6 +957,8 @@ let answered = false;
 let opponentDefense = 1.0; 
 // 新增变量
 let waitingForOpponent = false; 
+    let isAnswered = false; 
+    let answeredQuestions = new Set();
 
 // 在代码开头部分，获取按钮和输入框元素
 const createRoomBtn = document.querySelector('button[onclick="createRoom()"]');
@@ -994,8 +995,6 @@ function closePopup(element) {
     const popup = element.closest('.popup-image');
     popup.style.display = 'none';
 }
-
-let isAnswered = false; 
     
 
 // 修改class-card的点击事件，添加打开弹出图片的逻辑
@@ -1081,8 +1080,25 @@ function displayQuestion(question) {
     startTimer();
 }
 
-function checkAnswer(isCorrect) {
+function checkAnswer(isCorrect, questionId) {
+    if (answeredQuestions.has(questionId)) return; // 如果已回答，則不執行
+    answeredQuestions.add(questionId); // 記錄已回答的問題ID
 
+// 插入的代碼：計算傷害並更新血量
+    let damage = Math.floor((timeLeft / 15) * 13) * playerClass.attack;
+    const playerPath = isHost ? 'player1' : 'player2';
+    const opponentPath = isHost ? 'player2' : 'player1';
+    const updates = {};
+
+    if (isCorrect) {
+        updates[`${opponentPath}/health`] = firebase.database.ServerValue.increment(-damage);
+    } else {
+        updates[`${playerPath}/health`] = firebase.database.ServerValue.increment(-damage);
+    }
+
+    database.ref('rooms/' + currentRoomId).update(updates);
+
+    
 // 在伤害计算后添加：
 let effectElement = document.createElement('div');
 if(playerClass.type === 'warrior' && isCorrect) {
@@ -1415,57 +1431,61 @@ function createRoom() {
 
 function joinRoom() {
     currentRoomId = document.getElementById('roomId').value;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    listenToRoomChanges();
+    database.ref('rooms/' + currentRoomId).once('value').then((snapshot) => {
+        if (snapshot.exists()) {
+            document.getElementById('roomControl').style.display = 'none';
+            document.getElementById('classSelection').style.display = 'block';
+            listenToRoomChanges();
+        } else {
+            alert('房間不存在！');
+        }
+    });
 }
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.off('value');
+    roomRef.off('value'); // 移除舊的監聽器
 
-    roomRef.on('value', (snapshot) => {
-        const room = snapshot.val();
-        if (!room) return;
+    // 監聽玩家1數據
+    roomRef.child('player1').on('value', (snapshot) => {
+        const player1 = snapshot.val();
+        if (player1) updateHealthDisplay({ player1, player2: null });
+    });
 
-        if (isHost) {
-            opponentDefense = room.player2?.defense || 1.0;
-        } else {
-            opponentDefense = room.player1?.defense || 1.0;
+    // 監聽玩家2數據
+    roomRef.child('player2').on('value', (snapshot) => {
+        const player2 = snapshot.val();
+        if (player2) {
+            opponentDefense = player2.defense || 1.0;
+            updateHealthDisplay({ player1: null, player2 });
         }
+    });
 
-        if(room.player1?.class && room.player2?.class) {
-            document.getElementById('waitingArea').style.display = 'none';
-        }
+    // 監聽遊戲狀態
+    roomRef.child('gameStarted').on('value', (snapshot) => {
+        const gameStarted = snapshot.val();
+        if (gameStarted) startGame({ gameStarted });
+    });
 
-        if (room.gameEnded) {
-            handleGameEnd(room.winner);
-            return;
-        }
-
-        if (room.player1?.class && room.player2?.class) {
-            document.getElementById('classSelection').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            startGame(room);
-        }
-
-        updateHealthDisplay(room);
-
-        if (room.hostRematch && room.clientRematch && !room.gameStarted) {
-            // 双方都同意重开，移除等待界面
-            const waitingForRematch = document.getElementById('waitingForRematch');
-            if (waitingForRematch) {
-                waitingForRematch.remove();
-            }
-
-            // 开始新游戏
-            const updates = {
-                gameStarted: true
-            };
-            database.ref('rooms/' + currentRoomId).update(updates, () => {
-                startNewGameSession();
+    // 監聽遊戲結束
+    roomRef.child('gameEnded').on('value', (snapshot) => {
+        const gameEnded = snapshot.val();
+        if (gameEnded) {
+            roomRef.child('winner').once('value', (winnerSnapshot) => {
+                handleGameEnd(winnerSnapshot.val());
             });
         }
+    });
+
+    // 監聽重開狀態
+    roomRef.child('hostRematch').on('value', (snapshot) => {
+        const hostRematch = snapshot.val();
+        if (hostRematch && roomRef.child('clientRematch').val()) startNewGameSession();
+    });
+
+    roomRef.child('clientRematch').on('value', (snapshot) => {
+        const clientRematch = snapshot.val();
+        if (clientRematch && roomRef.child('hostRematch').val()) startNewGameSession();
     });
 }
 
@@ -1490,41 +1510,21 @@ function startNewGameSession() {
 }
     
 function updateHealthDisplay(room) {
-     // 在原有代码前添加职业头像显示
-    const myClass = isHost ? room.player1.class : (room.player2?.class || '');
-    const opponentClass = isHost ? (room.player2?.class || '') : room.player1.class;
+    const myHealth = isHost ? room.player1?.health : (room.player2?.health || 100);
+    const opponentHealth = isHost ? (room.player2?.health || 100) : room.player1?.health;
 
- // 添加职业头像
-    document.getElementById('myHealthContainer').innerHTML = `
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="https://example.com/${myClass}.png" style="width:50px; height:50px; border-radius:50%;">
-            <div>🏹 你的氣血: <span id="myHealth">100</span></div>
-        </div>
-        <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
-    `;
-    
-    document.getElementById('enemyHealthContainer').innerHTML = `
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="https://example.com/${opponentClass}.png" style="width:50px; height:50px; border-radius:50%;">
-            <div>🗡 敵方氣血: <span id="opponentHealth">100</span></div>
-        </div>
-        <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
-    `;
-    
-    const myHealth = isHost ? room.player1.health : (room.player2?.health || 100);
-    const opponentHealth = isHost ? (room.player2?.health || 100) : room.player1.health;
-    
-document.getElementById('myHealth').textContent = Math.max(myHealth, 0);
-document.getElementById('opponentHealth').textContent = Math.max(opponentHealth, 0);
-    document.getElementById('myHealthBar').style.width = myHealth + '%';
-    document.getElementById('opponentHealthBar').style.width = opponentHealth + '%';
-}
-
-function startGame(room) {
-    if (!room.player1 || !room.player2) {
-        console.log('等待對手加入...');
-        return;
+    if (myHealth !== undefined) {
+        document.getElementById('myHealth').textContent = Math.max(myHealth, 0);
+        document.getElementById('myHealthBar').style.width = myHealth + '%';
+        if (myHealth <= 30) {
+            document.getElementById('myHealthBar').style.background = '#ff0000';
+        }
     }
+    if (opponentHealth !== undefined) {
+        document.getElementById('opponentHealth').textContent = Math.max(opponentHealth, 0);
+        document.getElementById('opponentHealthBar').style.width = opponentHealth + '%';
+    }
+}
 
     clearInterval(timer);
     timeLeft = 15;
@@ -1549,34 +1549,40 @@ function shuffleArray(array) {
     return array;
 }
 
+let questionsCache = null;
+
 function loadNewQuestion() {
-    const questionsRef = database.ref('questions');
-    questionsRef.once('value').then(snapshot => {
-        const questions = snapshot.val();
-        const randomIndex = Math.floor(Math.random() * questions.length);
-        const originalQuestion = questions[randomIndex];
-        
-        const optionsCopy = [...originalQuestion.options];
-        const correctAnswer = optionsCopy[originalQuestion.correctIndex];
-        const shuffledOptions = shuffleArray(optionsCopy);
-        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+    if (!questionsCache) {
+        database.ref('questions').once('value').then((snapshot) => {
+            questionsCache = snapshot.val();
+            displayNewQuestion();
+        });
+    } else {
+        displayNewQuestion();
+    }
+}
 
-        const processedQuestion = {
-            question: originalQuestion.question,
-            options: shuffledOptions,
-            correctIndex: newCorrectIndex
-        };
+function displayNewQuestion() {
+    const randomIndex = Math.floor(Math.random() * questionsCache.length);
+    const question = questionsCache[randomIndex];
+    const shuffledOptions = shuffleArray([...question.options]);
+    const newCorrectIndex = shuffledOptions.indexOf(question.options[question.correctIndex]);
 
-        const playerPath = isHost? 'player1' : 'player2';
-        database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ currentQuestion: processedQuestion });
-        
-        isAnswered = false; // 重置答题状态，以便可以选择新问题的答案
-    });
+    const processedQuestion = {
+        question: question.question,
+        options: shuffledOptions,
+        correctIndex: newCorrectIndex,
+        id: Date.now()
+    };
+
+    const playerPath = isHost ? 'player1' : 'player2';
+    database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ currentQuestion: processedQuestion });
+    displayQuestion(processedQuestion);
 }
 
 function displayQuestion(question) {
     this.answered = false; // 重置答題狀態
-    window.currentQuestion = question; // 必須用window保存
+    window.currentQuestion = question;
     document.getElementById('question').textContent = question.question;
     const optionsDiv = document.getElementById('options');
     optionsDiv.innerHTML = '';
@@ -1584,7 +1590,12 @@ function displayQuestion(question) {
     question.options.forEach((option, index) => {
         const button = document.createElement('button');
         button.textContent = option;
-        button.onclick = () => checkAnswer(index === question.correctIndex);
+        button.setAttribute('data-question-id', question.id); // 設置問題ID
+        button.onclick = () => {
+            if (!answeredQuestions.has(question.id)) { // 檢查是否已回答
+                checkAnswer(index === question.correctIndex, question.id);
+            }
+        };
         optionsDiv.appendChild(button);
     });
     startTimer();
@@ -1644,6 +1655,13 @@ function checkGameOver() {
 function handleGameEnd(winnerType) {
     if (gameOver) return;
     gameOver = true;
+    clearInterval(timer);
+
+    const roomRef = database.ref('rooms/' + currentRoomId);
+    roomRef.off('value'); // 移除監聽器
+
+    const victoryOverlay = document.querySelector('.victory-overlay');
+    victoryOverlay.style.display = 'flex';
     
     // 新增強制停止計時器
     clearInterval(timer);
@@ -1893,3 +1911,5 @@ if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gam
 
     
 </html>
+
+
