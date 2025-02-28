@@ -1580,6 +1580,7 @@ function loadNewQuestion() {
 }
 
 function displayQuestion(question) {
+    console.log('Displaying new question, resetting isAnswered to false');
     // 确保每次显示新问题时，将答题状态重置为false
     isAnswered = false; 
     document.getElementById('question').textContent = question.question;
@@ -1599,8 +1600,11 @@ function displayQuestion(question) {
             }
         };
 
+        
+
         optionsDiv.appendChild(button);
     });
+    console.log('Button added:', button.textContent);
 
     startTimer();
 }
