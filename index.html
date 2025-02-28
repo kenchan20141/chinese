@@ -1081,7 +1081,9 @@ function displayQuestion(question) {
     startTimer();
 }
 
-function checkAnswer(isCorrect) {
+function checkAnswer(isCorrect, questionId) {
+    if (answeredQuestions.has(questionId)) return; // 如果已回答，則不執行
+    answeredQuestions.add(questionId); // 記錄已回答的問題ID
 
 // 在伤害计算后添加：
 let effectElement = document.createElement('div');
