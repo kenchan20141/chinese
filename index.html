@@ -1097,7 +1097,6 @@ function displayQuestion(question) {
     
     startTimer();
 }
-
 function checkAnswer(isCorrect) {
 
 // 在伤害计算后添加：
@@ -1233,22 +1232,22 @@ if (isCorrect) {
     // 强制立即检查游戏状态
         checkGameOver();
         
-        if (!gameOver) {
-            setTimeout(() => {
-                // 重置按钮样式和互动状态
-                const buttons = document.querySelectorAll('#options button');
-                buttons.forEach(btn => {
-                    btn.style.cssText = '';
-                    btn.style.pointerEvents = 'auto'; // 重新启用点击
-                });
-                answered = false; // 新增：重置回答状态
-                
-                // 重置铁甲宗恢复标志变量
-                isTankHealed = false; 
-                
-                loadNewQuestion();
-            }, 700);
-        }
+      if (!gameOver) {
+    setTimeout(() => {
+        // 重置按钮样式和互动状态
+        const buttons = document.querySelectorAll('#options button');
+        buttons.forEach(btn => {
+            btn.style.cssText = '';
+            btn.style.pointerEvents = 'auto'; // 重新启用点击
+        });
+        answered = false; // 新增：重置回答状态
+        
+        // 重置铁甲宗恢复标志变量
+        isTankHealed = false; 
+        
+        loadNewQuestion();
+    }, 700);
+          
     });
 
  // 修正後的代碼 ▼
