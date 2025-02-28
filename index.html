@@ -951,6 +951,8 @@
     
 <script>
 
+let isAnswered = false; // 新增变量，用于记录答案是否已经被选择
+    
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
 let opponentJoinedMessage = null;
     let isRematching = false;
@@ -964,7 +966,6 @@ const createRoomBtn = document.querySelector('button[onclick="createRoom()"]');
 const joinRoomBtn = document.querySelector('button[onclick="joinRoom()"]');
 const roomIdInput = document.getElementById('roomId');
 
-    
 // 修改 createRoom 函数的调用方式
 createRoomBtn.onclick = function() {
     const roomId = roomIdInput.value;
@@ -994,9 +995,6 @@ function closePopup(element) {
     const popup = element.closest('.popup-image');
     popup.style.display = 'none';
 }
-
-let isAnswered = false; 
-    
 
 // 修改class-card的点击事件，添加打开弹出图片的逻辑
 const classCards = document.querySelectorAll('.class-card');
@@ -1055,8 +1053,7 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
 
 
 function displayQuestion(question) {
-    
-     // 重置答题状态
+    // 重置答题状态
     isAnswered = false; 
     document.getElementById('question').textContent = question.question;
 
