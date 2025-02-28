@@ -1424,48 +1424,57 @@ function joinRoom() {
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.off('value');
+    roomRef.off('value'); // 移除舊的整體監聽器
 
-    roomRef.on('value', (snapshot) => {
-        const room = snapshot.val();
-        if (!room) return;
-
-        if (isHost) {
-            opponentDefense = room.player2?.defense || 1.0;
-        } else {
-            opponentDefense = room.player1?.defense || 1.0;
+    // 監聽玩家1的血量和職業
+    roomRef.child('player1').on('value', (snapshot) => {
+        const player1 = snapshot.val();
+        if (player1) {
+            updateHealthDisplay({ player1, player2: null });
+            if (isHost) opponentDefense = player1.defense || 1.0;
         }
+    });
 
-        if(room.player1?.class && room.player2?.class) {
-            document.getElementById('waitingArea').style.display = 'none';
+    // 監聽玩家2的血量和職業
+    roomRef.child('player2').on('value', (snapshot) => {
+        const player2 = snapshot.val();
+        if (player2) {
+            updateHealthDisplay({ player1: null, player2 });
+            if (!isHost) opponentDefense = player2.defense || 1.0;
         }
+    });
 
-        if (room.gameEnded) {
-            handleGameEnd(room.winner);
-            return;
+    // 監聽遊戲開始狀態
+    roomRef.child('gameStarted').on('value', (snapshot) => {
+        const gameStarted = snapshot.val();
+        if (gameStarted) startGame({ gameStarted });
+    });
+
+    // 監聽遊戲結束狀態
+    roomRef.child('gameEnded').on('value', (snapshot) => {
+        const gameEnded = snapshot.val();
+        if (gameEnded) {
+            roomRef.child('winner').once('value', (winnerSnapshot) => {
+                handleGameEnd(winnerSnapshot.val());
+            });
         }
+    });
 
-        if (room.player1?.class && room.player2?.class) {
-            document.getElementById('classSelection').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            startGame(room);
+    // 監聽重開請求
+    roomRef.child('hostRematch').on('value', (snapshot) => {
+        const hostRematch = snapshot.val();
+        if (hostRematch) {
+            roomRef.child('clientRematch').once('value', (clientSnapshot) => {
+                if (clientSnapshot.val()) startNewGameSession();
+            });
         }
+    });
 
-        updateHealthDisplay(room);
-
-        if (room.hostRematch && room.clientRematch && !room.gameStarted) {
-            // 双方都同意重开，移除等待界面
-            const waitingForRematch = document.getElementById('waitingForRematch');
-            if (waitingForRematch) {
-                waitingForRematch.remove();
-            }
-
-            // 开始新游戏
-            const updates = {
-                gameStarted: true
-            };
-            database.ref('rooms/' + currentRoomId).update(updates, () => {
-                startNewGameSession();
+    roomRef.child('clientRematch').on('value', (snapshot) => {
+        const clientRematch = snapshot.val();
+        if (clientRematch) {
+            roomRef.child('hostRematch').once('value', (hostSnapshot) => {
+                if (hostSnapshot.val()) startNewGameSession();
             });
         }
     });
