@@ -12,6 +12,7 @@
     <title>文瀾劍影錄</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>        
 
@@ -843,6 +844,13 @@
             </button>
         </div>
 
+     <div class="input-group">
+    <button id="loginBtn" class="action-btn" style="background: linear-gradient(45deg, #8e44ad, #9b59b6);">
+        <i class="fas fa-user"></i>
+        <span>登入</span>
+    </button>
+</div>
+
         <!-- 新增頁腳 -->
         <div class="footer">
             <div class="decor-line"></div>
@@ -1360,6 +1368,20 @@ appId: "1:948613965375:web:ae966d7dd461e328093a8a"
 
 };
 firebase.initializeApp(firebaseConfig);
+    document.getElementById('loginBtn').onclick = function() {
+    const email = prompt("請輸入郵箱");
+    const password = prompt("請輸入密碼");
+    auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            const user = userCredential.user;
+            alert("登入成功：" + user.email);
+            document.getElementById('loginBtn').style.display = 'none'; // 登入後隱藏按鈕
+        })
+        .catch((error) => {
+            alert("登入失敗：" + error.message);
+        });
+};
+    const auth = firebase.auth();
 const database = firebase.database();
 
 let currentRoomId = null;
