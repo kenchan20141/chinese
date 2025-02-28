@@ -1328,8 +1328,8 @@ function updateHealthDisplay(room) {
     const myHealthBar = document.getElementById('myHealthBar');
 
     const user = firebase.auth().currentUser;
-const myName = user ? (user.displayName || '匿名玩家') : '匿名玩家';
-const opponentName = room.player1.userId === user.uid ? (room.player2.displayName || '對手') : (room.player1.displayName || '對手');
+    const myName = user ? user.displayName : '玩家';
+    const opponentName = '對手'; // 可從 room 數據中獲取對手的 displayName
     document.getElementById('myHealthContainer').innerHTML = `
         <div>${myName} 氣血: <span id="myHealth">${Math.max(isHost ? room.player1.health : room.player2?.health || 100, 0)}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
@@ -1472,9 +1472,8 @@ document.getElementById('logoutBtn').onclick = function() {
 
     
     const auth = firebase.auth();
-  auth.onAuthStateChanged((user) => {
+   auth.onAuthStateChanged((user) => {
     if (user) {
-        // 無論是匿名還是正常登入，都隱藏登入和註冊按鈕
         document.getElementById('loginBtn').style.display = 'none';
         document.getElementById('registerBtn').style.display = 'none';
         document.getElementById('logoutContainer').style.display = 'block';
@@ -1574,6 +1573,12 @@ function joinRoom() {
 }
 
 
+    function randomMatch() {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        alert("請先登入");
+        return;
+    }
 
     // 顯示等待配對界面
     document.getElementById('roomControl').style.display = 'none';
@@ -2187,5 +2192,3 @@ if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gam
 
     
 </html>
-
-
