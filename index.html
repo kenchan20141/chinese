@@ -1082,6 +1082,8 @@ function displayQuestion(question) {
 }
 
 function checkAnswer(isCorrect) {
+const buttons = document.querySelectorAll('#options button');
+    if (answered || gameOver || buttons[0].style.pointerEvents === 'none') return;
 
     if (isAnswered) {
     return;
@@ -1555,6 +1557,7 @@ function shuffleArray(array) {
 }
 
 function loadNewQuestion() {
+    answered = false; // 新增此行
     const questionsRef = database.ref('questions');
     questionsRef.once('value').then(snapshot => {
         const questions = snapshot.val();
@@ -1580,7 +1583,8 @@ function loadNewQuestion() {
 }
 
 function displayQuestion(question) {
-    this.answered = false; // 重置答題狀態
+     answered = false; // 改用全局变量
+    window.currentQuestion = question;
     window.currentQuestion = question; // 必須用window保存
     document.getElementById('question').textContent = question.question;
     const optionsDiv = document.getElementById('options');
