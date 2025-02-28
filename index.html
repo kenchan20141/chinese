@@ -1396,7 +1396,6 @@ appId: "1:948613965375:web:ae966d7dd461e328093a8a"
 
 };
 firebase.initializeApp(firebaseConfig);
-   document.getElementById('loginBtn').onclick = function() {
 
 document.getElementById('registerBtn').onclick = function() {
     const email = prompt("請輸入郵箱");
@@ -1406,6 +1405,47 @@ document.getElementById('registerBtn').onclick = function() {
         alert("郵箱、密碼和顯示名稱不能為空");
         return;
     }
+
+    const displayNamesRef = database.ref('displayNames');
+    displayNamesRef.child(displayName).once('value')
+        .then((snapshot) => {
+            if (snapshot.exists()) {
+                alert("該顯示名稱已被使用，請選擇其他名稱");
+                return Promise.reject("顯示名稱已存在");
+            } else {
+                return auth.createUserWithEmailAndPassword(email, password);
+            }
+        })
+        .then((userCredential) => {
+            const user = userCredential.user;
+            return user.updateProfile({
+                displayName: displayName
+            }).then(() => {
+                return displayNamesRef.child(displayName).set(true);
+            });
+        })
+        .then(() => {
+            alert("註冊成功：" + displayName);
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('registerBtn').style.display = 'none';
+            document.getElementById('logoutContainer').style.display = 'block';
+        })
+        .catch((error) => {
+            if (error === "顯示名稱已存在") {
+                // 已處理
+            } else if (error.code === 'auth/email-already-in-use') {
+                alert("該郵箱已被註冊");
+            } else {
+                alert("註冊失敗：" + error.message);
+            }
+        });
+};
+    
+
+    
+   document.getElementById('loginBtn').onclick = function() {
+
+
 
     // 檢查顯示名稱是否已被使用
     const displayNamesRef = database.ref('displayNames');
