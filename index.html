@@ -1800,55 +1800,8 @@ function joinRoomWithId(roomId) {
     });
 }
 
-function checkForMatch() {
-    const waitingRef = database.ref('waitingRooms');
-    waitingRef.orderByChild('timestamp').limitToFirst(2).once('value', (snapshot) => {
-        const waitingPlayers = [];
-        snapshot.forEach((childSnapshot) => {
-            waitingPlayers.push(childSnapshot.key);
-        });
 
-        if (waitingPlayers.length >= 2) {
-            const player1 = waitingPlayers[0];
-            const player2 = waitingPlayers[1];
 
-            // 隨機生成房間編號
-            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-            const roomRef = database.ref('rooms/' + roomId);
-            roomRef.set({
-                player1: { userId: player1, health: 100, class: null, currentQuestion: null },
-                player2: { userId: player2, health: 100, class: null, currentQuestion: null },
-                gameStarted: false,
-                gameEnded: false,
-                winner: null
-            });
-
-            // 移除配對成功的玩家
-            waitingRef.child(player1).remove();
-            waitingRef.child(player2).remove();
-
-            // 根據當前用戶進入遊戲
-            const userId = firebase.auth().currentUser.uid;
-            if (userId === player1) {
-                currentRoomId = roomId;
-                isHost = true;
-                startGameSession();
-            } else if (userId === player2) {
-                currentRoomId = roomId;
-                isHost = false;
-                startGameSession();
-            }
-        }
-    });
-}
-
-function startGameSession() {
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    document.getElementById('waitingArea').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = currentRoomId;
-    listenToRoomChanges();
-}
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
