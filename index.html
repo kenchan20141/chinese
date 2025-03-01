@@ -1816,6 +1816,7 @@ function listenToRoomChanges() {
     const userId = Math.random().toString(36).substr(2, 9); // 臨時用戶 ID
 
     waitingRef.once('value', (snapshot) => {
+        console.log("Waiting data:", snapshot.val());
         const waitingData = snapshot.val();
 
         if (!waitingData || !waitingData.roomId) {
