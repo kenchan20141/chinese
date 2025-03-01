@@ -799,28 +799,7 @@
   animation: reduceDamageFade 1.2s ease-out;
   pointer-events: none;
 }
-
-
-/* 抽牌界面 */
-#cardDrawArea {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-}
-
-#cardCanvas {
-    width: 800px;
-    height: 400px;
-}
-
-    
+        
     </style>
 </head>
 <body>
@@ -985,10 +964,6 @@
         </div>
     </div>
 
-        <div id="cardDrawArea">
-    <canvas id="cardCanvas"></canvas>
-</div>
-
     <!-- 問題與選項區 -->
     <div id="question"></div>
     <div id="options"></div>
@@ -1147,208 +1122,6 @@ let waitingForOpponent = false;
     let isAnswered = false; 
     let answeredQuestions = new Set();
     let hasHealedThisTurn = false;
-
-// 抽牌相關變數
-let cardDrawActive = false;
-let selectedCard = null;
-let cardFlipProgress = [0, 0, 0]; // 3張牌的翻牌進度
-const cardWidth = 200;
-const cardHeight = 300;
-const cardSpacing = 50;
-
-// 卡牌效果定義
-const cardEffects = [
-    { name: "回春丹", effect: "heal_20", description: "恢復20%氣血", image: "card_1.png" },
-    { name: "狂戰令", effect: "boost_attack_50", description: "下次攻擊傷害+50%", image: "card_2.png" },
-    { name: "護身符", effect: "reduce_damage_50", description: "下次傷害-50%", image: "card_3.png" },
-    { name: "疾風靴", effect: "boost_dodge_20", description: "閃避+20%（1回合）", image: "card_4.png" },
-    { name: "洞察術", effect: "show_answer", description: "顯示下題答案", image: "card_5.png" },
-    { name: "毒霧散", effect: "damage_10", description: "減少10%氣血", image: "card_6.png" },
-    { name: "虛弱咒", effect: "reduce_attack_30", description: "下次攻擊-30%", image: "card_7.png" },
-    { name: "混亂術", effect: "shuffle_options", description: "下次選項打亂", image: "card_8.png" },
-    { name: "詛咒鎖", effect: "reduce_defense_20", description: "防禦-20%（1回合）", image: "card_9.png" },
-    { name: "幻影陣", effect: "miss_50", description: "下次攻擊50%miss", image: "card_10.png" }
-];
-
-// 玩家狀態
-let playerEffects = {
-    attackBoost: 1.0,
-    damageReduction: 1.0,
-    dodgeBoost: 0,
-    showNextAnswer: false,
-    shuffleNextOptions: false,
-    defenseReduction: 1.0,
-    missChance: 0
-};
-
-// 圖片加載
-const cardBackImg = new Image();
-cardBackImg.src = "card_back.png"; // 牌底圖片
-const cardImages = [];
-cardEffects.forEach((card, index) => {
-    const img = new Image();
-    img.src = card.image;
-    cardImages[index] = img;
-});
-
-// 抽牌觸發檢查
-function checkCardDraw() {
-    if (Math.random() < 0.25) {
-        startCardDraw();
-    } else {
-        loadNewQuestion();
-    }
-}
-
-// 開始抽牌
-function startCardDraw() {
-    cardDrawActive = true;
-    const roomRef = database.ref('rooms/' + currentRoomId);
-    const playerPath = isHost ? 'player1' : 'player2';
-    
-    // 隨機選擇3張卡牌
-    const shuffledCards = shuffleArray([...cardEffects]);
-    const drawnCards = shuffledCards.slice(0, 3);
-    
-    // 更新資料庫，同步雙方進入抽牌
-    roomRef.update({
-        drawPhase: true,
-        [`${playerPath}/drawnCards`]: drawnCards.map(card => card.effect)
-    });
-    
-    // 初始化翻牌畫面
-    initCardDrawCanvas(drawnCards);
-}
-
-// 初始化Canvas抽牌畫面
-function initCardDrawCanvas(drawnCards) {
-    const cardCanvas = document.getElementById('cardCanvas');
-    const ctx = cardCanvas.getContext('2d');
-    cardCanvas.width = 800;
-    cardCanvas.height = 400;
-    
-    document.getElementById('cardDrawArea').style.display = 'flex';
-    cardFlipProgress = [0, 0, 0];
-    
-    function drawCards() {
-        ctx.clearRect(0, 0, cardCanvas.width, cardCanvas.height);
-        
-        drawnCards.forEach((card, index) => {
-            const x = 100 + index * (cardWidth + cardSpacing);
-            const y = 50;
-            const flip = cardFlipProgress[index];
-            
-            ctx.save();
-            ctx.translate(x + cardWidth / 2, y + cardHeight / 2);
-            ctx.scale(flip < 0.5 ? 1 - 2 * flip : 2 * (flip - 0.5), 1);
-            ctx.translate(-cardWidth / 2, -cardHeight / 2);
-            
-            if (flip < 0.5) {
-                ctx.drawImage(cardBackImg, 0, 0, cardWidth, cardHeight);
-            } else {
-                ctx.drawImage(cardImages[cardEffects.findIndex(c => c.effect === card.effect)], 0, 0, cardWidth, cardHeight);
-                ctx.fillStyle = 'white';
-                ctx.font = '20px WangHanZhongWeiBei';
-                ctx.textAlign = 'center';
-                ctx.fillText(card.name, cardWidth / 2, 20);
-                ctx.fillText(card.description, cardWidth / 2, cardHeight - 20);
-            }
-            
-            ctx.restore();
-        });
-        
-        if (cardFlipProgress.some(p => p < 1)) {
-            cardFlipProgress = cardFlipProgress.map(p => Math.min(p + 0.05, 1));
-            requestAnimationFrame(drawCards);
-        }
-    }
-    
-    drawCards();
-    
-    // 點擊事件
-    cardCanvas.onclick = function(e) {
-        if (!cardDrawActive || selectedCard !== null) return;
-        
-        const rect = cardCanvas.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickY = e.clientY - rect.top;
-        
-        drawnCards.forEach((card, index) => {
-            const x = 100 + index * (cardWidth + cardSpacing);
-            const y = 50;
-            if (clickX >= x && clickX <= x + cardWidth && clickY >= y && clickY <= y + cardHeight) {
-                selectedCard = card;
-                applyCardEffect(card.effect);
-                endCardDraw();
-            }
-        });
-    };
-}
-
-// 應用卡牌效果
-function applyCardEffect(effect) {
-    const playerPath = isHost ? 'player1' : 'player2';
-    const updates = {};
-    
-    switch (effect) {
-        case "heal_20":
-            updates[`${playerPath}/health`] = firebase.database.ServerValue.increment(20);
-            break;
-        case "boost_attack_50":
-            playerEffects.attackBoost = 1.5;
-            break;
-        case "reduce_damage_50":
-            playerEffects.damageReduction = 0.5;
-            break;
-        case "boost_dodge_20":
-            playerEffects.dodgeBoost = 0.2;
-            break;
-        case "show_answer":
-            playerEffects.showNextAnswer = true;
-            break;
-        case "damage_10":
-            updates[`${playerPath}/health`] = firebase.database.ServerValue.increment(-10);
-            break;
-        case "reduce_attack_30":
-            playerEffects.attackBoost = 0.7;
-            break;
-        case "shuffle_options":
-            playerEffects.shuffleNextOptions = true;
-            break;
-        case "reduce_defense_20":
-            playerEffects.defenseReduction = 0.8;
-            break;
-        case "miss_50":
-            playerEffects.missChance = 0.5;
-            break;
-    }
-    
-    if (Object.keys(updates).length > 0) {
-        database.ref('rooms/' + currentRoomId).update(updates);
-    }
-}
-
-// 結束抽牌
-function endCardDraw() {
-    cardDrawActive = false;
-    selectedCard = null;
-    document.getElementById('cardDrawArea').style.display = 'none';
-    
-    const roomRef = database.ref('rooms/' + currentRoomId);
-    const playerPath = isHost ? 'player1' : 'player2';
-    roomRef.child(playerPath).update({ drawnCards: null });
-    
-    // 檢查雙方是否都完成抽牌
-    roomRef.once('value', snapshot => {
-        const room = snapshot.val();
-        if (!room.player1.drawnCards && !room.player2.drawnCards) {
-            roomRef.update({ drawPhase: false });
-            loadNewQuestion();
-        }
-    });
-}
-
-    
 
 // 在代码开头部分，获取按钮和输入框元素
 const createRoomBtn = document.querySelector('button[onclick="createRoom()"]');
@@ -1554,23 +1327,16 @@ if(playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
 
 let damage;
 if (isCorrect) {
-    // 應用攻擊加成和miss機率
-    let finalAttack = playerEffects.attackBoost * playerClass.attack;
-    if (Math.random() < playerEffects.missChance) finalAttack = 0;
-    damage = Math.floor(baseDamage * finalAttack / opponentDefense);
+    // 攻击敌人：攻击力加成 × 敌人防御减免
+    damage = Math.floor(baseDamage * playerClass.attack / opponentDefense);
 } else {
-    // 應用防禦減免和傷害減免
-    damage = Math.floor(baseDamage / (playerClass.defense * playerEffects.defenseReduction) * playerEffects.damageReduction);
-    // 應用閃避加成
-    if (Math.random() < (playerClass.dodge + playerEffects.dodgeBoost)) {
-        damage = 0;
-        const dodgeDisplay = document.getElementById('dodgeText');
-        dodgeDisplay.style.display = 'block';
-        setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
-    }
-    // 玄天阁减伤30%
-    if (playerClass.type === 'mage') {
+    // 自己受伤：基础伤害 ÷ 自身防御减免
+    damage = Math.floor(baseDamage / playerClass.defense);
+    
+    // 玄天阁减伤30%（新增代码）
+    if(playerClass.type === 'mage') {
         damage = Math.floor(damage * 0.7);
+        // 显示减伤提示
         const reduceDisplay = document.getElementById('reduceDamageText');
         reduceDisplay.style.display = 'block';
         setTimeout(() => reduceDisplay.style.display = 'none', 1200);
@@ -2172,27 +1938,6 @@ function loadNewQuestion() {
 
         // 重置答題狀態並顯示問題
         isAnswered = false;
-        // 重置一次性效果
-playerEffects.attackBoost = 1.0;
-playerEffects.damageReduction = 1.0;
-playerEffects.dodgeBoost = 0;
-playerEffects.defenseReduction = 1.0;
-playerEffects.missChance = 0;
-
-// 應用混亂術效果
-if (playerEffects.shuffleNextOptions) {
-    processedQuestion.options = shuffleArray([...processedQuestion.options]);
-    playerEffects.shuffleNextOptions = false;
-}
-
-// 應用洞察術效果
-if (playerEffects.showNextAnswer) {
-    setTimeout(() => {
-        const correctBtn = document.querySelector(`#options button:nth-child(${processedQuestion.correctIndex + 1})`);
-        if (correctBtn) correctBtn.style.border = '2px solid #ffd700';
-    }, 100);
-    playerEffects.showNextAnswer = false;
-}
         displayQuestion(processedQuestion);
     }).catch(error => {
         console.error('下載問題數據時出錯:', error);
@@ -2482,10 +2227,6 @@ function listenToRoomChanges() {
         }
 
         updateHealthDisplay(room);
-if (room.drawPhase && room[playerPath].drawnCards && !cardDrawActive) {
-    startCardDraw(room[playerPath].drawnCards.map(effect => cardEffects.find(c => c.effect === effect)));
-}
-        
 
         // 检查双方是否都同意重开
         const bothAgreed = room.hostRematch && room.clientRematch;
@@ -2553,14 +2294,9 @@ if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gam
 
     // 一段时间后移除提示信息
     setTimeout(() => {
-    // 重置按鈕樣式和互動狀態
-    buttons.forEach(btn => {
-        btn.style.cssText = '';
-        btn.style.pointerEvents = 'auto'; // 重新啟用點擊
-    });
-    answered = false; // 新增：重置回答狀態
-    checkCardDraw(); // 替換 loadNewQuestion()
-}, 700);
+        opponentJoinedMessage.remove();
+        opponentJoinedMessage = null;
+    }, 3000);
 }
     });
 }
@@ -2579,4 +2315,3 @@ if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gam
 
     
 </html>
-
