@@ -1224,9 +1224,12 @@ database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
 }).then(() => {
     database.ref(`rooms/${currentRoomId}`).once('value').then(snapshot => {
         const room = snapshot.val();
+        console.log('Checking if both players have selected class:', room.player1.class, room.player2.class);
         if (room.player1.class && room.player2.class) {
+            console.log('Both players have selected class, setting gameStarted to true');
             database.ref(`rooms/${currentRoomId}`).update({ gameStarted: true });
         } else {
+            console.log('Waiting for opponent to select class');
             document.getElementById('classSelection').style.display = 'none';
             document.getElementById('waitingArea').style.display = 'block';
             document.getElementById('waitingArea').textContent = '等待對手選擇流派...';
@@ -1804,6 +1807,7 @@ let timer;
 let timeLeft = 15;
 let gameOver = false;
 let playerClass = null; // 存储玩家选择的职业
+    let gameStartedLocally = false; // 添加這一行
 
 const bgMusic = new Audio('https://incompetech.com/music/royalty-free/mp3-royaltyfree/Clash%20Defiant.mp3');
 let isMusicPlaying = false;
@@ -1961,7 +1965,7 @@ function startGameSession() {
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.off('value'); // 移除舊的監聽器
+    roomRef.off('value');
 
     roomRef.on('value', (snapshot) => {
         const room = snapshot.val();
@@ -1973,24 +1977,26 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-if (room.gameStarted && !gameOver) {
-    document.getElementById('waitingArea').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'none';
-    document.getElementById('gameArea').style.display = 'block';
-    startGame(room);
-}
+        console.log('room.gameStarted:', room.gameStarted); // 添加調試日誌
 
-        
-if (room.drawPhase && !inDrawPhase) {
-    startDrawPhase();
-}
+        if (room.gameStarted && !gameOver && !gameStartedLocally) {
+            gameStartedLocally = true;
+            console.log('room.gameStarted:', room.gameStarted);
+            if (room.gameStarted && !gameOver && !gameStartedLocally)
+            document.getElementById('classSelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            startGame(room);
+        }
+
+        // 其他邏輯保持不變...
+        if (room.drawPhase && !inDrawPhase) {
+            startDrawPhase();
+        }
         updateHealthDisplay(room);
 
         if (room.gameEnded) {
             handleGameEnd(room.winner);
         }
-    });
-}
     
 
 function startNewGameSession() {
@@ -2045,10 +2051,20 @@ document.getElementById('opponentHealth').textContent = Math.max(opponentHealth,
 }
 
 function startGame(room) {
-    if (!room.player1 || !room.player2) {
-        console.log('等待對手加入...');
-        return;
-    }
+    clearInterval(timer);
+    timeLeft = 15;
+    document.getElementById('gameArea').style.display = 'block';
+
+    setTimeout(() => {
+        const playerPath = isHost ? 'player1' : 'player2';
+        const question = room[playerPath].currentQuestion;
+        if (!question) {
+            loadNewQuestion();
+        } else {
+            displayQuestion(question);
+        }
+    }, 500);
+}
 
     clearInterval(timer);
     timeLeft = 15;
