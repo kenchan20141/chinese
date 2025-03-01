@@ -1315,6 +1315,7 @@ function selectClass(className) {
     function startSinglePlayerGame() {
     gameOver = false;
     answered = false;
+        answeredQuestions.clear(); // 清空已回答問題集合
 
     const myHealthContainer = document.getElementById('myHealthContainer');
     const enemyHealthContainer = document.getElementById('enemyHealthContainer');
