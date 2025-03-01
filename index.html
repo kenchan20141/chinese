@@ -16,6 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>        
 
+
 .rematch-buttons {
     margin-top: 30px;
     display: flex;
@@ -799,11 +800,35 @@
   animation: reduceDamageFade 1.2s ease-out;
   pointer-events: none;
 }
-        
+
+
+#cardCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: none; /* 初始隱藏 */
+    background: rgba(0, 0, 0, 0.7); /* 半透明背景 */
+}
+
+.card-option {
+    position: absolute;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.card-option:hover {
+    transform: scale(1.05);
+}
+    
     </style>
 </head>
 <body>
     <canvas id="animationCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;"></canvas>
+<canvas id="cardCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: none;"></canvas>
+    
     <button class="music-control" onclick="toggleMusic()">🎵</button>
     
  <div id="roomControl">
@@ -1122,6 +1147,10 @@ let waitingForOpponent = false;
     let isAnswered = false; 
     let answeredQuestions = new Set();
     let hasHealedThisTurn = false;
+    let inDrawPhase = false; // 標記是否在抽牌環節
+let selectedCard = null; // 儲存玩家選擇的卡牌
+const cardBackImage = new Image(); // 牌底圖片
+cardBackImage.src = "path/to/card-back.png"; // 替換為你的牌底圖片 URL
 
 // 在代码开头部分，获取按钮和输入框元素
 const createRoomBtn = document.querySelector('button[onclick="createRoom()"]');
@@ -1325,6 +1354,41 @@ if(playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
     setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
 }
 
+
+// 應用當前卡牌效果
+roomRef.once('value').then(snapshot => {
+    const room = snapshot.val();
+    const playerPath = isHost ? 'player1' : 'player2';
+    const currentEffect = room[playerPath].cardEffects;
+
+    if (currentEffect) {
+        switch (currentEffect) {
+            case 'attackBoost':
+                if (isCorrect) baseDamage *= (1 + card.value / 100);
+                break;
+            case 'damageReduce':
+                if (!isCorrect) baseDamage *= (1 - card.value / 100);
+                break;
+            case 'dodgeBoost':
+                if (!isCorrect && Math.random() < 0.5) baseDamage = 0;
+                break;
+            case 'weaken':
+                if (isCorrect) baseDamage *= (1 - card.value / 100);
+                break;
+            case 'damageIncrease':
+                if (!isCorrect) baseDamage *= (1 + card.value / 100);
+                break;
+            case 'timeReduce':
+                timeLeft = Math.max(timeLeft - card.value, 0);
+                break;
+        }
+        // 清除一次性效果
+        if (currentEffect !== 'timeReduce') {
+            roomRef.child(playerPath).update({ cardEffects: null });
+        }
+    }
+});
+    
 let damage;
 if (isCorrect) {
     // 攻击敌人：攻击力加成 × 敌人防御减免
@@ -1378,21 +1442,22 @@ if (isCorrect) {
     }
 
     database.ref('rooms/' + currentRoomId).update(updates, (error) => {
-    if (error) return;
-    
-    // 強制立即檢查遊戲狀態
-    checkGameOver();
-    
-    if (!gameOver) {
-            setTimeout(() => {
-                // 重置按鈕樣式和互動狀態
-                buttons.forEach(btn => {
-                    btn.style.cssText = '';
-                    btn.style.pointerEvents = 'auto'; // 重新啟用點擊
-                });
-                answered = false; // 新增：重置回答狀態
-                loadNewQuestion();
-            }, 700);
+        if (error) return;
+
+        checkGameOver();
+
+        if (!gameOver) {
+            const enterDrawPhase = Math.random() < 0.25; // 25% 機率進入抽牌環節
+            if (enterDrawPhase) {
+                database.ref('rooms/' + currentRoomId).update({ drawPhase: true });
+                startDrawPhase();
+            } else {
+                database.ref('rooms/' + currentRoomId).update({ drawPhase: false });
+                setTimeout(() => {
+                    answered = false;
+                    loadNewQuestion();
+                }, 700);
+            }
         }
     });
 
@@ -1471,6 +1536,122 @@ setTimeout(() => hitText.remove(), 300);
     
     
 }
+
+function startDrawPhase() {
+    inDrawPhase = true;
+    const canvas = document.getElementById('cardCanvas');
+    canvas.style.display = 'block';
+
+    database.ref('cards').once('value').then(snapshot => {
+        const cards = snapshot.val();
+        const cardKeys = Object.keys(cards);
+        const selectedCards = [];
+        for (let i = 0; i < 3; i++) {
+            const randomIndex = Math.floor(Math.random() * cardKeys.length);
+            selectedCards.push(cards[cardKeys[randomIndex]]);
+        }
+        displayCards(selectedCards);
+    });
+}
+
+
+    function displayCards(cards) {
+    const canvas = document.getElementById('cardCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const cardWidth = 200;
+    const cardHeight = 300;
+    const spacing = 50;
+    const totalWidth = (cardWidth * 3) + (spacing * 2);
+    const startX = (canvas.width - totalWidth) / 2;
+    const startY = (canvas.height - cardHeight) / 2;
+
+    let flipped = [false, false, false];
+    let cardImages = cards.map(card => {
+        const img = new Image();
+        img.src = card.image;
+        return img;
+    });
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        cards.forEach((card, index) => {
+            const x = startX + index * (cardWidth + spacing);
+            if (!flipped[index]) {
+                ctx.drawImage(cardBackImage, x, startY, cardWidth, cardHeight);
+            } else {
+                ctx.drawImage(cardImages[index], x, startY, cardWidth, cardHeight);
+                ctx.font = '20px Ma Shan Zheng';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.fillText(card.description, x + cardWidth / 2, startY + cardHeight - 20);
+            }
+        });
+    }
+
+    cardImages.forEach(img => img.onload = draw);
+    cardBackImage.onload = draw;
+
+    canvas.onclick = (e) => {
+        if (!inDrawPhase) return;
+        const rect = canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+
+        cards.forEach((card, index) => {
+            const x = startX + index * (cardWidth + spacing);
+            if (clickX >= x && clickX <= x + cardWidth && clickY >= startY && clickY <= startY + cardHeight && !flipped[index]) {
+                flipped[index] = true;
+                draw();
+                setTimeout(() => {
+                    selectCard(card);
+                    canvas.style.display = 'none';
+                    inDrawPhase = false;
+                }, 1000); // 翻牌動畫持續 1 秒
+            }
+        });
+    };
+}
+
+    function selectCard(card) {
+    const playerPath = isHost ? 'player1' : 'player2';
+    database.ref('rooms/' + currentRoomId + '/' + playerPath).update({
+        drawnCard: card.effect,
+        cardEffects: card.effect
+    });
+    applyCardEffect(card);
+    database.ref('rooms/' + currentRoomId).update({ drawPhase: false });
+    setTimeout(() => {
+        answered = false;
+        loadNewQuestion();
+    }, 700);
+}
+
+function applyCardEffect(card) {
+    const playerPath = isHost ? 'player1' : 'player2';
+    const opponentPath = isHost ? 'player2' : 'player1';
+    const roomRef = database.ref('rooms/' + currentRoomId);
+
+    switch (card.effect) {
+        case 'heal':
+            roomRef.child(playerPath + '/health').set(firebase.database.ServerValue.increment(card.value));
+            break;
+        case 'damage':
+            roomRef.child(playerPath + '/health').set(firebase.database.ServerValue.increment(-card.value));
+            break;
+        case 'attackBoost':
+        case 'damageReduce':
+        case 'dodgeBoost':
+        case 'weaken':
+        case 'damageIncrease':
+        case 'timeReduce':
+            // 這些效果在下次行動時應用，僅記錄在 cardEffects 中
+            break;
+    }
+}
+    
     
     
 // 修改 updateHealthDisplay 函數
@@ -1666,8 +1847,8 @@ function toggleMusic() {
     document.querySelector('.music-control').textContent = isMusicPlaying ? '🎵' : '🔇';
 }
 
-function createRoom() {
-    currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
+function createRoomWithId(roomId) {
+    currentRoomId = roomId;
     isHost = true;
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('classSelection').style.display = 'block';
@@ -1675,19 +1856,24 @@ function createRoom() {
     document.getElementById('displayRoomId').textContent = currentRoomId;
 
     database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        player1: { health: 100, class: null, currentQuestion: null, drawnCard: null, cardEffects: null },
+        player2: { health: 100, class: null, currentQuestion: null, drawnCard: null, cardEffects: null },
         gameStarted: false,
         gameEnded: false,
-        winner: null
+        winner: null,
+        drawPhase: false // 新增
     });
     listenToRoomChanges();
 }
 
-function joinRoom() {
-    currentRoomId = document.getElementById('roomId').value;
+function joinRoomWithId(roomId) {
+    currentRoomId = roomId;
+    isHost = false;
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('classSelection').style.display = 'block';
+    database.ref('rooms/' + currentRoomId).update({
+        drawPhase: false // 新增
+    });
     listenToRoomChanges();
 }
 
@@ -1811,7 +1997,9 @@ function listenToRoomChanges() {
             document.getElementById('gameArea').style.display = 'block';
             startGame(room);
         }
-
+if (room.drawPhase && !inDrawPhase) {
+    startDrawPhase();
+}
         updateHealthDisplay(room);
 
         if (room.gameEnded) {
