@@ -16,6 +16,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>        
 
+.single-player-btn {
+    background: linear-gradient(45deg, #8e44ad, #9b59b6);
+    box-shadow: 0 5px 15px rgba(142, 68, 173, 0.4);
+}
+
+#difficultySelection {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    padding: 2rem;
+    z-index: 9998;
+    overflow-y: auto;
+}
+
+.difficulty-card {
+    background: rgba(45, 41, 38, 0.95);
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: transform 0.3s;
+    text-align: center;
+}
+
+.difficulty-card:hover {
+    transform: scale(1.05);
+    border-color: #fff;
+}
+
+        
 .rematch-buttons {
     margin-top: 30px;
     display: flex;
@@ -892,6 +925,11 @@
             <span>隨機分配</span>
             <div class="btn-glow"></div>
         </button>
+        <button onclick="startSinglePlayerMode()" class="action-btn single-player-btn">
+    <i class="fas fa-user-ninja"></i>
+    <span>單機挑戰</span>
+    <div class="btn-glow"></div>
+</button>
     </div>
 
    
@@ -985,6 +1023,28 @@
     </div>
     <div id="selectedClassInfo" style="margin-top: 2rem;"></div>
 </div>
+
+    <div id="difficultySelection" style="display: none;">
+    <h2 style="color: var(--gold); margin-bottom: 2rem; text-align: center;">選擇挑戰難度</h2>
+    <div class="difficulty-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; max-width: 800px; margin: 0 auto;">
+        <div class="difficulty-card" onclick="selectDifficulty('easy')">
+            <h3>容易</h3>
+          
+        </div>
+        <div class="difficulty-card" onclick="selectDifficulty('normal')">
+            <h3>普通</h3>
+         
+        </div>
+        <div class="difficulty-card" onclick="selectDifficulty('hard')">
+            <h3>困難</h3>
+        
+        </div>
+        <div class="difficulty-card" onclick="selectDifficulty('hell')">
+            <h3>地獄</h3>
+        
+        </div>
+    </div>
+</div>
     
    <div id="waitingArea" style="
     text-align: center;
@@ -1037,6 +1097,10 @@
 
     
 <script>
+
+    let isSinglePlayer = false;
+let computerPlayer = null; // 儲存電腦的難度設置
+let computerAnswerTimeout = null; // 電腦回答的計時器
 
 // Canvas 動畫代碼
 window.onload = function() {
@@ -1208,81 +1272,98 @@ function selectClass(className) {
         warrior: { attack: 1.2, defense: 0.9, dodge: 0, skill: 'doubleDamage' },
         tank: { attack: 0.9, defense: 1.2, dodge: 0, skill: 'heal' },
         assassin: { attack: 1.0, defense: 0.9, dodge: 0.3, skill: 'dodge' },
-        mage: { attack: 1.1, defense: 1, dodge: 0, skill: 'counter' }
+        mage: { attack: 1.1, defense: 1.0, dodge: 0, skill: 'counter' }
     };
     
     playerClass = classData[className];
     playerClass.type = className;
-    
-    // 显示选择反馈
-    document.getElementById('selectedClassInfo').innerHTML = `
-        <p>已選擇：${document.querySelector(`.class-card[onclick="selectClass('${className}')"] h3`).textContent}</p>
-        <p>等待對手選擇流派...</p>
-    `;
 
-// 移除所有卡片的选中状态
-document.querySelectorAll('.class-card').forEach(card => {
-    card.classList.remove('selected');
-    card.querySelector('.selected-tick').style.display = 'none';
-});
-
-// 设置当前选中卡片
-const selectedCard = document.querySelector(`.class-card[onclick="selectClass('${className}')"]`);
-selectedCard.classList.add('selected');
-selectedCard.querySelector('.selected-tick').style.display = 'flex';
-
-    // 显示确认信息
+    const selectedCard = document.querySelector(`.class-card[onclick="selectClass('${className}')"]`);
     document.getElementById('selectedClassInfo').innerHTML = `
         <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${selectedCard.querySelector('h3').textContent}</p>
-        <p>等待對手選擇流派...</p>
+        ${isSinglePlayer ? '<p>準備挑戰電腦...</p>' : '<p>等待對手選擇流派...</p>'}
     `;
-    
-    // 更新数据库
-    const playerPath = isHost ? 'player1' : 'player2';
-    database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-        class: className,
-        health: 100,
-        attack: playerClass.attack,
-        defense: playerClass.defense,
-        dodge: playerClass.dodge
+
+    document.querySelectorAll('.class-card').forEach(card => {
+        card.classList.remove('selected');
+        card.querySelector('.selected-tick').style.display = 'none';
     });
 
-// 顯示彈出圖片並在動畫結束後隱藏
+    selectedCard.classList.add('selected');
+    selectedCard.querySelector('.selected-tick').style.display = 'flex';
+
+    if (isSinglePlayer) {
+        document.getElementById('classSelection').style.display = 'none';
+        document.getElementById('gameArea').style.display = 'block';
+        startSinglePlayerGame();
+    } else {
+        const playerPath = isHost ? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+            class: className,
+            health: 100,
+            attack: playerClass.attack,
+            defense: playerClass.defense,
+            dodge: playerClass.dodge
+        });
+    }
+
     const popupImage = selectedCard.querySelector('.popup-image');
     popupImage.style.display = 'block';
-    setTimeout(() => {
-        popupImage.style.display = 'none';
-    }, 500); // 動畫持續時間為0.5秒
-    
+    setTimeout(() => popupImage.style.display = 'none', 500);
+}
+
+    function startSinglePlayerGame() {
+    gameOver = false;
+    answered = false;
+
+    const myHealthContainer = document.getElementById('myHealthContainer');
+    const enemyHealthContainer = document.getElementById('enemyHealthContainer');
+    myHealthContainer.innerHTML = `
+        <div>🏹 你的氣血: <span id="myHealth">100</span></div>
+        <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: 100%;"></div></div>
+    `;
+    enemyHealthContainer.innerHTML = `
+        <div>🗡 敵方氣血: <span id="opponentHealth">${computerPlayer.health}</span></div>
+        <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: 100%;"></div></div>
+    `;
+
+    loadNewQuestion();
 }
 
 
 function displayQuestion(question) {
-    
-     // 重置答题状态
-    isAnswered = false; 
+    this.answered = false;
+    window.currentQuestion = question;
     document.getElementById('question').textContent = question.question;
-
     const optionsDiv = document.getElementById('options');
     optionsDiv.innerHTML = '';
-
+    
     question.options.forEach((option, index) => {
         const button = document.createElement('button');
         button.textContent = option;
-
-        // 点击处理逻辑
+        button.setAttribute('data-question-id', question.id);
         button.onclick = () => {
-            if (!isAnswered) {
-                isAnswered = true; // 设置为已选择状态
-                checkAnswer(index === question.correctIndex);
+            if (!answeredQuestions.has(question.id)) {
+                checkAnswer(index === question.correctIndex, question.id);
             }
         };
-
         optionsDiv.appendChild(button);
     });
 
     startTimer();
+
+    if (isSinglePlayer) {
+        clearTimeout(computerAnswerTimeout);
+        computerAnswerTimeout = setTimeout(() => {
+            if (!answered && !gameOver) {
+                const isCorrect = Math.random() < computerPlayer.accuracy;
+                checkAnswer(isCorrect, question.id, true); // true 表示電腦回答
+            }
+        }, computerPlayer.answerTime);
+    }
 }
+
+    
 
 function checkAnswer(isCorrect, questionId) {
     if (answeredQuestions.has(questionId)) return; // 如果已回答，則不執行
@@ -1896,6 +1977,27 @@ function listenToRoomChanges() {
         }
     });
 }
+
+    function startSinglePlayerMode() {
+    isSinglePlayer = true;
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('difficultySelection').style.display = 'block';
+}
+
+    function selectDifficulty(difficulty) {
+    const difficultySettings = {
+        easy: { answerTime: 5000, accuracy: 0.3, health: 100 },
+        normal: { answerTime: 4000, accuracy: 0.5, health: 100 },
+        hard: { answerTime: 3000, accuracy: 0.7, health: 100 },
+        hell: { answerTime: 2000, accuracy: 0.9, health: 100 }
+    };
+
+    computerPlayer = difficultySettings[difficulty];
+    computerPlayer.class = 'computer';
+
+    document.getElementById('difficultySelection').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'block';
+}
     
 
 function startNewGameSession() {
@@ -2103,81 +2205,39 @@ function checkGameOver() {
 function handleGameEnd(winnerType) {
     if (gameOver) return;
     gameOver = true;
-    
-    // 新增強制停止計時器
     clearInterval(timer);
-    timeLeft = 0;
-    document.getElementById('timer').textContent = '🕒0秒';
-
-    // 新增禁用所有按鈕
-    document.querySelectorAll('#options button').forEach(btn => {
-        btn.style.pointerEvents = 'none';
-        btn.style.opacity = '0.5';
-    });
-
-    
-    clearInterval(timer);
-    document.querySelectorAll('#options button').forEach(btn => btn.disabled = true);
+    if (isSinglePlayer) clearTimeout(computerAnswerTimeout);
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    
-    const isWinner = (winnerType === 'player1' && isHost) || 
-                    (winnerType === 'player2' && !isHost);
-    
     victoryOverlay.style.display = 'flex';
-    if (winnerType === 'draw') {
-        victoryText.textContent = "平分秋色！";
+
+    if (isSinglePlayer) {
+        victoryText.textContent = winnerType === 'player' ? '武道昌隆！' : '雖敗猶榮！';
     } else {
-        victoryText.textContent = isWinner ? "武道昌隆！" : "雖敗猶榮！";
+        const isWinner = (winnerType === 'player1' && isHost) || (winnerType === 'player2' && !isHost);
+        victoryText.textContent = winnerType === 'draw' ? "平分秋色！" : (isWinner ? "武道昌隆！" : "雖敗猶榮！");
     }
 
-    const resultSound = isWinner ? soundEffects.victory : soundEffects.defeat;
-    resultSound.play();
-
-    victoryText.style.animation = 'none';
-    setTimeout(() => victoryText.style.animation = 'victoryPulse 1s ease-out', 10);
-// 新增重赛按钮容器
-   // 先移除已存在的按钮
-const existingButtons = document.querySelector('.rematch-buttons');
-if (existingButtons) existingButtons.remove();
-
-const buttonContainer = document.createElement('div');
+    const buttonContainer = document.createElement('div');
     buttonContainer.className = 'rematch-buttons';
-    
     const rematchBtn = document.createElement('button');
     rematchBtn.textContent = '再戰江湖';
     const mainMenuBtn = document.createElement('button');
     mainMenuBtn.textContent = '歸隱山林';
 
-    // 按钮点击处理
-    rematchBtn.onclick = () => handleRematchRequest();
-    mainMenuBtn.onclick = () => {
-        database.ref('rooms/' + currentRoomId).remove();
-        window.location.reload();
+    rematchBtn.onclick = () => {
+        victoryOverlay.style.display = 'none';
+        if (isSinglePlayer) {
+            startSinglePlayerGame();
+        } else {
+            handleRematchRequest();
+        }
     };
+    mainMenuBtn.onclick = () => window.location.reload();
 
     buttonContainer.appendChild(rematchBtn);
     buttonContainer.appendChild(mainMenuBtn);
-    const user = auth.currentUser;
-if (user) {
-    const userId = user.uid;
-    const isWinner = (winnerType === 'player1' && isHost) || (winnerType === 'player2' && !isHost);
-    const scoreChange = isWinner ? 10 : -5; // 贏加10分，輸扣5分
-
-    const userRef = database.ref('leaderboard/' + userId);
-    userRef.transaction((currentData) => {
-        if (currentData) {
-            currentData.score = (currentData.score || 0) + scoreChange;
-        } else {
-            currentData = {
-                name: user.displayName, // 直接使用 displayName，不需要後備值
-                score: scoreChange
-            };
-        }
-        return currentData;
-    });
-}
     victoryOverlay.appendChild(buttonContainer);
 }
 
