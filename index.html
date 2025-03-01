@@ -1811,7 +1811,8 @@ function listenToRoomChanges() {
 }
 
     function randomMatch() {
-    const waitingRef = database.ref('waitingRoom'); // 使用單一等待房間
+        console.log("randomMatch called");
+    const waitingRef = database.ref('waitingRooms'); // 使用單一等待房間
     const userId = Math.random().toString(36).substr(2, 9); // 臨時用戶 ID
 
     waitingRef.once('value', (snapshot) => {
