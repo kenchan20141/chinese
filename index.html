@@ -1391,7 +1391,14 @@ if (isCorrect) {
     
     // 強制立即檢查遊戲狀態
     checkGameOver();
-    
+
+// 隨機觸發事件（這裡假設10%機率）
+if (Math.random() < 0.5) {
+    var eventType = Math.random() < 0.5 ? 'health' : 'other'; // 50%機率是氣血事件
+    var notificationText = eventType === 'health' ? '氣血事件觸發！' : '隨機事件觸發！';
+    showNotification(notificationText, eventType);
+}
+        
     if (!gameOver) {
             setTimeout(() => {
                 // 重置按鈕樣式和互動狀態
@@ -2022,7 +2029,30 @@ function displayQuestion(question) {
     startTimer();
 }
 
+function showNotification(text, type) {
+    var notification = document.getElementById('notification');
+    notification.textContent = text;
+    notification.style.display = 'block';
 
+    // 如果與氣血相關，放在氣血條附近
+    if (type === 'health') {
+        var healthBar = document.getElementById('myHealthContainer');
+        notification.style.top = (healthBar.offsetTop + healthBar.offsetHeight + 10) + 'px';
+        notification.style.left = healthBar.offsetLeft + 'px';
+    } else {
+        // 其他事件顯示在螢幕中央
+        notification.style.top = '50%';
+        notification.style.left = '50%';
+        notification.style.transform = 'translate(-50%, -50%)';
+    }
+
+    // 3秒後自動隱藏
+    setTimeout(function() {
+        notification.style.display = 'none';
+    }, 3000);
+}
+
+    
 function startTimer() {
     clearInterval(timer);
     // 新增以下兩行重置動畫狀態
