@@ -1353,14 +1353,46 @@ function displayQuestion(question) {
     startTimer();
 
     if (isSinglePlayer) {
-        clearTimeout(computerAnswerTimeout);
-        computerAnswerTimeout = setTimeout(() => {
-            if (!answered && !gameOver) {
-                const isCorrect = Math.random() < computerPlayer.accuracy;
-                checkAnswer(isCorrect, question.id, true); // true 表示電腦回答
-            }
-        }, computerPlayer.answerTime);
+    const myHealthElement = document.getElementById('myHealth');
+    const opponentHealthElement = document.getElementById('opponentHealth');
+    let myHealth = parseInt(myHealthElement.textContent);
+    let opponentHealth = parseInt(opponentHealthElement.textContent);
+
+    if (isCorrect) {
+        opponentHealth = Math.max(opponentHealth - damage, 0);
+        opponentHealthElement.textContent = opponentHealth;
+        document.getElementById('opponentHealthBar').style.width = opponentHealth + '%';
+    } else {
+        myHealth = Math.max(myHealth - damage, 0);
+        myHealthElement.textContent = myHealth;
+        document.getElementById('myHealthBar').style.width = myHealth + '%';
     }
+
+    setTimeout(() => {
+        buttons.forEach(btn => {
+            btn.style.cssText = '';
+            btn.style.pointerEvents = 'auto';
+        });
+        answered = false;
+        checkGameOver(); // 只在血量歸零時觸發結束
+        if (!gameOver) loadNewQuestion();
+    }, 700);
+} else {
+    // 原有的多人模式代碼保持不變
+    database.ref('rooms/' + currentRoomId).update(updates, (error) => {
+        if (error) return;
+        checkGameOver();
+        if (!gameOver) {
+            setTimeout(() => {
+                buttons.forEach(btn => {
+                    btn.style.cssText = '';
+                    btn.style.pointerEvents = 'auto';
+                });
+                answered = false;
+                loadNewQuestion();
+            }, 700);
+        }
+    });
 }
 
     
@@ -2167,39 +2199,47 @@ function startTimer() {
 }
 
 function checkGameOver() {
-    const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.once('value').then(snapshot => {
-        const room = snapshot.val();
-        if (!room) return;
+    if (isSinglePlayer) {
+        const myHealth = parseInt(document.getElementById('myHealth').textContent);
+        const opponentHealth = parseInt(document.getElementById('opponentHealth').textContent);
 
-        // 新增血量下限處理
-        const player1Health = Math.max(room.player1?.health || 0, 0);
-        const player2Health = Math.max(room.player2?.health || 0, 0);
-
-        let winner = null;
-        if (player1Health <= 0 || player2Health <= 0) {
-            if (player1Health > player2Health) {
-                winner = 'player1';
-            } else if (player2Health > player1Health) {
-                winner = 'player2';
-            } else {
-                winner = 'draw';
-            }
-
-            // 新增強制血量歸零
-            const updates = {
-                gameEnded: true,
-                winner: winner,
-                'player1/health': player1Health,
-                'player2/health': player2Health
-            };
-
-            roomRef.update(updates, () => {
-                // 新增直接觸發結束處理
-                handleGameEnd(winner);
-            });
+        if (myHealth <= 0 || opponentHealth <= 0) {
+            gameOver = true;
+            const winner = myHealth > opponentHealth ? 'player' : 'computer';
+            handleGameEnd(winner);
         }
-    });
+    } else {
+        const roomRef = database.ref('rooms/' + currentRoomId);
+        roomRef.once('value').then(snapshot => {
+            const room = snapshot.val();
+            if (!room) return;
+
+            const player1Health = Math.max(room.player1?.health || 0, 0);
+            const player2Health = Math.max(room.player2?.health || 0, 0);
+
+            let winner = null;
+            if (player1Health <= 0 || player2Health <= 0) {
+                if (player1Health > player2Health) {
+                    winner = 'player1';
+                } else if (player2Health > player1Health) {
+                    winner = 'player2';
+                } else {
+                    winner = 'draw';
+                }
+
+                const updates = {
+                    gameEnded: true,
+                    winner: winner,
+                    'player1/health': player1Health,
+                    'player2/health': player2Health
+                };
+
+                roomRef.update(updates, () => {
+                    handleGameEnd(winner);
+                });
+            }
+        });
+    }
 }
 
 function handleGameEnd(winnerType) {
