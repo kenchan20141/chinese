@@ -2274,21 +2274,21 @@ const opponentReentered = isHost? room.player2?.reentered : room.player1?.reente
 if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
     opponentJoinedMessage = document.createElement('div');
     opponentJoinedMessage.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.9);
-        color: #fff;
-        padding: 20px;
-        border-radius: 10px;
-        z-index: 9999;
-        font-size: 2rem;
-        text-align: center;
-        width: 80%;
-        max-width: 300px;
-        box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
-    `;
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 9999;
+    font-size: 2rem;
+    text-align: center;
+    width: 80%;
+    max-width: 300px;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+`;
     opponentJoinedMessage.textContent = '🎮玩家已進場';
     document.body.appendChild(opponentJoinedMessage);
 
