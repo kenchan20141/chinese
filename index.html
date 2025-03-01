@@ -799,31 +799,7 @@
   animation: reduceDamageFade 1.2s ease-out;
   pointer-events: none;
 }
-
-
-.event-message {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(45deg, #c0392b, #e74c3c);
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 8px;
-    z-index: 9999;
-    font-size: 1.5rem;
-    text-align: center;
-    box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
-    animation: fadeInOut 3s ease-in-out;
-}
-
-@keyframes fadeInOut {
-    0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-    10% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    90% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-}
-    
+        
     </style>
 </head>
 <body>
@@ -1008,89 +984,6 @@
 
     
 <script>
-
-function showEventMessage(message) {
-    const eventMessageDiv = document.getElementById('eventMessage');
-    if (message) {
-        eventMessageDiv.textContent = message;
-        eventMessageDiv.style.display = 'block';
-        setTimeout(() => {
-            eventMessageDiv.style.display = 'none';
-        }, 3000);
-    }
-}
-    
-function triggerRandomEvent() {
-    const randomNum = Math.random();
-    let eventMessage = '';
-    const playerPath = isHost ? 'player1' : 'player2';
-    const opponentPath = isHost ? 'player2' : 'player1';
-
-    if (randomNum < 0.0667) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).transaction(health => {
-            return Math.min((health || 100) + Math.ceil((health || 100) * 0.2), 100);
-        });
-        eventMessage = '🛡️ 你恢復了20%的氣血！';
-    } else if (randomNum < 0.1334) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).transaction(attack => {
-            return (attack || 1) * 1.2;
-        });
-        eventMessage = '💪 你的攻擊力提升了20%！';
-    } else if (randomNum < 0.2) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/defense`).transaction(defense => {
-            return (defense || 1) * 1.2;
-        });
-        eventMessage = '🛡️ 你的防禦力提升了20%！';
-    } else if (randomNum < 0.2667) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/extraAnswer`).set(true);
-        eventMessage = '🎉 你獲得了額外一次答題機會！';
-    } else if (randomNum < 0.3334) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/negativeStates`).set([]);
-        eventMessage = '✨ 你清除了所有負面狀態！';
-    } else if (randomNum < 0.4) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).transaction(health => {
-            return Math.max((health || 100) - Math.ceil((health || 100) * 0.1), 0);
-        });
-        eventMessage = '❌ 你損失了10%的氣血！';
-    } else if (randomNum < 0.4667) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).transaction(attack => {
-            return (attack || 1) * 0.8;
-        });
-        eventMessage = '🥀 你的攻擊力降低了20%！';
-    } else if (randomNum < 0.5334) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/defense`).transaction(defense => {
-            return (defense || 1) * 0.8;
-        });
-        eventMessage = '🥀 你的防禦力降低了20%！';
-    } else if (randomNum < 0.6) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/noDamageOnWrongAnswer`).set(true);
-        eventMessage = '🛡️ 本回合答題錯誤不會扣血！';
-    } else if (randomNum < 0.6667) {
-        database.ref(`rooms/${currentRoomId}/${opponentPath}/health`).transaction(health => {
-            return Math.max((health || 100) - Math.ceil((health || 100) * 0.1), 0);
-        });
-        eventMessage = '💥 敵人損失了10%的氣血！';
-    } else if (randomNum < 0.7334) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/guaranteedDodge`).set(true);
-        eventMessage = '🌟 下回合你必定能閃避敵人的攻擊！';
-    } else if (randomNum < 0.8) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/isConfused`).set(true);
-        eventMessage = '😵 你陷入了混亂，選項順序被打亂！';
-    } else if (randomNum < 0.8667) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/isSilenced`).set(true);
-        eventMessage = '🔇 你被沉默了，本回合無法使用技能！';
-    } else if (randomNum < 0.9334) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/doubleAnswerReward`).set(true);
-        eventMessage = '🎉 本回合答對題將獲得雙倍傷害！';
-    } else {
-        database.ref(`rooms/${currentRoomId}/${playerPath}/isPoisoned`).set(true);
-        database.ref(`rooms/${currentRoomId}/${playerPath}/poisonTurns`).set(3);
-        eventMessage = '☠️ 你中毒了，每回合損失5%氣血，持續3回合！';
-    }
-
-    showEventMessage(eventMessage);
-}
-    
 
 // Canvas 動畫代碼
 window.onload = function() {
@@ -1409,77 +1302,28 @@ if(effectElement.className) {
 
     // 傷害計算與動畫
 // 修改为：
+// 修改后的伤害计算 ▼▼▼
 let baseDamage = Math.floor((timeLeft / 15) * 13);
 
-const playerPath = isHost ? 'player1' : 'player2';
-database.ref(`rooms/${currentRoomId}/${playerPath}`).once('value').then(snapshot => {
-    const playerData = snapshot.val();
+// 霸刀门双倍攻击判定（30%概率）
+if(playerClass.type === 'warrior' && isCorrect && Math.random() < 0.3) {
+    baseDamage *= 2;
+    // 添加刀光特效
+    const swordFlash = document.createElement('div');
+    swordFlash.className = 'sword-flash';
+    swordFlash.style.top = `${Math.random() * 40 + 30}%`;
+    document.body.appendChild(swordFlash);
+    setTimeout(() => swordFlash.remove(), 400);
+}
 
-    // 檢查雙倍傷害
-    if (playerData.doubleAnswerReward && isCorrect) {
-        baseDamage *= 2;
-    }
-
-    // 檢查錯答不扣血
-    if (!isCorrect && playerData.noDamageOnWrongAnswer) {
-        baseDamage = 0;
-        database.ref(`rooms/${currentRoomId}/${playerPath}/noDamageOnWrongAnswer`).set(false); // 重置狀態
-    }
-
-    // 檢查必定閃避
-    if (!isCorrect && playerData.guaranteedDodge) {
-        baseDamage = 0;
-        const dodgeDisplay = document.getElementById('dodgeText');
-        dodgeDisplay.style.display = 'block';
-        setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
-        database.ref(`rooms/${currentRoomId}/${playerPath}/guaranteedDodge`).set(false); // 重置狀態
-    }
-
-    // 檢查中毒效果（每回合結束時執行）
-    if (playerData.isPoisoned && playerData.poisonTurns > 0) {
-        const poisonDamage = Math.ceil(playerData.health * 0.05);
-        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).transaction(health => {
-            return Math.max((health || 100) - poisonDamage, 0);
-        });
-        database.ref(`rooms/${currentRoomId}/${playerPath}/poisonTurns`).transaction(turns => {
-            return Math.max((turns || 0) - 1, 0);
-        });
-        database.ref(`rooms/${currentRoomId}/${playerPath}/isPoisoned`).transaction(isPoisoned => {
-            return (playerData.poisonTurns - 1) > 0;
-        });
-    }
-
-    // 霸刀門雙倍攻擊（30%概率）
-    if (playerClass.type === 'warrior' && isCorrect && Math.random() < 0.3) {
-        baseDamage *= 2;
-        const swordFlash = document.createElement('div');
-        swordFlash.className = 'sword-flash';
-        swordFlash.style.top = `${Math.random() * 40 + 30}%`;
-        document.body.appendChild(swordFlash);
-        setTimeout(() => swordFlash.remove(), 400);
-    }
-
-    // 影流教閃避（30%概率）
-    if (playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
-        baseDamage = 0;
-        const dodgeDisplay = document.getElementById('dodgeText');
-        dodgeDisplay.style.display = 'block';
-        setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
-    }
-
-    let damage;
-    if (isCorrect) {
-        damage = Math.floor(baseDamage * playerClass.attack / opponentDefense);
-    } else {
-        damage = Math.floor(baseDamage / playerClass.defense);
-        if (playerClass.type === 'mage') {
-            damage = Math.floor(damage * 0.7);
-            const reduceDisplay = document.getElementById('reduceDamageText');
-            reduceDisplay.style.display = 'block';
-            setTimeout(() => reduceDisplay.style.display = 'none', 1200);
-        }
-    }
-});
+// 影流教闪避判定（30%概率）
+if(playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
+    baseDamage = 0; // 完全闪避
+    // 显示闪避提示
+    const dodgeDisplay = document.getElementById('dodgeText');
+    dodgeDisplay.style.display = 'block';
+    setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
+}
 
 let damage;
 if (isCorrect) {
@@ -2058,21 +1902,21 @@ function shuffleArray(array) {
 }
 
 function loadNewQuestion() {
-    hasHealedThisTurn = false; // 重置恢复状态
-    // 假设问题总数为 100，可以从Firebase或本地配置中动态获取
+    hasHealedThisTurn = false; // 重置恢復狀態
+    // 假設問題總數為 100，可以從 Firebase 或本地配置中動態獲取
     const totalQuestions = 622; 
-    const randomId = Math.floor(Math.random() * totalQuestions); // 随机生成问题ID
+    const randomId = Math.floor(Math.random() * totalQuestions); // 隨機生成問題 ID
 
-    // 只下载特定问题的数据
+    // 只下載特定問題的數據
     const questionRef = database.ref(`questions/${randomId}`);
     questionRef.once('value').then(snapshot => {
         const originalQuestion = snapshot.val();
         if (!originalQuestion) {
-            console.error('无法找到该问题数据');
+            console.error('無法找到該問題數據');
             return;
         }
 
-        // 在客户端处理问题数据（打乱选项等）
+        // 在客戶端處理問題數據（打亂選項等）
         const optionsCopy = [...originalQuestion.options];
         const correctAnswer = optionsCopy[originalQuestion.correctIndex];
         const shuffledOptions = shuffleArray(optionsCopy);
@@ -2082,27 +1926,21 @@ function loadNewQuestion() {
             question: originalQuestion.question,
             options: shuffledOptions,
             correctIndex: newCorrectIndex,
-            id: Date.now() // 生成唯一ID用于客户端识别
+            id: Date.now() // 生成唯一 ID 用於客戶端識別
         };
 
-        // 更新当前问题ID和房间数据
+        // 更新當前問題 ID 和房間數據
         currentQuestionId = processedQuestion.id;
-        const playerPath = isHost? 'player1' : 'player2';
+        const playerPath = isHost ? 'player1' : 'player2';
         database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ 
             currentQuestion: processedQuestion 
         });
 
-        // 触发随机事件
-        const randomChance = Math.random();
-        if (randomChance < 0.5) {
-            triggerRandomEvent();
-        }
-
-        // 重置答题状态并显示问题
+        // 重置答題狀態並顯示問題
         isAnswered = false;
         displayQuestion(processedQuestion);
     }).catch(error => {
-        console.error('下载问题数据时出错:', error);
+        console.error('下載問題數據時出錯:', error);
     });
 }
 
@@ -2469,9 +2307,7 @@ if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gam
 
 <!-- 新增减伤提示 -->
 <div id="reduceDamageText" style="display:none; position:fixed; top:40%; left:50%; transform:translate(-50%,-50%); font-size:2rem; color:#00ffff; text-shadow:0 0 10px rgba(0,255,255,0.5);">🔥 離火護體 傷害減少30%</div>
-
     
-    <div id="eventMessage" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: #fff; padding: 10px 20px; border-radius: 5px; z-index: 9999; font-size: 1.5rem; text-align: center;"></div>
 </body>
 
 <div id="dodgeText" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3rem; color:#00ff00; text-shadow:0 0 10px rgba(0,255,0,0.5);">閃避成功！</div>
