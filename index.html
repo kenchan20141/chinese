@@ -1036,7 +1036,7 @@ window.onload = function() {
         const imgY = (canvas.height - imgHeight) / 2;
 
         // 初始繪製圖片
-        ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
         // 從圖片區域生成粒子
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
