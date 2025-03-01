@@ -1,6 +1,4 @@
 
-
-
 <!DOCTYPE html>
 <html>
     
@@ -1528,35 +1526,20 @@ setTimeout(() => hitText.remove(), 300);
     
 // 修改 updateHealthDisplay 函數
 function updateHealthDisplay(room) {
-    const myClass = isHost ? room.player1.class : (room.player2?.class || '');
-    const opponentClass = isHost ? (room.player2?.class || '') : room.player1.class;
     const myHealth = isHost ? room.player1.health : (room.player2?.health || 100);
-    const opponentHealth = isHost ? (room.player2?.health || 100) : room.player1.health;
-    const classIcons = {
-        warrior: 'https://i.ibb.co/p6g4PFH4/1.png',
-        tank: 'https://i.ibb.co/4wksKZsF/image.png',
-        assassin: 'https://i.ibb.co/W4V5bX8X/image.png',
-        mage: 'https://i.ibb.co/tM82mXtr/3.png'
-    };
+    const myName = isHost ? (room.player1?.name || '玩家1') : (room.player2?.name || '玩家2');
+    const opponentName = isHost ? (room.player2?.name || '玩家2') : (room.player1?.name || '玩家1');
 
     document.getElementById('myHealthContainer').innerHTML = `
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="${classIcons[myClass] || ''}" style="width:50px; height:50px; border-radius:50%;">
-            <div>🏹 你的氣血: <span id="myHealth">${Math.max(myHealth, 0)}</span></div>
-        </div>
+        <div>${myName} 氣血: <span id="myHealth">${Math.max(myHealth, 0)}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
     `;
-    
     document.getElementById('enemyHealthContainer').innerHTML = `
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="${classIcons[opponentClass] || ''}" style="width:50px; height:50px; border-radius:50%;">
-            <div>🗡 敵方氣血: <span id="opponentHealth">${Math.max(opponentHealth, 0)}</span></div>
-        </div>
+        <div>${opponentName} 氣血: <span id="opponentHealth">${Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0)}</span></div>
         <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
     `;
-    
     document.getElementById('myHealthBar').style.width = Math.max(myHealth, 0) + '%';
-    document.getElementById('opponentHealthBar').style.width = Math.max(opponentHealth, 0) + '%';
+    document.getElementById('opponentHealthBar').style.width = Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0) + '%';
 }
     
 
@@ -2258,33 +2241,69 @@ function handleRematchRequest() {
     if (isRematching) return;
     isRematching = true;
 
+    // 强制移除胜利界面元素
     const victoryOverlay = document.querySelector('.victory-overlay');
     victoryOverlay.style.display = 'none';
     const buttons = victoryOverlay.querySelector('.rematch-buttons');
     if (buttons) buttons.remove();
 
-    const existingWaiting = document.getElementById('newwaitingForRematch');
-    if (existingWaiting) existingWaiting.remove(); // 移除舊的等待界面
-
-    // 原有的其他代碼保持不變
+    // 获取当前玩家对应的重开字段
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
+
+    // 原子性重置数据库状态
     const updates = {
         'player1/health': 100,
         'player2/health': 100,
         gameEnded: false,
         currentQuestion: null,
         winner: null,
-        gameStarted: false,
-        [rematchField]: true,
+        gameStarted: false, // 确保游戏在双方都同意重开前不开始
+        [rematchField]: true, // 记录当前玩家同意重开
+        // 新增一个字段用于表示玩家是否已经重新进入游戏
         'player1/reentered': isHost,
-        'player2/reentered': !isHost,
-        clientEntered: isHost ? false : true
+        'player2/reentered':!isHost,
+        clientEntered: isHost ? false : true 
     };
 
     waitingForOpponent = false;
 
     database.ref('rooms/' + currentRoomId).update(updates, (error) => {
-        // 原有的其他代碼保持不變
+        isRematching = false;
+        if (error) {
+            console.error('更新数据库时出错:', error);
+            return;
+        }
+
+        // 本地强制重置
+        gameOver = false;
+        answered = false;
+
+        // 清除旧问题显示
+        document.getElementById('question').textContent = '';
+        document.getElementById('options').innerHTML = '';
+
+        // 显示等待界面
+        const waitingForRematch = document.createElement('div');
+        waitingForRematch.id = 'waitingForRematch';
+        waitingForRematch.style.textAlign = 'center';
+        waitingForRematch.style.fontSize = '2rem';
+        waitingForRematch.style.color = 'var(--gold)';
+        waitingForRematch.style.padding = '2rem';
+        waitingForRematch.style.background = 'rgba(45, 41, 38, 0.95)';
+        waitingForRematch.style.border = '3px solid var(--gold)';
+        waitingForRematch.style.borderRadius = '15px';
+        waitingForRematch.style.maxWidth = '600px';
+        waitingForRematch.style.margin = '2rem auto';
+        waitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+        waitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+        waitingForRematch.textContent = '等待對手同意重開遊戲...';
+        document.body.appendChild(waitingForRematch);
+
+        // 添加等待对方同意的标志位
+        waitingForOpponent = true;
+
+        // 重新绑定监听器
+        listenToRoomChanges();
     });
 }
 
@@ -2356,11 +2375,9 @@ function listenToRoomChanges() {
                 newWaitingForRematch.style.margin = '2rem auto';
                 newWaitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
                 newWaitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-                newWaitingForRematch.textContent = '等待對手同意重開遊戲...';
+                newWaitingForRematch.textContent = '等待对手同意重开游戏...';
                 document.body.appendChild(newWaitingForRematch);
             }
-        } else if (room.gameStarted && newwaitingForRematch) {
-            newwaitingForRematch.remove(); // 確保重開後移除
         }
 
        // 新增：检查玩家是否已经重新进入游戏
