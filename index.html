@@ -1748,6 +1748,14 @@ function joinRoom() {
     });
 }
 
+    function startGameSession() {
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'block';
+    document.getElementById('waitingArea').style.display = 'block';
+    document.getElementById('displayRoomId').textContent = currentRoomId;
+    listenToRoomChanges();
+}
+
     function createRoomWithId(roomId) {
     currentRoomId = roomId;
     isHost = true;
@@ -1844,23 +1852,20 @@ function startGameSession() {
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.off('value'); // 移除舊的監聽器
+    roomRef.off('value');
 
     roomRef.on('value', (snapshot) => {
         const room = snapshot.val();
         if (!room) return;
-
-        if (isHost) {
-            opponentDefense = room.player2?.defense || 1.0;
-        } else {
-            opponentDefense = room.player1?.defense || 1.0;
-        }
 
         if (room.player1?.class && room.player2?.class) {
             document.getElementById('waitingArea').style.display = 'none';
             document.getElementById('classSelection').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
             startGame(room);
+        } else {
+            document.getElementById('waitingArea').style.display = 'block';
+            document.getElementById('classSelection').style.display = 'block';
         }
 
         updateHealthDisplay(room);
