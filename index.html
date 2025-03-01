@@ -1132,19 +1132,19 @@ const roomIdInput = document.getElementById('roomId');
 // 修改 createRoom 函数的调用方式
 createRoomBtn.onclick = function() {
     const roomId = roomIdInput.value.trim();
-    if (roomId) {
-        createRoomWithId(roomId); // 有 ID 則創建指定房間
+    if (roomId !== "") {
+        createRoomWithId(roomId);
     } else {
-        joinWaitingQueue(); // 無 ID 則進入隨機分配
+        joinWaitingQueue();
     }
 };
 
 joinRoomBtn.onclick = function() {
     const roomId = roomIdInput.value.trim();
-    if (roomId) {
-        joinRoomWithId(roomId); // 有 ID 則加入指定房間
+    if (roomId !== "") {
+        joinRoomWithId(roomId);
     } else {
-        joinWaitingQueue(); // 無 ID 則進入隨機分配
+        joinWaitingQueue();
     }
 };
 
@@ -1666,7 +1666,30 @@ function toggleMusic() {
     document.querySelector('.music-control').textContent = isMusicPlaying ? '🎵' : '🔇';
 }
 
+function createRoom() {
+    currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
+    isHost = true;
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'block';
+    document.getElementById('waitingArea').style.display = 'block';
+    document.getElementById('displayRoomId').textContent = currentRoomId;
 
+    database.ref('rooms/' + currentRoomId).set({
+        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        gameStarted: false,
+        gameEnded: false,
+        winner: null
+    });
+    listenToRoomChanges();
+}
+
+function joinRoom() {
+    currentRoomId = document.getElementById('roomId').value;
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'block';
+    listenToRoomChanges();
+}
 
     function createRoomWithId(roomId) {
     currentRoomId = roomId;
@@ -1704,8 +1727,10 @@ function joinRoomWithId(roomId) {
     const waitingRef = database.ref('waitingRooms');
     const userId = user.uid;
 
+    // 檢查是否已在等待隊列中
     waitingRef.child(userId).once('value', (snapshot) => {
         if (!snapshot.exists()) {
+            // 加入等待隊列
             waitingRef.child(userId).set({
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
@@ -1727,6 +1752,8 @@ function checkForMatch() {
         if (waitingPlayers.length >= 2) {
             const player1 = waitingPlayers[0];
             const player2 = waitingPlayers[1];
+
+            // 隨機生成房間編號
             const roomId = Math.floor(1000 + Math.random() * 9000).toString();
             const roomRef = database.ref('rooms/' + roomId);
             roomRef.set({
@@ -1737,9 +1764,11 @@ function checkForMatch() {
                 winner: null
             });
 
+            // 移除配對成功的玩家
             waitingRef.child(player1).remove();
             waitingRef.child(player2).remove();
 
+            // 根據當前用戶進入遊戲
             const userId = firebase.auth().currentUser.uid;
             if (userId === player1) {
                 currentRoomId = roomId;
@@ -1764,7 +1793,7 @@ function startGameSession() {
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.off('value');
+    roomRef.off('value'); // 移除舊的監聽器
 
     roomRef.on('value', (snapshot) => {
         const room = snapshot.val();
@@ -1776,11 +1805,10 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        if (room.player1?.class && room.player2?.class && !room.gameStarted) {
+        if (room.player1?.class && room.player2?.class) {
             document.getElementById('waitingArea').style.display = 'none';
             document.getElementById('classSelection').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
-            database.ref('rooms/' + currentRoomId).update({ gameStarted: true });
             startGame(room);
         }
 
