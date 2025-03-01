@@ -1235,61 +1235,56 @@ function checkAnswer(isCorrect, questionId) {
     if (answeredQuestions.has(questionId)) return; // 如果已回答，則不執行
     answeredQuestions.add(questionId); // 記錄已回答的問題ID
 
-// 在伤害计算后添加：
-let effectElement = document.createElement('div');
-if(playerClass.type === 'warrior' && isCorrect) {
-    effectElement.className = 'sword-animation';
-    effectElement.style.background = 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.7) 50%, transparent 100%)';
-    effectElement.style.width = '150px';
-    effectElement.style.height = '30px';
-    effectElement.style.position = 'fixed';
-    effectElement.style.top = '50%';
-} 
-else if(playerClass.type === 'tank' && !isCorrect) {
-    effectElement.className = 'shield-animation';
-    effectElement.innerHTML = '🛡️';
-    effectElement.style.fontSize = '4rem';
-    effectElement.style.position = 'fixed';
-    effectElement.style.left = '50%';
-    effectElement.style.transform = 'translateX(-50%)';
-}
+    let effectElement = document.createElement('div');
+    if(playerClass.type === 'warrior' && isCorrect) {
+        effectElement.className = 'sword-animation';
+        effectElement.style.background = 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.7) 50%, transparent 100%)';
+        effectElement.style.width = '150px';
+        effectElement.style.height = '30px';
+        effectElement.style.position = 'fixed';
+        effectElement.style.top = '50%';
+    } 
+    else if(playerClass.type === 'tank' && !isCorrect) {
+        effectElement.className = 'shield-animation';
+        effectElement.innerHTML = '🛡️';
+        effectElement.style.fontSize = '4rem';
+        effectElement.style.position = 'fixed';
+        effectElement.style.left = '50%';
+        effectElement.style.transform = 'translateX(-50%)';
+    }
 
-   // 新增铁甲宗治疗代码 ▼▼▼
-if (playerClass && playerClass.type === 'tank' && !hasHealedThisTurn) {
-    hasHealedThisTurn = true; // 標記本回合已恢復
-    const healAmount = 2; // 固定恢復2點氣血
-    const playerPath = isHost ? 'player1' : 'player2';
-    database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-        firebase.database.ServerValue.increment(healAmount)
-    );
-    const myHealthElement = document.getElementById('myHealth');
-    const shieldIcon = document.createElement('span');
-    shieldIcon.className = 'shield-icon';
-    shieldIcon.innerHTML = '🛡️';
-    myHealthElement.appendChild(shieldIcon);
-    setTimeout(() => {
-        shieldIcon.remove();
-    }, 1000);
-}
+    if (playerClass && playerClass.type === 'tank' && !hasHealedThisTurn) {
+        hasHealedThisTurn = true;
+        const healAmount = 2;
+        const playerPath = isHost ? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
+            firebase.database.ServerValue.increment(healAmount)
+        );
+        const myHealthElement = document.getElementById('myHealth');
+        const shieldIcon = document.createElement('span');
+        shieldIcon.className = 'shield-icon';
+        shieldIcon.innerHTML = '🛡️';
+        myHealthElement.appendChild(shieldIcon);
+        setTimeout(() => {
+            shieldIcon.remove();
+        }, 1000);
+    }
 
-    
-if(effectElement.className) {
-    document.body.appendChild(effectElement);
-    setTimeout(() => effectElement.remove(), 1000);
-}
+    if(effectElement.className) {
+        document.body.appendChild(effectElement);
+        setTimeout(() => effectElement.remove(), 1000);
+    }
     
     if (answered || gameOver) return;
     answered = true;
 
     clearInterval(timer);
     
-    // 樣式處理
     const buttons = document.querySelectorAll('#options button');
     const correctIndex = window.currentQuestion.correctIndex;
     
-    // 顯示正確答案樣式
     buttons.forEach((btn, index) => {
-        btn.style.pointerEvents = 'none'; // 立即禁止點擊
+        btn.style.pointerEvents = 'none';
         if (index === correctIndex) {
             btn.style.cssText = `
                 background: #2ecc71 !important;
@@ -1299,74 +1294,56 @@ if(effectElement.className) {
          }
     }, 50);
 
+    let baseDamage = Math.floor((timeLeft / 15) * 13);
 
-    // 傷害計算與動畫
-// 修改为：
-// 修改后的伤害计算 ▼▼▼
-let baseDamage = Math.floor((timeLeft / 15) * 13);
-
-// 霸刀门双倍攻击判定（30%概率）
-if(playerClass.type === 'warrior' && isCorrect && Math.random() < 0.3) {
-    baseDamage *= 2;
-    // 添加刀光特效
-    const swordFlash = document.createElement('div');
-    swordFlash.className = 'sword-flash';
-    swordFlash.style.top = `${Math.random() * 40 + 30}%`;
-    document.body.appendChild(swordFlash);
-    setTimeout(() => swordFlash.remove(), 400);
-}
-
-// 影流教闪避判定（30%概率）
-if(playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
-    baseDamage = 0; // 完全闪避
-    // 显示闪避提示
-    const dodgeDisplay = document.getElementById('dodgeText');
-    dodgeDisplay.style.display = 'block';
-    setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
-}
-
-let damage;
-if (isCorrect) {
-    // 攻击敌人：攻击力加成 × 敌人防御减免
-    damage = Math.floor(baseDamage * playerClass.attack / opponentDefense);
-} else {
-    // 自己受伤：基础伤害 ÷ 自身防御减免
-    damage = Math.floor(baseDamage / playerClass.defense);
-    
-    // 玄天阁减伤30%（新增代码）
-    if(playerClass.type === 'mage') {
-        damage = Math.floor(damage * 0.7);
-        // 显示减伤提示
-        const reduceDisplay = document.getElementById('reduceDamageText');
-        reduceDisplay.style.display = 'block';
-        setTimeout(() => reduceDisplay.style.display = 'none', 1200);
+    if(playerClass.type === 'warrior' && isCorrect && Math.random() < 0.3) {
+        baseDamage *= 2;
+        const swordFlash = document.createElement('div');
+        swordFlash.className = 'sword-flash';
+        swordFlash.style.top = `${Math.random() * 40 + 30}%`;
+        document.body.appendChild(swordFlash);
+        setTimeout(() => swordFlash.remove(), 400);
     }
-}
+
+    if(playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
+        baseDamage = 0;
+        const dodgeDisplay = document.getElementById('dodgeText');
+        dodgeDisplay.style.display = 'block';
+        setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
+    }
+
+    let damage;
+    if (isCorrect) {
+        damage = Math.floor(baseDamage * playerClass.attack / opponentDefense);
+    } else {
+        damage = Math.floor(baseDamage / playerClass.defense);
+        if(playerClass.type === 'mage') {
+            damage = Math.floor(damage * 0.7);
+            const reduceDisplay = document.getElementById('reduceDamageText');
+            reduceDisplay.style.display = 'block';
+            setTimeout(() => reduceDisplay.style.display = 'none', 1200);
+        }
+    }
     const targetElement = isCorrect 
         ? document.getElementById('opponentHealthBar')
         : document.getElementById('myHealthBar');
 
-    // 觸發動畫效果
     targetElement.classList.add('damage-flash');
     document.getElementById('gameArea').classList.add('screen-shake');
     document.querySelectorAll('.health-fill').forEach(bar => bar.classList.add('damage-effect'));
     
-    // 震動效果
     navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
     if (navigator.vibrate) navigator.vibrate(200);
 
-    // 音效播放
     soundEffects.attack.currentTime = 0;
     soundEffects.attack.play();
 
-    // 移除動畫
     setTimeout(() => {
         targetElement.classList.remove('damage-flash');
         document.getElementById('gameArea').classList.remove('screen-shake');
         document.querySelectorAll('.health-fill').forEach(bar => bar.classList.remove('damage-effect'));
     }, 500);
 
-    // 更新數據庫
     const updates = {};
     const playerPath = isHost ? 'player1' : 'player2';
     const opponentPath = isHost ? 'player2' : 'player1';
@@ -1378,26 +1355,24 @@ if (isCorrect) {
     }
 
     database.ref('rooms/' + currentRoomId).update(updates, (error) => {
-    if (error) return;
-    
-    // 強制立即檢查遊戲狀態
-    checkGameOver();
-    
-    if (!gameOver) {
+        if (error) return;
+        checkGameOver();
+        if (!gameOver) {
             setTimeout(() => {
-                // 重置按鈕樣式和互動狀態
                 buttons.forEach(btn => {
                     btn.style.cssText = '';
-                    btn.style.pointerEvents = 'auto'; // 重新啟用點擊
+                    btn.style.pointerEvents = 'auto';
                 });
-                answered = false; // 新增：重置回答狀態
+                answered = false;
+                // 重置攻擊力和防禦力
+                playerClass.attack = playerClass.type === 'warrior' ? 1.2 : playerClass.type === 'tank' ? 0.9 : playerClass.type === 'mage' ? 1.1 : 1.0;
+                playerClass.defense = playerClass.type === 'tank' ? 1.2 : playerClass.type === 'assassin' ? 0.9 : 1.0;
                 loadNewQuestion();
             }, 700);
         }
     });
 
- // 修正後的代碼 ▼
-    setTimeout(() => { // 延遲確保DOM已更新
+    setTimeout(() => {
         const buttons = document.querySelectorAll('#options button');
         const correctIndex = window.currentQuestion.correctIndex;
         if (buttons[correctIndex]) {
@@ -1409,38 +1384,24 @@ if (isCorrect) {
         }
     }, 50);
 
- // 替换原有的刀光特效代码 ▼
- const flash = document.createElement('div');
-flash.className = 'sword-flash';
-// 根據玩家位置設定刀光起始點
-const startX = isHost ? '20%' : '80%'; 
-flash.style.left = startX;
-flash.style.top = `${Math.random() * 40 + 30}%`; // 隨機垂直位置
-document.body.appendChild(flash);
+    const flash = document.createElement('div');
+    flash.className = 'sword-flash';
+    const startX = isHost ? '20%' : '80%'; 
+    flash.style.left = startX;
+    flash.style.top = `${Math.random() * 40 + 30}%`;
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 400);
 
-// 自動移除元素
-setTimeout(() => {
-    flash.remove();
-}, 400);
+    if(!isCorrect) {
+        flash.style.background = `linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,100,100,0.7) 50%, rgba(255,255,255,0) 100%)`;
+    }
 
-// 添加顏色變化
-if(!isCorrect) {
-    flash.style.background = `linear-gradient(
-        90deg,
-        rgba(255,255,255,0) 0%,
-        rgba(255,100,100,0.7) 50%,
-        rgba(255,255,255,0) 100%
-    )`;
-}
-
-    // 根据回答正确性添加不同颜色边框脉冲
     const gameArea = document.getElementById('gameArea');
     gameArea.style.boxShadow = `0 0 30px ${isCorrect ? '#2ecc71' : '#e74c3c'}`;
     setTimeout(() => {
         gameArea.style.boxShadow = '0 0 20px var(--gold)';
     }, 300);
 
-    // 保留原有的血条冲击波效果，但修改颜色
     const healthBar = isCorrect ? document.getElementById('opponentHealthBar') : document.getElementById('myHealthBar');
     const wave = document.createElement('div');
     wave.className = 'health-wave';
@@ -1448,28 +1409,23 @@ if(!isCorrect) {
     healthBar.appendChild(wave);
     setTimeout(() => wave.remove(), 500);
 
-   // 新增命中數字顯示
-const hitText = document.createElement('div');
-hitText.className = 'hit-marker';
-hitText.textContent = `-${damage}`;
-if (isCorrect) {
-    // 答对时，显示在对方气血条附近
-    const opponentHealthContainer = document.getElementById('enemyHealthContainer');
-    hitText.style.position = 'absolute';
-    hitText.style.left = `${Math.random() * opponentHealthContainer.offsetWidth + opponentHealthContainer.offsetLeft}px`;
-    hitText.style.top = `${opponentHealthContainer.offsetTop + opponentHealthContainer.offsetHeight / 2 - hitText.offsetHeight / 2}px`;
-    opponentHealthContainer.appendChild(hitText);
-} else {
-    // 答错时，显示在自己气血条附近
-    const myHealthContainer = document.getElementById('myHealthContainer');
-    hitText.style.position = 'absolute';
-    hitText.style.left = `${Math.random() * myHealthContainer.offsetWidth + myHealthContainer.offsetLeft}px`;
-    hitText.style.top = `${myHealthContainer.offsetTop + myHealthContainer.offsetHeight / 2 - hitText.offsetHeight / 2}px`;
-    myHealthContainer.appendChild(hitText);
-}
-setTimeout(() => hitText.remove(), 300);
-    
-    
+    const hitText = document.createElement('div');
+    hitText.className = 'hit-marker';
+    hitText.textContent = `-${damage}`;
+    if (isCorrect) {
+        const opponentHealthContainer = document.getElementById('enemyHealthContainer');
+        hitText.style.position = 'absolute';
+        hitText.style.left = `${Math.random() * opponentHealthContainer.offsetWidth + opponentHealthContainer.offsetLeft}px`;
+        hitText.style.top = `${opponentHealthContainer.offsetTop + opponentHealthContainer.offsetHeight / 2 - hitText.offsetHeight / 2}px`;
+        opponentHealthContainer.appendChild(hitText);
+    } else {
+        const myHealthContainer = document.getElementById('myHealthContainer');
+        hitText.style.position = 'absolute';
+        hitText.style.left = `${Math.random() * myHealthContainer.offsetWidth + myHealthContainer.offsetLeft}px`;
+        hitText.style.top = `${myHealthContainer.offsetTop + myHealthContainer.offsetHeight / 2 - hitText.offsetHeight / 2}px`;
+        myHealthContainer.appendChild(hitText);
+    }
+    setTimeout(() => hitText.remove(), 300);
 }
     
     
@@ -1525,6 +1481,27 @@ messagingSenderId: "948613965375",
 appId: "1:948613965375:web:ae966d7dd461e328093a8a"
 
 };
+
+    const events = [
+    { name: "恢復氣血", effect: "restoreHealth", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "攻擊力提升", effect: "boostAttack", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "防禦力提升", effect: "boostDefense", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "額外回合", effect: "extraTurn", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "幸運一擊", effect: "doubleDamage", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "氣血流失", effect: "loseHealth", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "攻擊力削弱", effect: "weakenAttack", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "防禦力削弱", effect: "weakenDefense", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "混亂", effect: "shuffleOptions", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "疲勞", effect: "reduceTime", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "天氣變化", effect: "weatherChange", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "神秘商人", effect: "merchant", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "命運輪盤", effect: "randomEvent", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "靈光一閃", effect: "hint", image: "https://i.ibb.co/tM82mXtr/3.png" },
+    { name: "短暫休憩", effect: "rest", image: "https://i.ibb.co/tM82mXtr/3.png" }
+];
+
+
+    
 firebase.initializeApp(firebaseConfig);
   
 
@@ -1893,6 +1870,86 @@ function startGame(room) {
     }, 500);
 }
 
+
+    function triggerRandomEvent() {
+    const randomEvent = events[Math.floor(Math.random() * events.length)];
+    showEventImage(randomEvent.image);
+    applyEventEffect(randomEvent.effect);
+}
+
+function showEventImage(imageUrl) {
+    const popupImage = document.createElement('div');
+    popupImage.className = 'popup-image';
+    popupImage.innerHTML = `<img src="${imageUrl}" alt="事件圖片">`;
+    document.body.appendChild(popupImage);
+    setTimeout(() => {
+        popupImage.style.display = 'block';
+    }, 10); // 延遲顯示，觸發動畫
+    setTimeout(() => {
+        popupImage.remove();
+    }, 1000); // 1秒後移除
+}
+
+function applyEventEffect(effect) {
+    const playerPath = isHost ? 'player1' : 'player2';
+    let currentHealth = parseInt(document.getElementById('myHealth').textContent);
+    switch (effect) {
+        case "restoreHealth":
+            const restoreAmount = Math.floor(currentHealth * 0.2);
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
+                firebase.database.ServerValue.increment(restoreAmount)
+            );
+            break;
+        case "boostAttack":
+            playerClass.attack *= 1.2; // 本回合提升20%
+            break;
+        case "boostDefense":
+            playerClass.defense *= 1.2; // 本回合提升20%
+            break;
+        case "extraTurn":
+            setTimeout(loadNewQuestion, 1000); // 模擬額外回合
+            break;
+        case "doubleDamage":
+            playerClass.attack *= 2; // 本回合傷害翻倍
+            break;
+        case "loseHealth":
+            const loseAmount = Math.floor(currentHealth * 0.1);
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
+                firebase.database.ServerValue.increment(-loseAmount)
+            );
+            break;
+        case "weakenAttack":
+            playerClass.attack *= 0.8; // 本回合降低20%
+            break;
+        case "weakenDefense":
+            playerClass.defense *= 0.8; // 本回合降低20%
+            break;
+        case "shuffleOptions":
+            shuffleArray(window.currentQuestion.options);
+            displayQuestion(window.currentQuestion);
+            break;
+        case "reduceTime":
+            timeLeft = Math.max(timeLeft - 5, 5); // 減少5秒，最低5秒
+            break;
+        case "weatherChange":
+            document.body.style.backgroundImage = "url('https://example.com/new_background.png')";
+            break;
+        case "merchant":
+            alert("神秘商人出現！你可以選擇購買道具（模擬效果）。");
+            break;
+        case "randomEvent":
+            triggerRandomEvent(); // 再次觸發隨機事件
+            break;
+        case "hint":
+            const wrongIndex = window.currentQuestion.correctIndex === 0 ? 1 : 0;
+            document.querySelectorAll('#options button')[wrongIndex].style.background = "#555";
+            break;
+        case "rest":
+            alert("短暫休憩，無事發生。");
+            break;
+    }
+}
+
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1902,6 +1959,9 @@ function shuffleArray(array) {
 }
 
 function loadNewQuestion() {
+    if (Math.random() < 0.5) {
+        triggerRandomEvent();
+    }
     hasHealedThisTurn = false; // 重置恢復狀態
     // 假設問題總數為 100，可以從 Firebase 或本地配置中動態獲取
     const totalQuestions = 622; 
