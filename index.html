@@ -1353,46 +1353,14 @@ function displayQuestion(question) {
     startTimer();
 
     if (isSinglePlayer) {
-    const myHealthElement = document.getElementById('myHealth');
-    const opponentHealthElement = document.getElementById('opponentHealth');
-    let myHealth = parseInt(myHealthElement.textContent);
-    let opponentHealth = parseInt(opponentHealthElement.textContent);
-
-    if (isCorrect) {
-        opponentHealth = Math.max(opponentHealth - damage, 0);
-        opponentHealthElement.textContent = opponentHealth;
-        document.getElementById('opponentHealthBar').style.width = opponentHealth + '%';
-    } else {
-        myHealth = Math.max(myHealth - damage, 0);
-        myHealthElement.textContent = myHealth;
-        document.getElementById('myHealthBar').style.width = myHealth + '%';
+        clearTimeout(computerAnswerTimeout);
+        computerAnswerTimeout = setTimeout(() => {
+            if (!answered && !gameOver) {
+                const isCorrect = Math.random() < computerPlayer.accuracy;
+                checkAnswer(isCorrect, question.id, true); // true 表示電腦回答
+            }
+        }, computerPlayer.answerTime);
     }
-
-    setTimeout(() => {
-        buttons.forEach(btn => {
-            btn.style.cssText = '';
-            btn.style.pointerEvents = 'auto';
-        });
-        answered = false;
-        checkGameOver(); // 只在血量歸零時觸發結束
-        if (!gameOver) loadNewQuestion();
-    }, 700);
-} else {
-    // 原有的多人模式代碼保持不變
-    database.ref('rooms/' + currentRoomId).update(updates, (error) => {
-        if (error) return;
-        checkGameOver();
-        if (!gameOver) {
-            setTimeout(() => {
-                buttons.forEach(btn => {
-                    btn.style.cssText = '';
-                    btn.style.pointerEvents = 'auto';
-                });
-                answered = false;
-                loadNewQuestion();
-            }, 700);
-        }
-    });
 }
 
     
@@ -1516,12 +1484,49 @@ function checkAnswer(isCorrect, questionId) {
         if (navigator.vibrate) navigator.vibrate(200);
     }
 
-    // 移除動畫
+   // 移除原有的 setTimeout 和結束邏輯，替換為：
+if (isSinglePlayer) {
+    const myHealthElement = document.getElementById('myHealth');
+    const opponentHealthElement = document.getElementById('opponentHealth');
+    let myHealth = parseInt(myHealthElement.textContent);
+    let opponentHealth = parseInt(opponentHealthElement.textContent);
+
+    if (isCorrect) {
+        opponentHealth = Math.max(opponentHealth - damage, 0);
+        opponentHealthElement.textContent = opponentHealth;
+        document.getElementById('opponentHealthBar').style.width = opponentHealth + '%';
+    } else {
+        myHealth = Math.max(myHealth - damage, 0);
+        myHealthElement.textContent = myHealth;
+        document.getElementById('myHealthBar').style.width = myHealth + '%';
+    }
+
     setTimeout(() => {
-        targetElement.classList.remove('damage-flash');
-        document.getElementById('gameArea').classList.remove('screen-shake');
-        document.querySelectorAll('.health-fill').forEach(bar => bar.classList.remove('damage-effect'));
-    }, 500);
+        buttons.forEach(btn => {
+            btn.style.cssText = '';
+            btn.style.pointerEvents = 'auto';
+        });
+        answered = false;
+        checkGameOver(); // 只在血量歸零時觸發結束
+        if (!gameOver) loadNewQuestion();
+    }, 700);
+} else {
+    // 原有的多人模式代碼保持不變
+    database.ref('rooms/' + currentRoomId).update(updates, (error) => {
+        if (error) return;
+        checkGameOver();
+        if (!gameOver) {
+            setTimeout(() => {
+                buttons.forEach(btn => {
+                    btn.style.cssText = '';
+                    btn.style.pointerEvents = 'auto';
+                });
+                answered = false;
+                loadNewQuestion();
+            }, 700);
+        }
+    });
+}
 
     // 更新數據庫
     const updates = {};
