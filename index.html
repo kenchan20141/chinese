@@ -14,7 +14,14 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
-    <style>        
+    <style>    
+
+
+        /* 单机模式按钮颜色区分 */
+.action-btn[onclick*="easy"] { background: linear-gradient(45deg, #4CAF50, #45a049); }
+.action-btn[onclick*="normal"] { background: linear-gradient(45deg, #2196F3, #1976D2); }
+.action-btn[onclick*="hard"] { background: linear-gradient(45deg, #FF9800, #F57C00); }
+.action-btn[onclick*="hell"] { background: linear-gradient(45deg, #f44336, #d32f2f); }
 
 .rematch-buttons {
     margin-top: 30px;
@@ -894,8 +901,27 @@
         </button>
     </div>
 
-   
-     
+   <div class="button-group">
+    <button onclick="startSinglePlayer('easy')" class="action-btn">
+        <i class="fas fa-robot"></i>
+        <span>單機模式 - 初出茅廬</span>
+    </button>
+    <button onclick="startSinglePlayer('normal')" class="action-btn">
+        <i class="fas fa-robot"></i>
+        <span>單機模式 - 爐火純青</span>
+    </button>
+    <button onclick="startSinglePlayer('hard')" class="action-btn">
+        <i class="fas fa-robot"></i>
+        <span>單機模式 - 一代宗師</span>
+    </button>
+    <button onclick="startSinglePlayer('hell')" class="action-btn">
+        <i class="fas fa-robot"></i>
+        <span>單機模式 - 天人合一</span>
+    </button>
+</div>
+
+
+    
     <div class="input-group">
          <button id="registerBtn" class="action-btn" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">
         <i class="fas fa-user-plus"></i>
@@ -1037,6 +1063,55 @@
 
     
 <script>
+
+    let isSinglePlayer = false;
+let computerDifficulty = 'easy';
+let computerAnswerDelay = { // 各难度答题延迟（毫秒）
+    easy: 3000,
+    normal: 2000,
+    hard: 1500,
+    hell: 1000
+};
+let computerAccuracy = { // 各难度正确率
+    easy: 0.3,
+    normal: 0.5,
+    hard: 0.7,
+    hell: 0.9
+};
+
+    function startSinglePlayer(difficulty) {
+    isSinglePlayer = true;
+    computerDifficulty = difficulty;
+    
+    // 初始化气血
+    playerHealth = 100;
+    computerHealth = 100;
+    
+    // 隐藏主界面
+    document.getElementById('roomControl').style.display = 'none';
+    
+    // 显示游戏界面
+    document.getElementById('gameArea').style.display = 'block';
+    
+    // 更新血条显示
+    updateHealthDisplaySingle();
+    
+    // 开始第一题
+    loadNewQuestion();
+}
+
+function updateHealthDisplaySingle() {
+    document.getElementById('myHealthContainer').innerHTML = `
+        <div>玩家氣血: <span id="myHealth">${Math.max(playerHealth, 0)}</span></div>
+        <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
+    `;
+    document.getElementById('enemyHealthContainer').innerHTML = `
+        <div>電腦氣血: <span id="opponentHealth">${Math.max(computerHealth, 0)}</span></div>
+        <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
+    `;
+    document.getElementById('myHealthBar').style.width = Math.max(playerHealth, 0) + '%';
+    document.getElementById('opponentHealthBar').style.width = Math.max(computerHealth, 0) + '%';
+}
 
 // Canvas 動畫代碼
 window.onload = function() {
@@ -1287,6 +1362,76 @@ function displayQuestion(question) {
 function checkAnswer(isCorrect, questionId) {
     if (answeredQuestions.has(questionId)) return; // 如果已回答，則不執行
     answeredQuestions.add(questionId); // 記錄已回答的問題ID
+
+      if(isSinglePlayer) {
+        // 单机模式伤害计算
+        let baseDamage = Math.floor((timeLeft / 15) * 10);
+        let damage = isCorrect ? baseDamage : -baseDamage;
+        
+        if(isCorrect) {
+            computerHealth = Math.max(computerHealth - damage, 0);
+        } else {
+            playerHealth = Math.max(playerHealth - Math.abs(damage), 0);
+        }
+        
+        updateHealthDisplaySingle();
+        
+        // 电脑自动回答
+        if(computerHealth > 0 && playerHealth > 0) {
+            setTimeout(() => computerAnswer(), computerAnswerDelay[computerDifficulty]);
+        }
+        
+        checkGameOverSingle();
+    }
+}
+
+    function computerAnswer() {
+    const question = window.currentQuestion;
+    const isCorrect = Math.random() < computerAccuracy[computerDifficulty];
+    
+    const correctIndex = question.correctIndex;
+    let selectedIndex;
+    
+    if(isCorrect) {
+        selectedIndex = correctIndex;
+    } else {
+        // 随机选错误答案
+        const wrongOptions = question.options
+            .map((_, i) => i)
+            .filter(i => i !== correctIndex);
+        selectedIndex = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
+    }
+    
+    // 模拟点击正确答案
+    const buttons = document.querySelectorAll('#options button');
+    buttons[selectedIndex].click();
+}
+
+function checkGameOverSingle() {
+    if(playerHealth <= 0 || computerHealth <= 0) {
+        const victoryOverlay = document.querySelector('.victory-overlay');
+        const victoryText = document.querySelector('.victory-text');
+        
+        victoryOverlay.style.display = 'flex';
+        victoryText.textContent = computerHealth <= 0 ? "武道昌隆！" : "雖敗猶榮！";
+        
+        // 添加单机模式专用按钮
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'rematch-buttons';
+        
+        const rematchBtn = document.createElement('button');
+        rematchBtn.textContent = '再戰江湖';
+        rematchBtn.onclick = () => startSinglePlayer(computerDifficulty);
+        
+        const mainMenuBtn = document.createElement('button');
+        mainMenuBtn.textContent = '歸隱山林';
+        mainMenuBtn.onclick = () => window.location.reload();
+        
+        buttonContainer.appendChild(rematchBtn);
+        buttonContainer.appendChild(mainMenuBtn);
+        victoryOverlay.appendChild(buttonContainer);
+    }
+}
 
     // 在傷害計算後添加特效元素
     let effectElement = document.createElement('div');
