@@ -283,6 +283,41 @@
     overflow: hidden;
 }
 
+        /* 確保 #roomControl 的子元素有一致的背景和佈局 */
+#roomControl .info-box,
+#roomControl .input-group,
+#roomControl .button-group,
+#roomControl .footer {
+    background: rgba(45, 41, 38, 0.95); /* 與 #roomControl 一致的半透明背景 */
+    padding: 1rem;
+    border-radius: 10px;
+    margin: 1rem auto;
+    max-width: 600px; /* 限制寬度，保持整齊 */
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); /* 輕微陰影效果 */
+}
+
+/* 用戶信息樣式 */
+#userInfo {
+    text-align: center;
+    color: var(--gold);
+    font-size: 1.2rem;
+    padding: 0.8rem;
+    border: 2px solid var(--gold);
+}
+
+/* 調整按鈕和輸入框的對齊 */
+.button-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* 自適應按鈕寬度 */
+    gap: 1rem;
+}
+
+/* 確保標題不被背景影響 */
+.title-container {
+    background: none;
+    padding: 0;
+}
+
 .title-container {
     position: relative;
     margin-bottom: 3rem;
@@ -808,82 +843,79 @@
     
 
 <div id="roomControl">
-    <!-- 其他現有內容 -->
-    <div id="userInfo" style="text-align: center; color: var(--gold); margin-bottom: 1rem; display: none;">
+    <!-- 新增裝飾性邊框 -->
+    <div class="main-border"></div>
+    
+    <!-- 用戶信息區域 -->
+    <div id="userInfo" class="info-box" style="display: none;">
         <span id="userName"></span> | 積分: <span id="userScore">0</span>
     </div>
-    <!-- 其他現有內容 -->
-</div>
-     
-        <!-- 新增裝飾性邊框 -->
-        <div class="main-border"></div>
-        
-        <!-- 強化標題 -->
-        <div class="title-container">
-         
-            <h1>
-                <span class="title-text">文瀾劍影錄</span>
-                <span class="subtitle">俠骨柔腸·劍膽琴心</span>
-            </h1>
-        </div>
-
-        <!-- 美化輸入框區域 -->
-        <div class="input-group">
-            <div class="input-decor">
-                <i class="fas fa-flag icon"></i>
-                <input type="text" id="roomId" placeholder="輸入四位戰場編號">
-                <div class="glow"></div>
-            </div>
-        </div>
-
-        <!-- 按鈕容器 -->
-        <div class="button-group">
-            <button onclick="createRoom()" class="action-btn create-btn">
-                <i class="fas fa-fist-raised"></i>
-                <span>開闢戰場</span>
-                <div class="btn-glow"></div>
-            </button>
-            <button onclick="joinRoom()" class="action-btn join-btn">
-                <i class="fas fa-shield-alt"></i>
-                <span>加入征伐</span>
-                <div class="btn-glow"></div>
-            </button>
-            <button onclick="randomMatch()" class="action-btn random-match-btn">
-    <i class="fas fa-random"></i>
-    <span>隨機分配</span>
-    <div class="btn-glow"></div>
-</button>
-        </div>
-
-<button id="registerBtn" class="action-btn" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">
-    <i class="fas fa-user-plus"></i>
-    <span>註冊</span>
-</button>
-     
-     <div class="input-group">
-    <button id="loginBtn" class="action-btn" style="background: linear-gradient(45deg, #8e44ad, #9b59b6);">
-        <i class="fas fa-user"></i>
-        <span>登入</span>
-    </button>
-</div>
-
-     <div id="logoutContainer" style="display: none; margin-top: 1rem;">
-    <button id="logoutBtn" class="action-btn" style="background: linear-gradient(45deg, #e74c3c, #c0392b);">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>登出</span>
-    </button>
-</div>
-
-        <!-- 新增頁腳 -->
-        <div class="footer">
-            <div class="decor-line"></div>
-            <p>⚔️ 選擇你的征戰之路 ⚔️</p>
-            <button id="showLeaderboardBtn" class="action-btn" style="background: linear-gradient(45deg, #f1c40f, #f39c12); margin-top: 1rem;">
-    <i class="fas fa-trophy"></i>
-    <span>查看排行榜</span>
-</button>
+    
+    <!-- 強化標題 -->
+    <div class="title-container">
+        <h1>
+            <span class="title-text">文瀾劍影錄</span>
+            <span class="subtitle">俠骨柔腸·劍膽琴心</span>
+        </h1>
+    </div>
+    
+    <!-- 美化輸入框區域 -->
+    <div class="input-group">
+        <div class="input-decor">
+            <i class="fas fa-flag icon"></i>
+            <input type="text" id="roomId" placeholder="輸入四位戰場編號">
+            <div class="glow"></div>
         </div>
     </div>
+    
+    <!-- 按鈕容器 -->
+    <div class="button-group">
+        <button onclick="createRoom()" class="action-btn create-btn">
+            <i class="fas fa-fist-raised"></i>
+            <span>開闢戰場</span>
+            <div class="btn-glow"></div>
+        </button>
+        <button onclick="joinRoom()" class="action-btn join-btn">
+            <i class="fas fa-shield-alt"></i>
+            <span>加入征伐</span>
+            <div class="btn-glow"></div>
+        </button>
+        <button onclick="randomMatch()" class="action-btn random-match-btn">
+            <i class="fas fa-random"></i>
+            <span>隨機分配</span>
+            <div class="btn-glow"></div>
+        </button>
+    </div>
+
+    <button id="registerBtn" class="action-btn" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">
+        <i class="fas fa-user-plus"></i>
+        <span>註冊</span>
+    </button>
+     
+    <div class="input-group">
+        <button id="loginBtn" class="action-btn" style="background: linear-gradient(45deg, #8e44ad, #9b59b6);">
+            <i class="fas fa-user"></i>
+            <span>登入</span>
+        </button>
+    </div>
+
+    <div id="logoutContainer" style="display: none; margin-top: 1rem;">
+        <button id="logoutBtn" class="action-btn" style="background: linear-gradient(45deg, #e74c3c, #c0392b);">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>登出</span>
+        </button>
+    </div>
+
+    <!-- 新增頁腳 -->
+    <div class="footer">
+        <div class="decor-line"></div>
+        <p>⚔️ 選擇你的征戰之路 ⚔️</p>
+        <button id="showLeaderboardBtn" class="action-btn" style="background: linear-gradient(45deg, #f1c40f, #f39c12); margin-top: 1rem;">
+            <i class="fas fa-trophy"></i>
+            <span>查看排行榜</span>
+        </button>
+    </div>
+</div>
 
 
 <!-- 新增職業選擇界面 -->
@@ -1616,7 +1648,7 @@ document.getElementById('logoutBtn').onclick = function() {
 
     
     const auth = firebase.auth();
-    auth.onAuthStateChanged((user) => {
+   auth.onAuthStateChanged((user) => {
     const userInfo = document.getElementById('userInfo');
     const userName = document.getElementById('userName');
     const userScore = document.getElementById('userScore');
