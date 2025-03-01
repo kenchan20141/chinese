@@ -1808,6 +1808,29 @@ function startGameSession() {
 }
 
 function listenToRoomChanges() {
+   const opponentReadyField = isHost ? 'player2Ready' : 'player1Ready';
+const opponentReady = room[opponentReadyField] === true;
+if (opponentReady && !opponentJoinedMessage && !room.gameStarted && waitingForOpponent) {
+    // 移除舊通知（如果存在）
+    if (document.querySelector('.opponent-joined-notification')) {
+        document.querySelector('.opponent-joined-notification').remove();
+    }
+
+    opponentJoinedMessage = document.createElement('div');
+    opponentJoinedMessage.className = 'opponent-joined-notification';
+    opponentJoinedMessage.textContent = '🎮玩家已進場';
+    document.body.appendChild(opponentJoinedMessage);
+
+    // 3秒後移除通知
+    setTimeout(() => {
+        if (opponentJoinedMessage) {
+            opponentJoinedMessage.remove();
+            opponentJoinedMessage = null;
+        }
+    }, 3000);
+}
+    
+    
     const roomRef = database.ref('rooms/' + currentRoomId);
     roomRef.off('value'); // 移除舊的監聽器
 
@@ -1834,28 +1857,6 @@ function listenToRoomChanges() {
             handleGameEnd(room.winner);
         }
 
-
-const opponentReadyField = isHost ? 'player2Ready' : 'player1Ready';
-const opponentReady = room[opponentReadyField] === true;
-if (opponentReady && !opponentJoinedMessage && !room.gameStarted && waitingForOpponent) {
-    // 移除舊通知（如果存在）
-    if (document.querySelector('.opponent-joined-notification')) {
-        document.querySelector('.opponent-joined-notification').remove();
-    }
-
-    opponentJoinedMessage = document.createElement('div');
-    opponentJoinedMessage.className = 'opponent-joined-notification';
-    opponentJoinedMessage.textContent = '🎮玩家已進場';
-    document.body.appendChild(opponentJoinedMessage);
-
-    // 3秒後移除通知
-    setTimeout(() => {
-        if (opponentJoinedMessage) {
-            opponentJoinedMessage.remove();
-            opponentJoinedMessage = null;
-        }
-    }, 3000);
-}
 
 // 當遊戲開始時重置準備狀態
 if (room.gameStarted) {
