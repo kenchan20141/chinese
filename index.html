@@ -1634,6 +1634,7 @@ document.getElementById('logoutBtn').onclick = function() {
     }
 });
 const database = firebase.database();
+    const waitingRef = database.ref('waitingrooms');
 
 let currentRoomId = null;
 let isHost = false;
@@ -1667,28 +1668,84 @@ function toggleMusic() {
 }
 
 function createRoom() {
-    currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
-    isHost = true;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    document.getElementById('waitingArea').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = currentRoomId;
+    const roomIdInput = document.getElementById('roomId').value.trim();
+    if (roomIdInput) {
+        currentRoomId = roomIdInput;
+        isHost = true;
+        document.getElementById('roomControl').style.display = 'none';
+        document.getElementById('classSelection').style.display = 'block';
+        document.getElementById('waitingArea').style.display = 'block';
+        document.getElementById('displayRoomId').textContent = currentRoomId;
 
-    database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        gameStarted: false,
-        gameEnded: false,
-        winner: null
-    });
-    listenToRoomChanges();
+        database.ref('rooms/' + currentRoomId).set({
+            player1: { health: 100, class: null, currentQuestion: null },
+            player2: { health: 100, class: null, currentQuestion: null },
+            gameStarted: false,
+            gameEnded: false,
+            winner: null
+        });
+        listenToRoomChanges();
+    } else {
+        joinWaitingQueue();
+    }
 }
 
 function joinRoom() {
-    currentRoomId = document.getElementById('roomId').value;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    listenToRoomChanges();
+    const roomIdInput = document.getElementById('roomId').value.trim();
+    if (roomIdInput) {
+        currentRoomId = roomIdInput;
+        isHost = false;
+        document.getElementById('roomControl').style.display = 'none';
+        document.getElementById('classSelection').style.display = 'block';
+        listenToRoomChanges();
+    } else {
+        joinWaitingQueue();
+    }
+}
+
+    function joinWaitingQueue() {
+    const userId = firebase.auth().currentUser.uid;
+    waitingRef.child(userId).set({
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+    checkForMatch();
+}
+
+    function checkForMatch() {
+    waitingRef.orderByChild('timestamp').limitToFirst(2).once('value', (snapshot) => {
+        const waitingPlayers = [];
+        snapshot.forEach((childSnapshot) => {
+            waitingPlayers.push(childSnapshot.key);
+        });
+
+        if (waitingPlayers.length >= 2) {
+            const player1 = waitingPlayers[0];
+            const player2 = waitingPlayers[1];
+
+            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+            database.ref('rooms/' + roomId).set({
+                player1: { userId: player1, health: 100, class: null, currentQuestion: null },
+                player2: { userId: player2, health: 100, class: null, currentQuestion: null },
+                gameStarted: false,
+                gameEnded: false,
+                winner: null
+            });
+
+            waitingRef.child(player1).remove();
+            waitingRef.child(player2).remove();
+
+            const userId = firebase.auth().currentUser.uid;
+            if (userId === player1) {
+                currentRoomId = roomId;
+                isHost = true;
+                startGameSession();
+            } else if (userId === player2) {
+                currentRoomId = roomId;
+                isHost = false;
+                startGameSession();
+            }
+        }
+    });
 }
 
     function createRoomWithId(roomId) {
@@ -1717,12 +1774,6 @@ function joinRoomWithId(roomId) {
     listenToRoomChanges();
 }
 
-    function joinWaitingQueue() {
-    const user = firebase.auth().currentUser;
-    if (!user) {
-        alert("請先登入！");
-        return;
-    }
 
     const waitingRef = database.ref('waitingRooms');
     const userId = user.uid;
