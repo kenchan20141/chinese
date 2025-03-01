@@ -305,42 +305,18 @@
 }
 
 .button-group {
-    display: flex; /* 改用 flex 確保水平排列 */
-    flex-wrap: wraps; /* 允許換行 */
-    justify-content: center; /* 按鈕居中 */
-    gap: 1rem; /* 統一間距 */
-    max-width: 90%; /* 與 #roomControl 一致 */
-    margin: 1.5rem auto; /* 減少外邊距 */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* 自適應按鈕寬度 */
+    gap: 1rem;
 }
 
-.action-btn {
-    position: relative;
-    padding: 1rem; /* 統一內邊距，使按鈕接近方形 */
-    min-width: 120px; /* 最小寬度，確保方形 */
-    max-width: 150px; /* 限制最大寬度 */
-    border: none;
-    border-radius: 12px;
-    font-size: 1.2rem; /* 減小字體，適應手機 */
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    overflow: hidden;
-}
-
-@media (max-width: 480px) {
-    .button-group {
-        flex-direction: row; /* 手機端保持水平排列 */
-        gap: 0.5rem; /* 減小間距 */
-    }
-    .action-btn {
-        padding: 0.8rem; /* 手機端縮小內邊距 */
-        min-width: 100px; /* 手機端最小寬度 */
-        max-width: 120px; /* 手機端限制寬度 */
-        font-size: 1rem; /* 手機端縮小字體 */
-    }
+/* 另一處定義（需要合併） */
+.button-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    max-width: 500px;
+    margin: 2rem auto;
 }
 
 /* 確保標題不被背景影響 */
