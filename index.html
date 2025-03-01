@@ -16,6 +16,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>        
 
+.card {
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+        
 .rematch-buttons {
     margin-top: 30px;
     display: flex;
@@ -805,7 +810,8 @@
 <body>
     <canvas id="animationCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;"></canvas>
     <button class="music-control" onclick="toggleMusic()">🎵</button>
-    
+
+
  <div id="roomControl">
         <!-- 新增裝飾性邊框 -->
         <div class="main-border"></div>
@@ -982,9 +988,149 @@
         <div class="victory-text"></div>
     </div>
 
+ <div id="cardDrawModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <div id="cardDrawArea" style="background: rgba(45, 41, 38, 0.95); border: 3px solid var(--gold); border-radius: 15px; padding: 2rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+            <canvas id="card1" class="card" width="200" height="300"></canvas>
+            <canvas id="card2" class="card" width="200" height="300"></canvas>
+            <canvas id="card3" class="card" width="200" height="300"></canvas>
+        </div>
+    </div>
+
+    
     
 <script>
 
+
+// 全局变量
+let cards = [
+    // 正面效果
+    { id: 1, effect: "恢复20%气血", type: "positive" },
+    { id: 2, effect: "增加20%攻击力，持续2回合", type: "positive" },
+    { id: 3, effect: "减少对手10%气血", type: "positive" },
+    { id: 4, effect: "获得额外一次答题机会", type: "positive" },
+    { id: 5, effect: "下一次答题错误不扣血", type: "positive" },
+    // 负面效果
+    { id: 6, effect: "减少10%气血", type: "negative" },
+    { id: 7, effect: "减少20%攻击力，持续2回合", type: "negative" },
+    { id: 8, effect: "对手恢复10%气血", type: "negative" },
+    { id: 9, effect: "失去下一次答题机会", type: "negative" },
+    { id: 10, effect: "下一次答题错误额外扣10%血", type: "negative" }
+];
+
+function drawCardBack(ctx) {
+    ctx.fillStyle = "#333";
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.fillStyle = "#fff";
+    ctx.font = "20px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("抽牌", ctx.canvas.width / 2, ctx.canvas.height / 2);
+}
+
+function drawCardFront(ctx, card) {
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.fillStyle = "#333";
+    ctx.font = "16px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(card.effect, ctx.canvas.width / 2, ctx.canvas.height / 2);
+}
+
+function shuffleCards() {
+    for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+    return cards;
+}
+
+function showCardDrawModal() {
+    const cardDrawModal = document.getElementById("cardDrawModal");
+    const cardDrawArea = document.getElementById("cardDrawArea");
+    const cardsToDraw = shuffleCards().slice(0, 3);
+
+    const canvas1 = document.getElementById("card1");
+    const ctx1 = canvas1.getContext("2d");
+    drawCardBack(ctx1);
+
+    const canvas2 = document.getElementById("card2");
+    const ctx2 = canvas2.getContext("2d");
+    drawCardBack(ctx2);
+
+    const canvas3 = document.getElementById("card3");
+    const ctx3 = canvas3.getContext("2d");
+    drawCardBack(ctx3);
+
+    canvas1.addEventListener("click", () => {
+        drawCardFront(ctx1, cardsToDraw[0]);
+        applyCardEffect(cardsToDraw[0]);
+        cardDrawModal.style.display = "none";
+    });
+
+    canvas2.addEventListener("click", () => {
+        drawCardFront(ctx2, cardsToDraw[1]);
+        applyCardEffect(cardsToDraw[1]);
+        cardDrawModal.style.display = "none";
+    });
+
+    canvas3.addEventListener("click", () => {
+        drawCardFront(ctx3, cardsToDraw[2]);
+        applyCardEffect(cardsToDraw[2]);
+        cardDrawModal.style.display = "none";
+    });
+
+    cardDrawModal.style.display = "flex";
+}
+
+function applyCardEffect(card) {
+    const playerPath = isHost? "player1" : "player2";
+    const opponentPath = isHost? "player2" : "player1";
+    switch (card.effect) {
+        case "恢复20%气血":
+            const currentHealth = database.ref(`rooms/${currentRoomId}/${playerPath}/health`).val();
+            const newHealth = currentHealth * 1.2;
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(newHealth);
+            break;
+        case "增加20%攻击力，持续2回合":
+            // 实现逻辑
+            break;
+        case "减少对手10%气血":
+            const opponentHealth = database.ref(`rooms/${currentRoomId}/${opponentPath}/health`).val();
+            const newOpponentHealth = opponentHealth * 0.9;
+            database.ref(`rooms/${currentRoomId}/${opponentPath}/health`).set(newOpponentHealth);
+            break;
+        case "获得额外一次答题机会":
+            // 实现逻辑
+            break;
+        case "下一次答题错误不扣血":
+            // 实现逻辑
+            break;
+        case "减少10%气血":
+            const currentHealth2 = database.ref(`rooms/${currentRoomId}/${playerPath}/health`).val();
+            const newHealth2 = currentHealth2 * 0.9;
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(newHealth2);
+            break;
+        case "减少20%攻击力，持续2回合":
+            // 实现逻辑
+            break;
+        case "对手恢复10%气血":
+            const opponentHealth2 = database.ref(`rooms/${currentRoomId}/${opponentPath}/health`).val();
+            const newOpponentHealth2 = opponentHealth2 * 1.1;
+            database.ref(`rooms/${currentRoomId}/${opponentPath}/health`).set(newOpponentHealth2);
+            break;
+        case "失去下一次答题机会":
+            // 实现逻辑
+            break;
+        case "下一次答题错误额外扣10%血":
+            // 实现逻辑
+            break;
+        default:
+            break;
+    }
+}
+
+    
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1270,6 +1416,14 @@ if (playerClass && playerClass.type === 'tank' && !hasHealedThisTurn) {
     setTimeout(() => {
         shieldIcon.remove();
     }, 1000);
+
+   // 添加抽牌逻辑
+    const randomNumber = Math.random();
+    if (randomNumber < 0.5) {
+        showCardDrawModal();
+    }
+
+    
 }
 
     
