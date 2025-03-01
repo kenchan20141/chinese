@@ -985,86 +985,6 @@
     
 <script>
 
-
-    // 在代码开头部分，添加以下内容
-const randomEvents = [
-    {
-        description: "你找到了一瓶神秘药水，恢复了20%气血。",
-        effect: "heal",
-        image: "https://example.com/heal_potion.png"
-    },
-    {
-        description: "突然一阵强风，你的攻击降低10%，直到回合结束。",
-        effect: "attackDown",
-        image: "https://example.com/strong_wind.png"
-    },
-    {
-        description: "你获得了一层护盾，减免下一次伤害的50%。",
-        effect: "shield",
-        image: "https://example.com/shield.png"
-    },
-    {
-        description: "你的武器突然生锈，攻击降低20%，直到回合结束。",
-        effect: "weaponRust",
-        image: "https://example.com/rusty_weapon.png"
-    },
-    {
-        description: "你发现了一条捷径，下一次答题时间减少5秒。",
-        effect: "timeReduce",
-        image: "https://example.com/shortcut.png"
-    },
-    {
-        description: "一阵迷雾笼罩，你的闪避率降低15%，直到回合结束。",
-        effect: "dodgeDown",
-        image: "https://example.com/mist.png"
-    },
-    {
-        description: "你遇到了一位神秘老人，他传授你一招，下一次攻击必定暴击。",
-        effect: "criticalHit",
-        image: "https://example.com/mysterious_old_man.png"
-    },
-    {
-        description: "你的装备出现故障，防御降低15%，直到回合结束。",
-        effect: "defenseDown",
-        image: "https://example.com/broken_equipment.png"
-    },
-    {
-        description: "你捡到了一把锋利的剑，攻击提高15%，直到回合结束。",
-        effect: "attackUp",
-        image: "https://example.com/sharp_sword.png"
-    },
-    {
-        description: "你脚下一滑，下一次答题有20%的几率答错。",
-        effect: "answerMiss",
-        image: "https://example.com/slip.png"
-    },
-    {
-        description: "你获得了神秘力量的祝福，气血上限提高10%。",
-        effect: "healthUp",
-        image: "https://example.com/blessing.png"
-    },
-    {
-        description: "你的技能突然失灵，下一次技能无法使用。",
-        effect: "skillFail",
-        image: "https://example.com/skill_fail.png"
-    },
-    {
-        description: "你找到了一个隐藏的宝箱，恢复了15%气血并提高5%攻击，直到回合结束。",
-        effect: "treasure",
-        image: "https://example.com/treasure_chest.png"
-    },
-    {
-        description: "一阵诅咒降临，你的防御降低20%且闪避率降低10%，直到回合结束。",
-        effect: "curse",
-        image: "https://example.com/curse.png"
-    },
-    {
-        description: "你得到了幸运女神的眷顾，下一次答题必定答对。",
-        effect: "luckyAnswer",
-        image: "https://example.com/lucky_goddess.png"
-    }
-];
-
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1954,7 +1874,7 @@ document.getElementById('opponentHealth').textContent = Math.max(opponentHealth,
 
 function startGame(room) {
     if (!room.player1 || !room.player2) {
-        console.log('等待对手加入...');
+        console.log('等待對手加入...');
         return;
     }
 
@@ -1962,14 +1882,8 @@ function startGame(room) {
     timeLeft = 15;
     document.getElementById('gameArea').style.display = 'block';
 
-    // 添加随机事件触发逻辑
-    if (Math.random() < 0.5) {
-        const randomEvent = randomEvents[Math.floor(Math.random() * randomEvents.length)];
-        handleRandomEvent(randomEvent);
-    }
-
     setTimeout(() => {
-        const playerPath = isHost? 'player1' : 'player2';
+        const playerPath = isHost ? 'player1' : 'player2';
         const question = room[playerPath].currentQuestion;
         if (!question) {
             loadNewQuestion();
@@ -1977,80 +1891,6 @@ function startGame(room) {
             displayQuestion(question);
         }
     }, 500);
-}
-
-function showPopupImage(imagePath) {
-    const popupImage = document.createElement('div');
-    popupImage.className = 'popup-image';
-    popupImage.style.display = 'block';
-    const img = document.createElement('img');
-    img.src = imagePath;
-    img.alt = 'Random Event Image';
-    popupImage.appendChild(img);
-    document.body.appendChild(popupImage);
-
-    // 动画结束后隐藏图片
-    setTimeout(() => {
-        popupImage.style.display = 'none';
-        popupImage.remove();
-    }, 500); // 动画持续时间为0.5秒
-}
-    
-    function handleRandomEvent(event) {
-    switch (event.effect) {
-        case "heal":
-            const healAmount = Math.round(0.2 * 100); // 假设初始气血为100
-            const playerPath = isHost? 'player1' : 'player2';
-            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-                firebase.database.ServerValue.increment(healAmount)
-            );
-            showPopupImage(event.image);
-            break;
-        case "attackDown":
-            // 实现攻击降低的逻辑
-            break;
-        case "shield":
-            // 实现护盾的逻辑
-            break;
-        case "weaponRust":
-            // 实现武器生锈的逻辑
-            break;
-        case "timeReduce":
-            // 实现答题时间减少的逻辑
-            break;
-        case "dodgeDown":
-            // 实现闪避率降低的逻辑
-            break;
-        case "criticalHit":
-            // 实现必定暴击的逻辑
-            break;
-        case "defenseDown":
-            // 实现防御降低的逻辑
-            break;
-        case "attackUp":
-            // 实现攻击提高的逻辑
-            break;
-        case "answerMiss":
-            // 实现答题有几率答错的逻辑
-            break;
-        case "healthUp":
-            // 实现气血上限提高的逻辑
-            break;
-        case "skillFail":
-            // 实现技能失灵的逻辑
-            break;
-        case "treasure":
-            // 实现找到宝箱的逻辑
-            break;
-        case "curse":
-            // 实现诅咒的逻辑
-            break;
-        case "luckyAnswer":
-            // 实现必定答对的逻辑
-            break;
-        default:
-            break;
-    }
 }
 
 function shuffleArray(array) {
