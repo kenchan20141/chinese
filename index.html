@@ -2392,9 +2392,11 @@ function listenToRoomChanges() {
                 newWaitingForRematch.style.margin = '2rem auto';
                 newWaitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
                 newWaitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-                newWaitingForRematch.textContent = '等待对手同意重开游戏...';
+                newWaitingForRematch.textContent = '等待對手同意重開遊戲...';
                 document.body.appendChild(newWaitingForRematch);
             }
+        } else if (room.gameStarted && newwaitingForRematch) {
+            newwaitingForRematch.remove(); // 確保重開後移除
         }
 
        // 新增：检查玩家是否已经重新进入游戏
