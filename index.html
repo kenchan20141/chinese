@@ -1811,53 +1811,54 @@ function listenToRoomChanges() {
 }
 
     function randomMatch() {
-    const waitingRef = database.ref('waitingRooms');
-    const userId = Math.random().toString(36).substr(2, 9); // 隨機生成一個臨時用戶 ID
+    const waitingRef = database.ref('waitingRoom'); // 使用單一等待房間
+    const userId = Math.random().toString(36).substr(2, 9); // 臨時用戶 ID
 
-    // 使用事務確保原子性加入等待隊列
-    waitingRef.transaction((currentWaiting) => {
-        if (!currentWaiting) currentWaiting = {};
-        currentWaiting[userId] = { timestamp: firebase.database.ServerValue.TIMESTAMP };
-        return currentWaiting;
-    }, (error, committed, snapshot) => {
-        if (error) {
-            console.error('加入等待隊列失敗:', error);
-            return;
-        }
+    waitingRef.once('value', (snapshot) => {
+        const waitingData = snapshot.val();
 
-        const waitingPlayers = Object.keys(snapshot.val() || {});
-        if (waitingPlayers.length >= 2) {
-            const player1 = waitingPlayers[0];
-            const player2 = waitingPlayers[1];
+        if (!waitingData || !waitingData.roomId) {
+            // 沒有等待房間，第一個玩家成為房主
             const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-            const roomRef = database.ref('rooms/' + roomId);
+            currentRoomId = roomId;
+            isHost = true;
 
-            // 創建房間
-            roomRef.set({
-                player1: { userId: player1, health: 100, class: null, currentQuestion: null, name: '玩家1' },
-                player2: { userId: player2, health: 100, class: null, currentQuestion: null, name: '玩家2' },
+            // 創建房間並記錄到 waitingRoom
+            database.ref('rooms/' + roomId).set({
+                player1: { userId: userId, health: 100, class: null, currentQuestion: null, name: '玩家1' },
+                player2: null, // 等待第二個玩家
                 gameStarted: false,
                 gameEnded: false,
                 winner: null
-            }).then(() => {
-                // 移除配對成功的玩家
-                waitingRef.child(player1).remove();
-                waitingRef.child(player2).remove();
-
-                // 設置房間並進入遊戲
-                currentRoomId = roomId;
-                isHost = player1 === userId;
-                document.getElementById('roomControl').style.display = 'none';
-                document.getElementById('waitingArea').style.display = 'block';
-                document.getElementById('displayRoomId').textContent = '等待角色選擇...';
-                document.getElementById('classSelection').style.display = 'block';
             });
-        } else {
-            // 等待其他玩家
+            waitingRef.set({ roomId: roomId, hostId: userId });
+
+            // 更新 UI
             document.getElementById('roomControl').style.display = 'none';
             document.getElementById('waitingArea').style.display = 'block';
-            document.getElementById('displayRoomId').textContent = '等待中...';
+            document.getElementById('displayRoomId').textContent = '等待對手...';
             document.getElementById('classSelection').style.display = 'block';
+
+            listenToRoomChanges();
+        } else {
+            // 有等待房間，第二個玩家加入
+            const roomId = waitingData.roomId;
+            currentRoomId = roomId;
+            isHost = false;
+
+            // 加入房間作為 player2
+            database.ref('rooms/' + roomId + '/player2').set({
+                userId: userId, health: 100, class: null, currentQuestion: null, name: '玩家2'
+            });
+            waitingRef.remove(); // 清除等待房間記錄
+
+            // 更新 UI
+            document.getElementById('roomControl').style.display = 'none';
+            document.getElementById('waitingArea').style.display = 'block';
+            document.getElementById('displayRoomId').textContent = '等待角色選擇...';
+            document.getElementById('classSelection').style.display = 'block';
+
+            listenToRoomChanges();
         }
     });
 }
