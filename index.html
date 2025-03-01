@@ -997,65 +997,82 @@ window.onload = function() {
     img.src = 'https://i.ibb.co/tM82mXtr/3.png';
     img.crossOrigin = 'Anonymous'; // 解決跨域問題
 
-    img.onload = function() {
-        // 先完整顯示圖片
+   img.onload = function() {
+    // 定義粒子類，增加初始位置記錄
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x;
+            this.y = y;
+            this.startX = x; // 記錄初始X位置
+            this.startY = y; // 記錄初始Y位置
+            this.color = color;
+            this.vx = (Math.random() - 0.5) * 5; // 粒子分散速度
+            this.vy = (Math.random() - 0.5) * 5;
+            this.alpha = 1; // 初始透明度
+        }
+        update(progress) {
+            // 根據進度更新位置
+            this.x = this.startX + this.vx * progress * 50;
+            this.y = this.startY + this.vy * progress * 50;
+            this.alpha = 1 - progress; // 透明度隨進度減少
+        }
+        draw() {
+            ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // 先繪製完整的圖片到 Canvas
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    // 創建粒子，從圖片像素獲取位置和顏色
+    const particles = [];
+    const particleCount = 1000;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    for (let i = 0; i < particleCount; i++) {
+        const pixelIndex = Math.floor(Math.random() * (canvas.width * canvas.height));
+        const x = pixelIndex % canvas.width;
+        const y = Math.floor(pixelIndex / canvas.width);
+        const colorIndex = pixelIndex * 4;
+        const color = `${imageData[colorIndex]}, ${imageData[colorIndex + 1]}, ${imageData[colorIndex + 2]}`;
+        particles.push(new Particle(x, y, color));
+    }
+
+    // 動畫開始時間
+    let startTime = Date.now();
+    function animate() {
+        const elapsedTime = (Date.now() - startTime) / 1000; // 已過秒數
+        const duration = 2; // 動畫持續2秒
+        const progress = Math.min(elapsedTime / duration, 1); // 進度從0到1
+
+        // 清除畫布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 繪製圖片並漸淡
+        ctx.globalAlpha = 1 - progress; // 圖片透明度隨進度減少
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1; // 恢復全局透明度
 
-        // 定義粒子類
-        class Particle {
-            constructor(x, y, color) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
-                this.vx = (Math.random() - 0.5) * 4; // 隨機速度範圍擴大
-                this.vy = (Math.random() - 0.5) * 4;
-                this.alpha = 1; // 初始透明度
-            }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.alpha -= 0.015; // 透明度衰減速度稍快
-            }
-            draw() {
-                ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
-                ctx.fill();
-            }
+        // 更新並繪製粒子
+        particles.forEach(particle => {
+            particle.update(progress);
+            particle.draw();
+        });
+
+        // 如果動畫未結束，繼續執行
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            // 動畫結束，隱藏 Canvas，顯示主頁
+            canvas.style.display = 'none';
+            document.getElementById('roomControl').style.display = 'block';
         }
+    }
 
-        // 創建粒子數量
-        const particles = [];
-        const particleCount = 1000;
-        for (let i = 0; i < particleCount; i++) {
-            const x = Math.random() * canvas.width;
-            const y = Math.random() * canvas.height;
-            const imageData = ctx.getImageData(x, y, 1, 1).data;
-            const color = `${imageData[0]}, ${imageData[1]}, ${imageData[2]}`;
-            particles.push(new Particle(x, y, color));
-        }
-
-        // 延遲1秒後開始粒子動畫
-        setTimeout(() => {
-            let startTime = Date.now();
-            function animate() {
-                const elapsedTime = (Date.now() - startTime) / 1000; // 計算經過時間（秒）
-                if (elapsedTime < 2) { // 粒子動畫持續2秒
-                    ctx.clearRect(0, 0, canvas.width, canvas.height); // 清除畫布
-                    particles.forEach(particle => {
-                        particle.update();
-                        particle.draw();
-                    });
-                    requestAnimationFrame(animate);
-                } else {
-                    // 動畫結束，隱藏 Canvas，顯示主頁
-                    canvas.style.display = 'none';
-                    document.getElementById('roomControl').style.display = 'block';
-                }
-            }
-            animate();
-        }, 1000); // 延遲1000毫秒（1秒）
-    };
+    // 立即開始動畫
+    requestAnimationFrame(animate);
 };
     
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
