@@ -1354,12 +1354,16 @@ function displayQuestion(question) {
     startTimer();
 
     if (isSinglePlayer) {
-        clearTimeout(computerAnswerTimeout);
+        console.log('設置電腦答題定時器，等待時間：', computerPlayer.answerTime, 'ms');
+        clearTimeout(computerAnswerTimeout); // 清除舊的定時器
         computerAnswerTimeout = setTimeout(() => {
+            console.log('電腦答題定時器觸發');
             if (!answered && !gameOver) {
                 const isCorrect = Math.random() < computerPlayer.accuracy;
-                // 模擬電腦回答，添加 "true" 參數表示電腦觸發
-                checkAnswer(isCorrect, question.id, true);
+                console.log('電腦回答，是否正確：', isCorrect);
+                checkAnswer(isCorrect, question.id, true); // 標記為電腦回答
+            } else {
+                console.log('電腦未答題，原因：answered=', answered, 'gameOver=', gameOver);
             }
         }, computerPlayer.answerTime);
     }
