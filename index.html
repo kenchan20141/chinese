@@ -1,3 +1,6 @@
+發動隨機事件時，必須要有小視窗通知，但不能干擾玩家作答問題，如與氣血相關，則應放在氣血附近。
+
+我是一位新手，而你是世界頂級電腦遊戲工程師，請你很清晰、明確地告訴我要實現以上效果，具體要刪除甚麼代碼、添加甚麼代碼、要替代甚麼以及其具體的位置，否則我無法一步步跟著你的指示去修改。請用最少步驟和最簡單的方法幫我去實現，因為步驟越多越容易出錯。
 
 
 <!DOCTYPE html>
@@ -782,19 +785,10 @@
     text-shadow: 0 0 10px rgba(0,255,0,0.5);
 }
 
-    
+    .shield-icon
     .shield-icon {
     font-size: 1.5rem; /* 调整图标大小 */
     margin-left: 5px; /* 调整图标与气血文字的间距 */
-}
-
-    .health-change-animation {
-    position: absolute;
-    pointer-events: none;
-    z-index: 1000;
-    font-size: 2rem;
-    opacity: 1;
-    transition: opacity 1s, transform 1s;
 }
 
     /* 新增减伤提示动画 */
@@ -1391,14 +1385,7 @@ if (isCorrect) {
     
     // 強制立即檢查遊戲狀態
     checkGameOver();
-
-// 隨機觸發事件（這裡假設10%機率）
-if (Math.random() < 0.5) {
-    var eventType = Math.random() < 0.5 ? 'health' : 'other'; // 50%機率是氣血事件
-    var notificationText = eventType === 'health' ? '氣血事件觸發！' : '隨機事件觸發！';
-    showNotification(notificationText, eventType);
-}
-        
+    
     if (!gameOver) {
             setTimeout(() => {
                 // 重置按鈕樣式和互動狀態
@@ -1484,55 +1471,9 @@ if (isCorrect) {
     myHealthContainer.appendChild(hitText);
 }
 setTimeout(() => hitText.remove(), 300);
-
-
-    // 隨機事件觸發（50%機率）
-    const randomEventChance = Math.random();
-    if (randomEventChance < 0.5) {
-        const eventType = Math.random() < 0.5 ? 'heal' : 'damage';
-        const eventAmount = 10;
-        const playerPath = isHost ? 'player1' : 'player2';
-        const updates = {};
-
-        if (eventType === 'heal') {
-            updates[`${playerPath}/health`] = firebase.database.ServerValue.increment(eventAmount);
-            soundEffects.heal.play();
-            showHealthChangeAnimation('heal', eventAmount);
-        } else {
-            updates[`${playerPath}/health`] = firebase.database.ServerValue.increment(-eventAmount);
-            soundEffects.damage.play();
-            showHealthChangeAnimation('damage', eventAmount);
-        }
-
-        database.ref('rooms/' + currentRoomId).update(updates);
-    }
+    
     
 }
-
-
-    function showHealthChangeAnimation(type, amount) {
-    const healthBar = document.getElementById('myHealthBar');
-    const animationDiv = document.createElement('div');
-    animationDiv.className = 'health-change-animation';
-    animationDiv.textContent = type === 'heal' ? `+${amount}` : `-${amount}`;
-    animationDiv.style.color = type === 'heal' ? '#00ff00' : '#ff0000';
-    animationDiv.style.position = 'absolute';
-    animationDiv.style.left = '50%';
-    animationDiv.style.top = '50%';
-    animationDiv.style.transform = 'translate(-50%, -50%)';
-
-    healthBar.appendChild(animationDiv);
-
-    setTimeout(() => {
-        animationDiv.style.opacity = '0';
-        animationDiv.style.transform = 'translate(-50%, -100%)';
-    }, 100);
-
-    setTimeout(() => {
-        animationDiv.remove();
-    }, 1100);
-}
-
     
     
 // 修改 updateHealthDisplay 函數
@@ -1712,9 +1653,7 @@ bgMusic.volume = 0.3;
 const soundEffects = {
     attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3'),
     victory: new Audio('https://taira-komori.jpn.org/sound_os2/event01/clapping_short2.mp3'),
-    defeat: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3'),
-    heal: new Audio('https://taira-komori.jpn.org/sound_os2/game01/powerup01.mp3'), // 恢復音效
-    damage: new Audio('https://taira-komori.jpn.org/sound_os2/game01/powerup10.mp3')  // 扣血音效
+    defeat: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
 };
 
 // 修改重點 2：初始按鈕文字設定
@@ -2029,30 +1968,7 @@ function displayQuestion(question) {
     startTimer();
 }
 
-function showNotification(text, type) {
-    var notification = document.getElementById('notification');
-    notification.textContent = text;
-    notification.style.display = 'block';
 
-    // 如果與氣血相關，放在氣血條附近
-    if (type === 'health') {
-        var healthBar = document.getElementById('myHealthContainer');
-        notification.style.top = (healthBar.offsetTop + healthBar.offsetHeight + 10) + 'px';
-        notification.style.left = healthBar.offsetLeft + 'px';
-    } else {
-        // 其他事件顯示在螢幕中央
-        notification.style.top = '50%';
-        notification.style.left = '50%';
-        notification.style.transform = 'translate(-50%, -50%)';
-    }
-
-    // 3秒後自動隱藏
-    setTimeout(function() {
-        notification.style.display = 'none';
-    }, 3000);
-}
-
-    
 function startTimer() {
     clearInterval(timer);
     // 新增以下兩行重置動畫狀態
@@ -2402,3 +2318,4 @@ if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gam
 
     
 </html>
+
