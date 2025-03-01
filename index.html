@@ -985,6 +985,142 @@
     
 <script>
 
+function showEventMessage(message) {
+    const eventMessageDiv = document.createElement('div');
+    eventMessageDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 9999;
+        font-size: 1.5rem;
+        text-align: center;
+    `;
+    eventMessageDiv.textContent = message;
+    document.body.appendChild(eventMessageDiv);
+
+    // 一段时间后移除提示信息
+    setTimeout(() => {
+        eventMessageDiv.remove();
+    }, 3000);
+}
+    
+function triggerRandomEvent() {
+    const randomNum = Math.random();
+    let eventMessage = '';
+    if (randomNum < 0.0667) { // 约1/15的概率
+        // 恢复20%气血
+        const playerPath = isHost? 'player1' : 'player2';
+        const currentHealth = database.ref(`rooms/${currentRoomId}/${playerPath}/health`).once('value').then(snapshot => {
+            const health = snapshot.val();
+            const healAmount = Math.ceil(health * 0.2);
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(health + healAmount);
+            eventMessage = '🛡️ 你恢复了20%的气血！';
+        });
+    } else if (randomNum < 0.1334) {
+        // 增加20%攻击力
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).once('value').then(snapshot => {
+            const attack = snapshot.val();
+            database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).set(attack * 1.2);
+            eventMessage = '💪 你的攻击力提升了20%！';
+        });
+    } else if (randomNum < 0.2) {
+        // 增加20%防御力
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/defense`).once('value').then(snapshot => {
+            const defense = snapshot.val();
+            database.ref(`rooms/${currentRoomId}/${playerPath}/defense`).set(defense * 1.2);
+            eventMessage = '🛡️ 你的防御力提升了20%！';
+        });
+    } else if (randomNum < 0.2667) {
+        // 获得额外一次答题机会
+        // 这里可以通过设置一个标志位来实现，例如在玩家数据中添加一个字段
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/extraAnswer`).set(true);
+        eventMessage = '🎉 你获得了额外一次答题机会！';
+    } else if (randomNum < 0.3334) {
+        // 清除所有负面状态
+        // 假设负面状态存储在一个数组中，这里需要根据实际情况修改
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/negativeStates`).set([]);
+        eventMessage = '✨ 你清除了所有负面状态！';
+    } else if (randomNum < 0.4) {
+        // 损失10%气血
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).once('value').then(snapshot => {
+            const health = snapshot.val();
+            const damageAmount = Math.ceil(health * 0.1);
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(health - damageAmount);
+            eventMessage = '❌ 你损失了10%的气血！';
+        });
+    } else if (randomNum < 0.4667) {
+        // 降低20%攻击力
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).once('value').then(snapshot => {
+            const attack = snapshot.val();
+            database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).set(attack * 0.8);
+            eventMessage = '🥀 你的攻击力降低了20%！';
+        });
+    } else if (randomNum < 0.5334) {
+        // 降低20%防御力
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/defense`).once('value').then(snapshot => {
+            const defense = snapshot.val();
+            database.ref(`rooms/${currentRoomId}/${playerPath}/defense`).set(defense * 0.8);
+            eventMessage = '🥀 你的防御力降低了20%！';
+        });
+    } else if (randomNum < 0.6) {
+        // 答题错误不扣血
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/noDamageOnWrongAnswer`).set(true);
+        eventMessage = '🛡️ 本回合答题错误不会扣血！';
+    } else if (randomNum < 0.6667) {
+        // 敌人随机损失10%气血
+        const opponentPath = isHost? 'player2' : 'player1';
+        database.ref(`rooms/${currentRoomId}/${opponentPath}/health`).once('value').then(snapshot => {
+            const health = snapshot.val();
+            const damageAmount = Math.ceil(health * 0.1);
+            database.ref(`rooms/${currentRoomId}/${opponentPath}/health`).set(health - damageAmount);
+            eventMessage = '💥 敌人损失了10%的气血！';
+        });
+    } else if (randomNum < 0.7334) {
+        // 下回合必定闪避
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/guaranteedDodge`).set(true);
+        eventMessage = '🌟 下回合你必定能闪避敌人的攻击！';
+    } else if (randomNum < 0.8) {
+        // 混乱：玩家本回合答题时，选项顺序随机打乱
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/isConfused`).set(true);
+        eventMessage = '😵 你陷入了混乱，选项顺序被打乱！';
+    } else if (randomNum < 0.8667) {
+        // 沉默：玩家本回合无法使用技能
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/isSilenced`).set(true);
+        eventMessage = '🔇 你被沉默了，本回合无法使用技能！';
+    } else if (randomNum < 0.9334) {
+        // 获得双倍答题奖励
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/doubleAnswerReward`).set(true);
+        eventMessage = '🎉 本回合答对题将获得双倍伤害！';
+    } else {
+        // 中毒：每回合结束时损失5%气血，持续3回合
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}/isPoisoned`).set(true);
+        database.ref(`rooms/${currentRoomId}/${playerPath}/poisonTurns`).set(3);
+        eventMessage = '☠️ 你中毒了，每回合损失5%气血，持续3回合！';
+    }
+
+    // 显示提示信息
+    showEventMessage(eventMessage);
+}
+    
+
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1902,21 +2038,21 @@ function shuffleArray(array) {
 }
 
 function loadNewQuestion() {
-    hasHealedThisTurn = false; // 重置恢復狀態
-    // 假設問題總數為 100，可以從 Firebase 或本地配置中動態獲取
+    hasHealedThisTurn = false; // 重置恢复状态
+    // 假设问题总数为 100，可以从Firebase或本地配置中动态获取
     const totalQuestions = 622; 
-    const randomId = Math.floor(Math.random() * totalQuestions); // 隨機生成問題 ID
+    const randomId = Math.floor(Math.random() * totalQuestions); // 随机生成问题ID
 
-    // 只下載特定問題的數據
+    // 只下载特定问题的数据
     const questionRef = database.ref(`questions/${randomId}`);
     questionRef.once('value').then(snapshot => {
         const originalQuestion = snapshot.val();
         if (!originalQuestion) {
-            console.error('無法找到該問題數據');
+            console.error('无法找到该问题数据');
             return;
         }
 
-        // 在客戶端處理問題數據（打亂選項等）
+        // 在客户端处理问题数据（打乱选项等）
         const optionsCopy = [...originalQuestion.options];
         const correctAnswer = optionsCopy[originalQuestion.correctIndex];
         const shuffledOptions = shuffleArray(optionsCopy);
@@ -1926,21 +2062,27 @@ function loadNewQuestion() {
             question: originalQuestion.question,
             options: shuffledOptions,
             correctIndex: newCorrectIndex,
-            id: Date.now() // 生成唯一 ID 用於客戶端識別
+            id: Date.now() // 生成唯一ID用于客户端识别
         };
 
-        // 更新當前問題 ID 和房間數據
+        // 更新当前问题ID和房间数据
         currentQuestionId = processedQuestion.id;
-        const playerPath = isHost ? 'player1' : 'player2';
+        const playerPath = isHost? 'player1' : 'player2';
         database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ 
             currentQuestion: processedQuestion 
         });
 
-        // 重置答題狀態並顯示問題
+        // 触发随机事件
+        const randomChance = Math.random();
+        if (randomChance < 0.5) {
+            triggerRandomEvent();
+        }
+
+        // 重置答题状态并显示问题
         isAnswered = false;
         displayQuestion(processedQuestion);
     }).catch(error => {
-        console.error('下載問題數據時出錯:', error);
+        console.error('下载问题数据时出错:', error);
     });
 }
 
