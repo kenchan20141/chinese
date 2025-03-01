@@ -1222,6 +1222,18 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
         defense: playerClass.defense,
         dodge: playerClass.dodge
     });
+    database.ref(`rooms/${currentRoomId}`).once('value').then(snapshot => {
+    const room = snapshot.val();
+    if (room.player1.class && room.player2.class) {
+        // 雙方都選擇完職業，設置 gameStarted 為 true
+        database.ref(`rooms/${currentRoomId}`).update({ gameStarted: true });
+    } else {
+        // 只隱藏選擇界面，顯示等待區域
+        document.getElementById('classSelection').style.display = 'none';
+        document.getElementById('waitingArea').style.display = 'block';
+        document.getElementById('waitingArea').textContent = '等待對手選擇流派...';
+    }
+});
 
 // 顯示彈出圖片並在動畫結束後隱藏
     const popupImage = selectedCard.querySelector('.popup-image');
@@ -1307,26 +1319,24 @@ if(effectElement.className) {
     setTimeout(() => effectElement.remove(), 1000);
 }
     
-    if (answered || gameOver) return;
+  if (answeredQuestions.has(questionId) || gameOver) return;
+    answeredQuestions.add(questionId);
     answered = true;
-
     clearInterval(timer);
-    
-    // 樣式處理
+
     const buttons = document.querySelectorAll('#options button');
-    const correctIndex = window.currentQuestion.correctIndex;
-    
-    // 顯示正確答案樣式
     buttons.forEach((btn, index) => {
-        btn.style.pointerEvents = 'none'; // 立即禁止點擊
-        if (index === correctIndex) {
+        if (index === window.currentQuestion.correctIndex) {
             btn.style.cssText = `
                 background: #2ecc71 !important;
                 border: 2px solid #27ae60 !important;
                 transform: scale(1.05);
             `;
-         }
-    }, 50);
+        }
+        btn.style.pointerEvents = 'none'; // 僅禁用當前問題的按鈕
+    });
+
+
 
 
     // 傷害計算與動畫
@@ -1991,12 +2001,18 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        if (room.player1?.class && room.player2?.class) {
-            document.getElementById('waitingArea').style.display = 'none';
-            document.getElementById('classSelection').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            startGame(room);
-        }
+if (room.player1?.class && room.player2?.class) {
+    document.getElementById('waitingArea').style.display = 'block'; // 顯示等待區域
+    document.getElementById('waitingArea').textContent = '等待對手準備...'; // 更新等待提示
+    document.getElementById('classSelection').style.display = 'none'; // 隱藏職業選擇
+    if (room.gameStarted) { // 只有 gameStarted 為 true 時進入遊戲
+        document.getElementById('waitingArea').style.display = 'none';
+        document.getElementById('gameArea').style.display = 'block';
+        startGame(room);
+    }
+}
+
+        
 if (room.drawPhase && !inDrawPhase) {
     startDrawPhase();
 }
@@ -2090,6 +2106,8 @@ function shuffleArray(array) {
 }
 
 function loadNewQuestion() {
+    answered = false;
+isAnswered = false;
     hasHealedThisTurn = false; // 重置恢復狀態
     // 假設問題總數為 100，可以從 Firebase 或本地配置中動態獲取
     const totalQuestions = 622; 
@@ -2133,18 +2151,21 @@ function loadNewQuestion() {
 }
 
 function displayQuestion(question) {
-    this.answered = false; // 重置答題狀態
+    answered = false; // 重置全局 answered 狀態
+    isAnswered = false; // 重置局部 isAnswered 狀態
     window.currentQuestion = question;
     document.getElementById('question').textContent = question.question;
     const optionsDiv = document.getElementById('options');
     optionsDiv.innerHTML = '';
-    
+
     question.options.forEach((option, index) => {
         const button = document.createElement('button');
         button.textContent = option;
-        button.setAttribute('data-question-id', question.id); // 設置問題ID
+        button.setAttribute('data-question-id', question.id);
+        button.style.pointerEvents = 'auto'; // 確保啟用點擊
         button.onclick = () => {
-            if (!answeredQuestions.has(question.id)) { // 檢查是否已回答
+            if (!isAnswered) { // 只檢查局部狀態
+                isAnswered = true;
                 checkAnswer(index === question.correctIndex, question.id);
             }
         };
