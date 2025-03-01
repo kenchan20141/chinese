@@ -15,25 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>        
-/* 抽牌界面 */
-#cardDrawArea {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-}
 
-#cardCanvas {
-    width: 800px;
-    height: 400px;
-}
-        
 .rematch-buttons {
     margin-top: 30px;
     display: flex;
@@ -483,10 +465,6 @@
             display: none;
         }
 
-<div id="cardDrawArea">
-    <canvas id="cardCanvas"></canvas>
-</div>
-        
         .health-bar {
             width: 100%;
             height: 40px;
@@ -821,7 +799,28 @@
   animation: reduceDamageFade 1.2s ease-out;
   pointer-events: none;
 }
-        
+
+
+/* 抽牌界面 */
+#cardDrawArea {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+#cardCanvas {
+    width: 800px;
+    height: 400px;
+}
+
+    
     </style>
 </head>
 <body>
@@ -986,6 +985,10 @@
         </div>
     </div>
 
+        <div id="cardDrawArea">
+    <canvas id="cardCanvas"></canvas>
+</div>
+
     <!-- 問題與選項區 -->
     <div id="question"></div>
     <div id="options"></div>
@@ -1144,7 +1147,8 @@ let waitingForOpponent = false;
     let isAnswered = false; 
     let answeredQuestions = new Set();
     let hasHealedThisTurn = false;
-    // 抽牌相關變數
+
+// 抽牌相關變數
 let cardDrawActive = false;
 let selectedCard = null;
 let cardFlipProgress = [0, 0, 0]; // 3張牌的翻牌進度
@@ -1343,6 +1347,8 @@ function endCardDraw() {
         }
     });
 }
+
+    
 
 // 在代码开头部分，获取按钮和输入框元素
 const createRoomBtn = document.querySelector('button[onclick="createRoom()"]');
@@ -1565,22 +1571,6 @@ if (isCorrect) {
     // 玄天阁减伤30%
     if (playerClass.type === 'mage') {
         damage = Math.floor(damage * 0.7);
-        const reduceDisplay = document.getElementById('reduceDamageText');
-        reduceDisplay.style.display = 'block';
-        setTimeout(() => reduceDisplay.style.display = 'none', 1200);
-    }
-}
-if (isCorrect) {
-    // 攻击敌人：攻击力加成 × 敌人防御减免
-    damage = Math.floor(baseDamage * playerClass.attack / opponentDefense);
-} else {
-    // 自己受伤：基础伤害 ÷ 自身防御减免
-    damage = Math.floor(baseDamage / playerClass.defense);
-    
-    // 玄天阁减伤30%（新增代码）
-    if(playerClass.type === 'mage') {
-        damage = Math.floor(damage * 0.7);
-        // 显示减伤提示
         const reduceDisplay = document.getElementById('reduceDamageText');
         reduceDisplay.style.display = 'block';
         setTimeout(() => reduceDisplay.style.display = 'none', 1200);
@@ -2492,10 +2482,10 @@ function listenToRoomChanges() {
         }
 
         updateHealthDisplay(room);
-
-        if (room.drawPhase && room[playerPath].drawnCards && !cardDrawActive) {
+if (room.drawPhase && room[playerPath].drawnCards && !cardDrawActive) {
     startCardDraw(room[playerPath].drawnCards.map(effect => cardEffects.find(c => c.effect === effect)));
 }
+        
 
         // 检查双方是否都同意重开
         const bothAgreed = room.hostRematch && room.clientRematch;
@@ -2563,9 +2553,14 @@ if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gam
 
     // 一段时间后移除提示信息
     setTimeout(() => {
-        opponentJoinedMessage.remove();
-        opponentJoinedMessage = null;
-    }, 3000);
+    // 重置按鈕樣式和互動狀態
+    buttons.forEach(btn => {
+        btn.style.cssText = '';
+        btn.style.pointerEvents = 'auto'; // 重新啟用點擊
+    });
+    answered = false; // 新增：重置回答狀態
+    checkCardDraw(); // 替換 loadNewQuestion()
+}, 700);
 }
     });
 }
@@ -2584,3 +2579,6 @@ if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gam
 
     
 </html>
+
+
+
