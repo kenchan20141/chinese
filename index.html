@@ -1332,7 +1332,7 @@ function selectClass(className) {
 
 
 function displayQuestion(question) {
-    this.answered = false;
+    answered = false; // 修正為全局變量
     window.currentQuestion = question;
     document.getElementById('question').textContent = question.question;
     const optionsDiv = document.getElementById('options');
