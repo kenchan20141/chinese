@@ -840,6 +840,11 @@
                 <span>加入征伐</span>
                 <div class="btn-glow"></div>
             </button>
+            <button onclick="randomMatch()" class="action-btn random-match-btn">
+    <i class="fas fa-random"></i>
+    <span>隨機分配</span>
+    <div class="btn-glow"></div>
+</button>
         </div>
 
 <button id="registerBtn" class="action-btn" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">
@@ -1476,36 +1481,19 @@ setTimeout(() => hitText.remove(), 300);
 // 修改 updateHealthDisplay 函數
 function updateHealthDisplay(room) {
     const myHealth = isHost ? room.player1.health : (room.player2?.health || 100);
-    const myHealthBar = document.getElementById('myHealthBar');
+    const myName = isHost ? (room.player1?.name || '玩家1') : (room.player2?.name || '玩家2');
+    const opponentName = isHost ? (room.player2?.name || '玩家2') : (room.player1?.name || '玩家1');
 
-    const user = firebase.auth().currentUser;
-    const myName = user ? user.displayName : '玩家';
-    const opponentName = '對手'; // 可從 room 數據中獲取對手的 displayName
     document.getElementById('myHealthContainer').innerHTML = `
-        <div>${myName} 氣血: <span id="myHealth">${Math.max(isHost ? room.player1.health : room.player2?.health || 100, 0)}</span></div>
+        <div>${myName} 氣血: <span id="myHealth">${Math.max(myHealth, 0)}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
     `;
     document.getElementById('enemyHealthContainer').innerHTML = `
-        <div>${opponentName} 氣血: <span id="opponentHealth">${Math.max(isHost ? room.player2?.health || 100 : room.player1.health, 0)}</span></div>
+        <div>${opponentName} 氣血: <span id="opponentHealth">${Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0)}</span></div>
         <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
     `;
-    document.getElementById('myHealthBar').style.width = Math.max(isHost ? room.player1.health : room.player2?.health || 100, 0) + '%';
-    document.getElementById('opponentHealthBar').style.width = Math.max(isHost ? room.player2?.health || 100 : room.player1.health, 0) + '%';
-    
-    // 更新血條寬度
-    myHealthBar.style.width = myHealth + '%';
-    
-    // 簡單低血量提醒
-    if (myHealth <= 30) {
-        myHealthBar.style.background = '#ff0000'; // 直接變紅色
-        document.getElementById('myHealth').textContent = `${myHealth}% (危險！)`;
-    } else {
-        myHealthBar.style.background = 'linear-gradient(90deg, var(--main-red) 0%, #ff6b6b 100%)';
-        document.getElementById('myHealth').textContent = `${myHealth}%`;
-    }
-
-
-    
+    document.getElementById('myHealthBar').style.width = Math.max(myHealth, 0) + '%';
+    document.getElementById('opponentHealthBar').style.width = Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0) + '%';
 }
     
 
@@ -1816,6 +1804,53 @@ function listenToRoomChanges() {
 
         if (room.gameEnded) {
             handleGameEnd(room.winner);
+        }
+    });
+}
+
+    function randomMatch() {
+    const waitingRef = database.ref('waitingRooms');
+    const userId = Math.random().toString(36).substr(2, 9); // 隨機生成一個臨時用戶 ID
+
+    // 加入等待隊列
+    waitingRef.child(userId).set({
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    // 檢查是否有其他等待的玩家
+    waitingRef.orderByChild('timestamp').limitToFirst(2).once('value', (snapshot) => {
+        const waitingPlayers = [];
+        snapshot.forEach((childSnapshot) => {
+            waitingPlayers.push(childSnapshot.key);
+        });
+
+        if (waitingPlayers.length >= 2) {
+            const player1 = waitingPlayers[0];
+            const player2 = waitingPlayers[1];
+
+            // 隨機生成房間編號
+            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+            const roomRef = database.ref('rooms/' + roomId);
+            roomRef.set({
+                player1: { userId: player1, health: 100, class: null, currentQuestion: null, name: '玩家1' },
+                player2: { userId: player2, health: 100, class: null, currentQuestion: null, name: '玩家2' },
+                gameStarted: false,
+                gameEnded: false,
+                winner: null
+            });
+
+            // 移除配對成功的玩家
+            waitingRef.child(player1).remove();
+            waitingRef.child(player2).remove();
+
+            // 設置當前房間並進入遊戲
+            currentRoomId = roomId;
+            isHost = player1 === userId;
+            startGameSession();
+        } else {
+            // 等待其他玩家
+            document.getElementById('waitingArea').style.display = 'block';
+            document.getElementById('displayRoomId').textContent = '等待中...';
         }
     });
 }
@@ -2315,3 +2350,6 @@ if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gam
 
     
 </html>
+
+
+
