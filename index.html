@@ -203,22 +203,20 @@
         transition: all 0.1s;
 
        
-/* 敵方血條定位 */
-#enemyHealthContainer {
+#myHealthContainer, #enemyHealthContainer {
     position: absolute;
-    top: 20px;
-    left: 1rem;
-    right: 1rem;
-    z-index: 2;
+    z-index: 2; /* 確保在氣血條之上 */
 }
 
-/* 己方血條定位 */
-#myHealthContainer {
-    position: absolute;
-    bottom: 80px; /* 根據答案區高度調整 */
-    left: 1rem;
-    right: 1rem;
-    z-index: 2;
+.health-bar {
+    width: 100%;
+    height: 40px;
+    margin: 0.5rem 0;
+    background: #333;
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+    z-index: 1; /* 氣血條在頭像之下 */
 }
 
 /* 問題區增加底部間距 */
@@ -1499,20 +1497,37 @@ function checkAnswer(isCorrect, questionId) {
     
 // 修改 updateHealthDisplay 函數
 function updateHealthDisplay(room) {
+    const classIcons = {
+        'warrior': 'https://i.ibb.co/p6g4PFH4/1.png',
+        'tank': 'https://i.ibb.co/4wksKZsF/image.png',
+        'assassin': 'https://i.ibb.co/W4V5bX8X/image.png',
+        'mage': 'https://i.ibb.co/tM82mXtr/3.png'
+    };
+
+    const myClass = isHost ? room.player1.class : (room.player2?.class || '');
+    const opponentClass = isHost ? (room.player2?.class || '') : room.player1.class;
+
     const myHealth = isHost ? room.player1.health : (room.player2?.health || 100);
-    const myName = isHost ? (room.player1?.name || '玩家1') : (room.player2?.name || '玩家2');
-    const opponentName = isHost ? (room.player2?.name || '玩家2') : (room.player1?.name || '玩家1');
+    const opponentHealth = isHost ? (room.player2?.health || 100) : room.player1.health;
 
     document.getElementById('myHealthContainer').innerHTML = `
-        <div>${myName} 氣血: <span id="myHealth">${Math.max(myHealth, 0)}</span></div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <img src="${classIcons[myClass] || 'https://via.placeholder.com/50'}" style="width: 50px; height: 50px; border-radius: 50%;">
+            <div>🏹 你的氣血: <span id="myHealth">${Math.max(myHealth, 0)}</span></div>
+        </div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
     `;
+
     document.getElementById('enemyHealthContainer').innerHTML = `
-        <div>${opponentName} 氣血: <span id="opponentHealth">${Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0)}</span></div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <img src="${classIcons[opponentClass] || 'https://via.placeholder.com/50'}" style="width: 50px; height: 50px; border-radius: 50%;">
+            <div>🗡 敵方氣血: <span id="opponentHealth">${Math.max(opponentHealth, 0)}</span></div>
+        </div>
         <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
     `;
+
     document.getElementById('myHealthBar').style.width = Math.max(myHealth, 0) + '%';
-    document.getElementById('opponentHealthBar').style.width = Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0) + '%';
+    document.getElementById('opponentHealthBar').style.width = Math.max(opponentHealth, 0) + '%';
 }
     
 
