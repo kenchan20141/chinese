@@ -799,23 +799,7 @@
   animation: reduceDamageFade 1.2s ease-out;
   pointer-events: none;
 }
-
-    /* 玩家進入通知樣式 */
-.opponent-joined-notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.9);
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 10px;
-    z-index: 998; /* 低於勝利畫面(999)和動畫畫布(9999)，但高於遊戲區域 */
-    font-size: 1.5rem;
-    text-align: center;
-    width: auto;
-    max-width: 200px;
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
-}
+        
     </style>
 </head>
 <body>
@@ -1808,29 +1792,6 @@ function startGameSession() {
 }
 
 function listenToRoomChanges() {
-   const opponentReadyField = isHost ? 'player2Ready' : 'player1Ready';
-const opponentReady = room[opponentReadyField] === true;
-if (opponentReady && !opponentJoinedMessage && !room.gameStarted && waitingForOpponent) {
-    // 移除舊通知（如果存在）
-    if (document.querySelector('.opponent-joined-notification')) {
-        document.querySelector('.opponent-joined-notification').remove();
-    }
-
-    opponentJoinedMessage = document.createElement('div');
-    opponentJoinedMessage.className = 'opponent-joined-notification';
-    opponentJoinedMessage.textContent = '🎮玩家已進場';
-    document.body.appendChild(opponentJoinedMessage);
-
-    // 3秒後移除通知
-    setTimeout(() => {
-        if (opponentJoinedMessage) {
-            opponentJoinedMessage.remove();
-            opponentJoinedMessage = null;
-        }
-    }, 3000);
-}
-    
-    
     const roomRef = database.ref('rooms/' + currentRoomId);
     roomRef.off('value'); // 移除舊的監聽器
 
@@ -1856,17 +1817,6 @@ if (opponentReady && !opponentJoinedMessage && !room.gameStarted && waitingForOp
         if (room.gameEnded) {
             handleGameEnd(room.winner);
         }
-
-
-// 當遊戲開始時重置準備狀態
-if (room.gameStarted) {
-    const resetUpdates = {
-        player1Ready: false,
-        player2Ready: false
-    };
-    database.ref('rooms/' + currentRoomId).update(resetUpdates);
-}
-        
     });
 }
     
@@ -2175,6 +2125,7 @@ document.getElementById('showLeaderboardBtn').onclick = function() {
     });
 };
     
+
 function handleRematchRequest() {
     if (isRematching) return;
     isRematching = true;
@@ -2185,15 +2136,8 @@ function handleRematchRequest() {
     const buttons = victoryOverlay.querySelector('.rematch-buttons');
     if (buttons) buttons.remove();
 
-    // 清理舊的通知
-    if (opponentJoinedMessage) {
-        opponentJoinedMessage.remove();
-        opponentJoinedMessage = null;
-    }
-
-    // 获取当前玩家对应的重开字段和準備字段
+    // 获取当前玩家对应的重开字段
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
-    const readyField = isHost ? 'player1Ready' : 'player2Ready';
 
     // 原子性重置数据库状态
     const updates = {
@@ -2202,12 +2146,12 @@ function handleRematchRequest() {
         gameEnded: false,
         currentQuestion: null,
         winner: null,
-        gameStarted: false,
-        [rematchField]: true,
-        [readyField]: true, // 新增：表示當前玩家已準備
+        gameStarted: false, // 确保游戏在双方都同意重开前不开始
+        [rematchField]: true, // 记录当前玩家同意重开
+        // 新增一个字段用于表示玩家是否已经重新进入游戏
         'player1/reentered': isHost,
-        'player2/reentered': !isHost,
-        clientEntered: isHost ? false : true
+        'player2/reentered':!isHost,
+        clientEntered: isHost ? false : true 
     };
 
     waitingForOpponent = false;
@@ -2253,7 +2197,109 @@ function handleRematchRequest() {
 }
 
 
-    
+function listenToRoomChanges() {
+    const roomRef = database.ref('rooms/' + currentRoomId);
+    roomRef.off('value');
+
+    roomRef.on('value', (snapshot) => {
+        const room = snapshot.val();
+        if (!room) return;
+
+        if (isHost) {
+            opponentDefense = room.player2?.defense || 1.0;
+        } else {
+            opponentDefense = room.player1?.defense || 1.0;
+        }
+
+        if (room.player1?.class && room.player2?.class) {
+            document.getElementById('waitingArea').style.display = 'none';
+        }
+
+        if (room.gameEnded) {
+            handleGameEnd(room.winner);
+            return;
+        }
+
+        if (room.player1?.class && room.player2?.class) {
+            document.getElementById('classSelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            startGame(room);
+        }
+
+        updateHealthDisplay(room);
+
+        // 检查双方是否都同意重开
+        const bothAgreed = room.hostRematch && room.clientRematch;
+        if (bothAgreed &&!room.gameStarted) {
+            // 双方都同意重开，移除等待界面
+            const waitingForRematch = document.getElementById('waitingForRematch');
+            if (waitingForRematch) {
+                waitingForRematch.remove();
+            }
+
+            // 开始新游戏
+            const updates = {
+                gameStarted: true
+            };
+            database.ref('rooms/' + currentRoomId).update(updates, () => {
+                startNewGameSession();
+            });
+
+            // 重置等待对方同意的标志位
+            waitingForOpponent = false;
+        } else if (!bothAgreed && waitingForOpponent) {
+            // 如果只有一方同意且正在等待对方同意，保持等待界面显示
+            const waitingForRematch = document.getElementById('waitingForRematch');
+            if (!waitingForRematch) {
+                const newWaitingForRematch = document.createElement('div');
+                newWaitingForRematch.id = 'waitingForRematch';
+                newWaitingForRematch.style.textAlign = 'center';
+                newWaitingForRematch.style.fontSize = '2rem';
+                newWaitingForRematch.style.color = 'var(--gold)';
+                newWaitingForRematch.style.padding = '2rem';
+                newWaitingForRematch.style.background = 'rgba(45, 41, 38, 0.95)';
+                newWaitingForRematch.style.border = '3px solid var(--gold)';
+                newWaitingForRematch.style.borderRadius = '15px';
+                newWaitingForRematch.style.maxWidth = '600px';
+                newWaitingForRematch.style.margin = '2rem auto';
+                newWaitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+                newWaitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+                newWaitingForRematch.textContent = '等待对手同意重开游戏...';
+                document.body.appendChild(newWaitingForRematch);
+            }
+        }
+
+       // 新增：检查玩家是否已经重新进入游戏
+const opponentReentered = isHost? room.player2?.reentered : room.player1?.reentered;
+if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
+    opponentJoinedMessage = document.createElement('div');
+    opponentJoinedMessage.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        z-index: 9999;
+        font-size: 2rem;
+        text-align: center;
+        width: 80%;
+        max-width: 300px;
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+    `;
+    opponentJoinedMessage.textContent = '🎮玩家已進場';
+    document.body.appendChild(opponentJoinedMessage);
+
+    // 一段时间后移除提示信息
+    setTimeout(() => {
+        opponentJoinedMessage.remove();
+        opponentJoinedMessage = null;
+    }, 3000);
+}
+    });
+}
 </script>
 
 <!-- 新增治疗提示 -->
