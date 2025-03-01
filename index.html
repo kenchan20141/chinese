@@ -268,19 +268,27 @@
             font-size: 16px;
         }
 
-      #roomControl {
+     #roomControl {
     position: relative;
     background: linear-gradient(45deg, rgba(45, 41, 38, 0.95), rgba(25, 22, 20, 0.95)),
                 url('https://t.pimg.jp/076/481/852/1/76481852.jpg');
     background-size: cover;
     background-blend-mode: multiply;
-    padding: 3rem 2rem;
+    padding: 2rem 1rem; /* 減少內邊距以留出更多空間 */
     border-radius: 20px;
     box-shadow: 0 0 50px rgba(212, 175, 55, 0.5);
     border: 3px solid #695434;
-    max-width: 800px;
-    margin: 2rem auto;
+    max-width: 90%; /* 使用百分比寬度，適應不同螢幕 */
+    width: 1000px; /* 桌面端最大寬度增加 */
+    margin: 1rem auto; /* 減少外邊距 */
     overflow: hidden;
+}
+
+@media (max-width: 480px) {
+    #roomControl {
+        max-width: 95%; /* 手機端進一步擴展寬度 */
+        padding: 1.5rem 0.5rem; /* 手機端減小內邊距 */
+    }
 }
 
         /* 確保 #roomControl 的子元素有一致的背景和佈局 */
@@ -288,28 +296,62 @@
 #roomControl .input-group,
 #roomControl .button-group,
 #roomControl .footer {
-    background: rgba(45, 41, 38, 0.95); /* 與 #roomControl 一致的半透明背景 */
+    background: rgba(45, 41, 38, 0.95);
     padding: 1rem;
     border-radius: 10px;
     margin: 1rem auto;
-    max-width: 600px; /* 限制寬度，保持整齊 */
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); /* 輕微陰影效果 */
+    width: 90%; /* 統一寬度與 #roomControl 一致 */
+    max-width: 900px; /* 增加最大寬度 */
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
 }
 
-/* 用戶信息樣式 */
-#userInfo {
-    text-align: center;
-    color: var(--gold);
-    font-size: 1.2rem;
-    padding: 0.8rem;
-    border: 2px solid var(--gold);
+@media (max-width: 480px) {
+    #roomControl .info-box,
+    #roomControl .input-group,
+    #roomControl .button-group,
+    #roomControl .footer {
+        width: 95%; /* 手機端更寬 */
+        padding: 0.8rem; /* 減小內邊距 */
+    }
 }
 
-/* 調整按鈕和輸入框的對齊 */
 .button-group {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* 自適應按鈕寬度 */
-    gap: 1rem;
+    display: flex; /* 改用 flex 確保水平排列 */
+    flex-wrap: wraps; /* 允許換行 */
+    justify-content: center; /* 按鈕居中 */
+    gap: 1rem; /* 統一間距 */
+    max-width: 90%; /* 與 #roomControl 一致 */
+    margin: 1.5rem auto; /* 減少外邊距 */
+}
+
+.action-btn {
+    position: relative;
+    padding: 1rem; /* 統一內邊距，使按鈕接近方形 */
+    min-width: 120px; /* 最小寬度，確保方形 */
+    max-width: 150px; /* 限制最大寬度 */
+    border: none;
+    border-radius: 12px;
+    font-size: 1.2rem; /* 減小字體，適應手機 */
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    overflow: hidden;
+}
+
+@media (max-width: 480px) {
+    .button-group {
+        flex-direction: row; /* 手機端保持水平排列 */
+        gap: 0.5rem; /* 減小間距 */
+    }
+    .action-btn {
+        padding: 0.8rem; /* 手機端縮小內邊距 */
+        min-width: 100px; /* 手機端最小寬度 */
+        max-width: 120px; /* 手機端限制寬度 */
+        font-size: 1rem; /* 手機端縮小字體 */
+    }
 }
 
 /* 確保標題不被背景影響 */
