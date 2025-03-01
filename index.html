@@ -1214,25 +1214,24 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
     `;
     
     // 更新数据库
-    const playerPath = isHost ? 'player1' : 'player2';
-    database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-        class: className,
-        health: 100,
-        attack: playerClass.attack,
-        defense: playerClass.defense,
-        dodge: playerClass.dodge
-    });
+const playerPath = isHost ? 'player1' : 'player2';
+database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+    class: className,
+    health: 100,
+    attack: playerClass.attack,
+    defense: playerClass.defense,
+    dodge: playerClass.dodge
+}).then(() => {
     database.ref(`rooms/${currentRoomId}`).once('value').then(snapshot => {
-    const room = snapshot.val();
-    if (room.player1.class && room.player2.class) {
-        // 雙方都選擇完職業，設置 gameStarted 為 true
-        database.ref(`rooms/${currentRoomId}`).update({ gameStarted: true });
-    } else {
-        // 只隱藏選擇界面，顯示等待區域
-        document.getElementById('classSelection').style.display = 'none';
-        document.getElementById('waitingArea').style.display = 'block';
-        document.getElementById('waitingArea').textContent = '等待對手選擇流派...';
-    }
+        const room = snapshot.val();
+        if (room.player1.class && room.player2.class) {
+            database.ref(`rooms/${currentRoomId}`).update({ gameStarted: true });
+        } else {
+            document.getElementById('classSelection').style.display = 'none';
+            document.getElementById('waitingArea').style.display = 'block';
+            document.getElementById('waitingArea').textContent = '等待對手選擇流派...';
+        }
+    });
 });
 
 // 顯示彈出圖片並在動畫結束後隱藏
@@ -1974,15 +1973,11 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-if (room.player1?.class && room.player2?.class) {
-    document.getElementById('waitingArea').style.display = 'block'; // 顯示等待區域
-    document.getElementById('waitingArea').textContent = '等待對手準備...'; // 更新等待提示
-    document.getElementById('classSelection').style.display = 'none'; // 隱藏職業選擇
-    if (room.gameStarted) { // 只有 gameStarted 為 true 時進入遊戲
-        document.getElementById('waitingArea').style.display = 'none';
-        document.getElementById('gameArea').style.display = 'block';
-        startGame(room);
-    }
+if (room.gameStarted && !gameOver) {
+    document.getElementById('waitingArea').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+    startGame(room);
 }
 
         
