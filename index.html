@@ -51,10 +51,10 @@
 /* 翻牌动画关键帧 */
 @keyframes flip {
     0% {
-        transform: perspective(1500px) rotateY(0deg);
+        transform: perspective(1500px) rotateY(180deg);
     }
     100% {
-        transform: perspective(1500px) rotateY(180deg);
+        transform: perspective(1500px) rotateY(0deg);
     }
 }
 
@@ -1109,19 +1109,25 @@ function showDrawCardInterface() {
         // 创建牌面正面和背面元素
         const cardFront = document.createElement('div');
         cardFront.classList.add('card-front');
+        cardFront.style.background = `url('${cardImages[card.id - 1]}')`;
+cardFront.style.backgroundSize = 'cover';
         const cardBack = document.createElement('div');
         cardBack.classList.add('card-back');
 
         cardElement.appendChild(cardFront);
         cardElement.appendChild(cardBack);
 
-        cardElement.onclick = () => {
-            cardElement.classList.add('flipped');
-            selectCard(card);
-            setTimeout(() => {
-                drawCardDiv.remove();
-            }, 500); // 等待动画结束后移除抽牌界面
-        };
+       let cardSelected = false; // 新增变量，标记是否已选择卡牌
+cardElement.onclick = () => {
+    if (!cardSelected) { // 判断是否已选择卡牌
+        cardSelected = true;
+        cardElement.classList.add('flipped');
+        selectCard(card);
+        setTimeout(() => {
+            drawCardDiv.remove();
+        }, 500); // 等待动画结束后移除抽牌界面
+    }
+};
 
         cardContainer.appendChild(cardElement);
     });
@@ -1584,9 +1590,14 @@ setTimeout(() => {
 }, 400);
 
 if (Math.random() < 0.5) {
-        shouldDrawCard = true;
-        showDrawCardInterface();
-    }
+    shouldDrawCard = true;
+    const playerPath = isHost? 'player1' : 'player2';
+    const opponentPath = isHost? 'player2' : 'player1';
+    // 将双方玩家的抽牌状态记录到数据库
+    database.ref(`rooms/${currentRoomId}/${playerPath}/drawCard`).set(true);
+    database.ref(`rooms/${currentRoomId}/${opponentPath}/drawCard`).set(true);
+    showDrawCardInterface();
+}
 
     
 // 添加顏色變化
@@ -1958,6 +1969,15 @@ function startGameSession() {
 }
 
 function listenToRoomChanges() {
+
+if (room.player1?.drawCard && room.player2?.drawCard) {
+    // 双方玩家都准备好抽牌，显示抽牌界面
+    showDrawCardInterface();
+    // 抽牌结束后，将抽牌状态设置为false
+    database.ref(`rooms/${currentRoomId}/player1/drawCard`).set(false);
+    database.ref(`rooms/${currentRoomId}/player2/drawCard`).set(false);
+}
+    
     const roomRef = database.ref('rooms/' + currentRoomId);
     roomRef.off('value'); // 移除舊的監聽器
 
