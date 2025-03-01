@@ -1,4 +1,6 @@
 
+
+
 <!DOCTYPE html>
 <html>
     
@@ -1377,7 +1379,12 @@ if(playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
 }
 
 let damage;
-
+if (isCorrect) {
+    // 攻击敌人：攻击力加成 × 敌人防御减免
+    damage = Math.floor(baseDamage * playerClass.attack / opponentDefense);
+} else {
+    // 自己受伤：基础伤害 ÷ 自身防御减免
+    damage = Math.floor(baseDamage / playerClass.defense);
     
     // 玄天阁减伤30%（新增代码）
     if(playerClass.type === 'mage') {
@@ -1399,16 +1406,11 @@ let damage;
     
     // 震動效果
     navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
-    if (isCorrect) {
-        // 答對時：音效 + 震動
-        soundEffects.attack.currentTime = 0;
-        soundEffects.attack.play();
-        if (navigator.vibrate) navigator.vibrate(200);
-    } else {
-        // 答錯時：僅震動
-        if (navigator.vibrate) navigator.vibrate(200);
-    }
+    if (navigator.vibrate) navigator.vibrate(200);
 
+    // 音效播放
+    soundEffects.attack.currentTime = 0;
+    soundEffects.attack.play();
 
     // 移除動畫
     setTimeout(() => {
