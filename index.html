@@ -1038,6 +1038,10 @@
     function selectCard(card) {
     selectedCard = card;
     applyCardEffect(card);
+    const playerPath = isHost ? 'player1Drew' : 'player2Drew';
+    database.ref(`rooms/${currentRoomId}`).update({
+        [playerPath]: true
+    });
 }
 
     function applyCardEffect(card) {
@@ -1116,12 +1120,20 @@ function showDrawCardInterface() {
         cardElement.appendChild(cardBack);
 
         cardElement.onclick = () => {
-            cardElement.classList.add('flipped');
-            selectCard(card);
-            setTimeout(() => {
-                drawCardDiv.remove();
-            }, 500); // 等待动画结束后移除抽牌界面
-        };
+    if (hasSelected) return; // 如果已選擇卡牌，則不執行
+    hasSelected = true; // 標記已選擇
+    cardElement.classList.add('flipped');
+    selectCard(card);
+    // 禁用其他卡牌的點擊
+    const allCards = document.querySelectorAll('.card');
+    allCards.forEach(card => {
+        card.style.pointerEvents = 'none';
+    });
+    setTimeout(() => {
+        drawCardDiv.remove();
+        hasSelected = false; // 重置選擇狀態
+    }, 500); // 等待動畫結束後移除
+};
 
         cardContainer.appendChild(cardElement);
     });
@@ -1142,7 +1154,7 @@ let cards = [
     { id: 5, effect: "减少10%攻击力，持续2回合", type: "negative" },
     { id: 6, effect: "下一次答题错误时，伤害翻倍", type: "negative" }
 ]; // 定义卡牌效果
-let selectedCard = null; // 存储玩家选择的卡牌
+let hasSelected = false; // 用於標記是否已選擇卡牌
 
     
 // Canvas 動畫代碼
@@ -1584,9 +1596,12 @@ setTimeout(() => {
 }, 400);
 
 if (Math.random() < 0.5) {
-        shouldDrawCard = true;
-        showDrawCardInterface();
-    }
+    database.ref(`rooms/${currentRoomId}`).update({
+        drawPhase: true,
+        player1Drew: false,
+        player2Drew: false
+    });
+}
 
     
 // 添加顏色變化
@@ -1841,12 +1856,15 @@ function createRoom() {
     document.getElementById('displayRoomId').textContent = currentRoomId;
 
     database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        gameStarted: false,
-        gameEnded: false,
-        winner: null
-    });
+    player1: { health: 100, class: null, currentQuestion: null },
+    player2: { health: 100, class: null, currentQuestion: null },
+    gameStarted: false,
+    gameEnded: false,
+    winner: null,
+    drawPhase: false,       // 抽牌階段狀態
+    player1Drew: false,     // 玩家1是否已抽牌
+    player2Drew: false      // 玩家2是否已抽牌
+});
     listenToRoomChanges();
 }
 
@@ -2381,6 +2399,18 @@ function listenToRoomChanges() {
             document.getElementById('waitingArea').style.display = 'none';
         }
 
+if (room.drawPhase && !hasSelected) {
+    showDrawCardInterface();
+}
+if (room.player1Drew && room.player2Drew) {
+    database.ref(`rooms/${currentRoomId}`).update({
+        drawPhase: false,
+        player1Drew: false,
+        player2Drew: false
+    });
+}
+
+        
         if (room.gameEnded) {
             handleGameEnd(room.winner);
             return;
@@ -2392,6 +2422,9 @@ function listenToRoomChanges() {
             startGame(room);
         }
 
+
+
+        
         updateHealthDisplay(room);
 
         // 检查双方是否都同意重开
