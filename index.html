@@ -1,4 +1,4 @@
-
+翻牌備份
 
 <!DOCTYPE html>
 <html>
@@ -58,23 +58,18 @@
     }
 }
 
-.card-container {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 20px;
+/* 翻牌后的样式 */
+.card.flipped {
+    transform: perspective(1500px) rotateY(180deg);
 }
 
+/* 牌面正面和背面的样式 */
 .card {
     position: relative;
     width: 100px;
     height: 150px;
     transform-style: preserve-3d;
     transition: transform 0.5s ease;
-    cursor: pointer;
-}
-
-.card.flipped {
-    transform: rotateY(180deg);
 }
 
 .card-front,
@@ -83,17 +78,17 @@
     width: 100%;
     height: 100%;
     backface-visibility: hidden;
-    background-size: cover;
-}
-
-.card-back {
-    background-image: url('https://i.ibb.co/tM82mXtr/3.png'); /* 替換為你的牌底圖片URL */
 }
 
 .card-front {
+    background-color: #333;
+}
+
+.card-back {
+    background: url('https://i.ibb.co/tM82mXtr/3.png'); /* 替换为你的牌底图片路径 */
+    background-size: cover;
     transform: rotateY(180deg);
 }
-說明：
 
 
         
@@ -1027,10 +1022,6 @@
     <div id="timer">🕒15</div>
 </div>
 
-<div id="drawCardInterface" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background-color:rgba(0, 0, 0, 0.8); padding:20px; z-index:9999; color:white; text-align:center;">
-    <div class="card-container" style="display:flex; justify-content:space-around; margin-top:20px;"></div>
-</div>
-    
     <div class="victory-overlay">
         <div class="victory-text"></div>
     </div>
@@ -1044,117 +1035,114 @@
     return shuffledCards.slice(0, count);
 }
 
-   function selectCard(card) {
-    if (hasSelected) return; // 如果已选择卡牌，则不执行
-    hasSelected = true; // 标记已选择
-    cardElement.classList.add('flipped');
-    selectCard(card);
-    // 禁用其他卡牌的点击
-    const allCards = document.querySelectorAll('.card');
-    allCards.forEach(card => {
-        card.style.pointerEvents = 'none';
-    });
-    setTimeout(() => {
-        drawCardDiv.remove();
-        hasSelected = false; // 重置选择状态
-    }, 500); // 等待动画结束后移除
-
+    function selectCard(card) {
     selectedCard = card;
     applyCardEffect(card);
-    const playerPath = isHost? 'player1Drew' : 'player2Drew';
-    database.ref(`rooms/${currentRoomId}`).update({
-        [playerPath]: true
-    });
 }
 
-   function applyCardEffect(card) {
+    function applyCardEffect(card) {
     const playerPath = isHost? 'player1' : 'player2';
     const opponentPath = isHost? 'player2' : 'player1';
 
-    database.ref(`rooms/${currentRoomId}`).once('value').then((snapshot) => {
-        const room = snapshot.val();
-        const currentHealth = room[playerPath].health;
-        const currentAttack = room[playerPath].attack;
-
-        switch (card.id) {
-            case 1: // 恢复20%气血
-                const healAmount = Math.floor(currentHealth * 0.2);
-                database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(currentHealth + healAmount);
-                break;
-            case 2: // 增加10%攻击力，持续2回合
-                // 这里需要添加逻辑来记录持续回合数，例如在数据库中添加一个字段
-                database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).set(currentAttack * 1.1);
-                break;
-            case 3: // 获得一次额外答题机会
-                // 这里需要添加逻辑来实现额外答题机会，例如重置答题状态
-                break;
-            case 4: // 减少10%气血
-                const damageAmount = Math.floor(currentHealth * 0.1);
-                database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(currentHealth - damageAmount);
-                break;
-            case 5: // 减少10%攻击力，持续2回合
-                // 这里需要添加逻辑来记录持续回合数，例如在数据库中添加一个字段
-                database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).set(currentAttack * 0.9);
-                break;
-            case 6: // 下一次答题错误时，伤害翻倍
-                // 这里需要添加逻辑来记录这个效果，例如在数据库中添加一个字段
-                break;
-            default:
-                break;
-        }
-    });
+    switch (card.id) {
+        case 1: // 恢复20%气血
+            const currentHealth = database.ref(`rooms/${currentRoomId}/${playerPath}/health`).val();
+            const healAmount = Math.floor(currentHealth * 0.2);
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(currentHealth + healAmount);
+            break;
+        case 2: // 增加10%攻击力，持续2回合
+            // 这里需要添加逻辑来记录持续回合数，例如在数据库中添加一个字段
+            database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).set(database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).val() * 1.1);
+            break;
+        case 3: // 获得一次额外答题机会
+            // 这里需要添加逻辑来实现额外答题机会，例如重置答题状态
+            break;
+        case 4: // 减少10%气血
+            const currentHealth2 = database.ref(`rooms/${currentRoomId}/${playerPath}/health`).val();
+            const damageAmount = Math.floor(currentHealth2 * 0.1);
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(currentHealth2 - damageAmount);
+            break;
+        case 5: // 减少10%攻击力，持续2回合
+            // 这里需要添加逻辑来记录持续回合数，例如在数据库中添加一个字段
+            database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).set(database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).val() * 0.9);
+            break;
+        case 6: // 下一次答题错误时，伤害翻倍
+            // 这里需要添加逻辑来记录这个效果，例如在数据库中添加一个字段
+            break;
+        default:
+            break;
+    }
 }
 
 function showDrawCardInterface() {
-    const drawCardDiv = document.getElementById('drawCardInterface');
-    drawCardDiv.style.display = 'block';
-    const cardContainer = drawCardDiv.querySelector('.card-container');
-    cardContainer.innerHTML = '';
+    const drawCardDiv = document.createElement('div');
+    drawCardDiv.id = 'drawCardInterface';
+    drawCardDiv.style.position = 'fixed';
+    drawCardDiv.style.top = '50%';
+    drawCardDiv.style.left = '50%';
+    drawCardDiv.style.transform = 'translate(-50%, -50%)';
+    drawCardDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    drawCardDiv.style.padding = '20px';
+    drawCardDiv.style.zIndex = 9999;
+    drawCardDiv.style.color = 'white';
+    drawCardDiv.style.textAlign = 'center';
 
+    const cardContainer = document.createElement('div');
+    cardContainer.style.display = 'flex';
+    cardContainer.style.justifyContent ='space-around';
+    cardContainer.style.marginTop = '20px';
+
+    // 随机选择3张卡牌
     const randomCards = getRandomCards(3);
 
     randomCards.forEach(card => {
         const cardElement = document.createElement('div');
         cardElement.classList.add('card');
         cardElement.dataset.cardId = card.id;
+        cardElement.style.width = '100px';
+        cardElement.style.height = '150px';
+        cardElement.style.backgroundColor = '#333';
+        cardElement.style.margin = '0 10px';
+        cardElement.style.cursor = 'pointer';
+        cardElement.style.position ='relative';
 
+        // 创建牌面正面和背面元素
+        const cardFront = document.createElement('div');
+        cardFront.classList.add('card-front');
         const cardBack = document.createElement('div');
         cardBack.classList.add('card-back');
 
-        const cardFront = document.createElement('div');
-        cardFront.classList.add('card-front');
-        cardFront.style.backgroundImage = `url('${card.image}')`;
-
-        cardElement.appendChild(cardBack);
         cardElement.appendChild(cardFront);
+        cardElement.appendChild(cardBack);
 
         cardElement.onclick = () => {
-            if (hasSelected) return;
-            hasSelected = true;
             cardElement.classList.add('flipped');
             selectCard(card);
             setTimeout(() => {
-                drawCardDiv.style.display = 'none';
-                hasSelected = false;
-                cardContainer.innerHTML = ''; // 清空卡牌
-            }, 1000); // 等待翻牌動畫完成
+                drawCardDiv.remove();
+            }, 500); // 等待动画结束后移除抽牌界面
         };
 
         cardContainer.appendChild(cardElement);
     });
+
+    drawCardDiv.appendChild(cardContainer);
+    document.body.appendChild(drawCardDiv);
 }
     
 
 let shouldDrawCard = false; // 标记是否进入抽牌环节
 let cards = [
-    { id: 1, effect: "恢复20%气血", type: "positive", image: 'https://example.com/card1.png' },
-    { id: 2, effect: "增加10%攻击力，持续2回合", type: "positive", image: 'https://example.com/card2.png' },
-    { id: 3, effect: "获得一次额外答题机会", type: "positive", image: 'https://example.com/card3.png' },
-    { id: 4, effect: "减少10%气血", type: "negative", image: 'https://example.com/card4.png' },
-    { id: 5, effect: "减少10%攻击力，持续2回合", type: "negative", image: 'https://example.com/card5.png' },
-    { id: 6, effect: "下一次答题错误时，伤害翻倍", type: "negative", image: 'https://example.com/card6.png' }
+    // 正面效果卡牌
+    { id: 1, effect: "恢复20%气血", type: "positive" },
+    { id: 2, effect: "增加10%攻击力，持续2回合", type: "positive" },
+    { id: 3, effect: "获得一次额外答题机会", type: "positive" },
+    // 负面效果卡牌
+    { id: 4, effect: "减少10%气血", type: "negative" },
+    { id: 5, effect: "减少10%攻击力，持续2回合", type: "negative" },
+    { id: 6, effect: "下一次答题错误时，伤害翻倍", type: "negative" }
 ]; // 定义卡牌效果
-let hasSelected = false; // 用於標記是否已選擇卡牌
+let selectedCard = null; // 存储玩家选择的卡牌
 
     
 // Canvas 動畫代碼
@@ -1497,31 +1485,6 @@ if(playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
     setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
 }
 
-
-    // 檢查房間數據
-database.ref(`rooms/${currentRoomId}`).once('value', (snapshot) => {
-    const room = snapshot.val();
-    if (!room) return;
-
-    const playerPath = isHost ? 'player1' : 'player2';
-    const updates = {};
-
-    // 處理額外答題機會（卡牌3）
-    if (room[playerPath].extraChance && !isCorrect) {
-        updates[`${playerPath}/extraChance`] = false;
-        answered = false; // 允許再次答題
-        return;
-    }
-
-    // 處理傷害翻倍（卡牌6）
-    if (!isCorrect && room[playerPath].doubleDamage) {
-        baseDamage *= 2;
-        updates[`${playerPath}/doubleDamage`] = false;
-    }
-
-    // 更新數據庫
-    database.ref(`rooms/${currentRoomId}`).update(updates);
-});
 let damage;
 if (isCorrect) {
     // 攻击敌人：攻击力加成 × 敌人防御减免
@@ -1593,18 +1556,6 @@ if (isCorrect) {
         }
     });
 
-    database.ref(`rooms/${currentRoomId}/${playerPath}`).once('value', (snapshot) => {
-    const playerData = snapshot.val();
-    if (playerData.effectDuration > 0) {
-        const newDuration = playerData.effectDuration - 1;
-        const updates = { effectDuration: newDuration };
-        if (newDuration === 0) {
-            updates.attack = 1.0; // 恢復原始攻擊力
-        }
-        database.ref(`rooms/${currentRoomId}/${playerPath}`).update(updates);
-    }
-});
-
  // 修正後的代碼 ▼
     setTimeout(() => { // 延遲確保DOM已更新
         const buttons = document.querySelectorAll('#options button');
@@ -1633,12 +1584,9 @@ setTimeout(() => {
 }, 400);
 
 if (Math.random() < 0.5) {
-    database.ref(`rooms/${currentRoomId}`).update({
-        drawPhase: true,
-        player1Drew: false,
-        player2Drew: false
-    });
-}
+        shouldDrawCard = true;
+        showDrawCardInterface();
+    }
 
     
 // 添加顏色變化
@@ -1893,15 +1841,12 @@ function createRoom() {
     document.getElementById('displayRoomId').textContent = currentRoomId;
 
     database.ref('rooms/' + currentRoomId).set({
-    player1: { health: 100, class: null, currentQuestion: null },
-    player2: { health: 100, class: null, currentQuestion: null },
-    gameStarted: false,
-    gameEnded: false,
-    winner: null,
-    drawPhase: false,       // 抽牌階段狀態
-    player1Drew: false,     // 玩家1是否已抽牌
-    player2Drew: false      // 玩家2是否已抽牌
-});
+        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        gameStarted: false,
+        gameEnded: false,
+        winner: null
+    });
     listenToRoomChanges();
 }
 
@@ -2014,7 +1959,7 @@ function startGameSession() {
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.off('value');
+    roomRef.off('value'); // 移除舊的監聽器
 
     roomRef.on('value', (snapshot) => {
         const room = snapshot.val();
@@ -2028,25 +1973,6 @@ function listenToRoomChanges() {
 
         if (room.player1?.class && room.player2?.class) {
             document.getElementById('waitingArea').style.display = 'none';
-        }
-
-        if (room.drawPhase &&!hasSelected) {
-            showDrawCardInterface();
-        }
-        if (room.player1Drew && room.player2Drew) {
-            database.ref(`rooms/${currentRoomId}`).update({
-                drawPhase: false,
-                player1Drew: false,
-                player2Drew: false
-            });
-        }
-
-        if (room.gameEnded) {
-            handleGameEnd(room.winner);
-            return;
-        }
-
-        if (room.player1?.class && room.player2?.class) {
             document.getElementById('classSelection').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
             startGame(room);
@@ -2054,75 +1980,8 @@ function listenToRoomChanges() {
 
         updateHealthDisplay(room);
 
-        // 检查双方是否都同意重开
-        const bothAgreed = room.hostRematch && room.clientRematch;
-        if (bothAgreed &&!room.gameStarted) {
-            // 双方都同意重开，移除等待界面
-            const waitingForRematch = document.getElementById('waitingForRematch');
-            if (waitingForRematch) {
-                waitingForRematch.remove();
-            }
-
-            // 开始新游戏
-            const updates = {
-                gameStarted: true
-            };
-            database.ref('rooms/' + currentRoomId).update(updates, () => {
-                startNewGameSession();
-            });
-
-            // 重置等待对方同意的标志位
-            waitingForOpponent = false;
-        } else if (!bothAgreed && waitingForOpponent) {
-            // 如果只有一方同意且正在等待对方同意，保持等待界面显示
-            const waitingForRematch = document.getElementById('waitingForRematch');
-            if (!waitingForRematch) {
-                const newWaitingForRematch = document.createElement('div');
-                newWaitingForRematch.id = 'waitingForRematch';
-                newWaitingForRematch.style.textAlign = 'center';
-                newWaitingForRematch.style.fontSize = '2rem';
-                newWaitingForRematch.style.color = 'var(--gold)';
-                newWaitingForRematch.style.padding = '2rem';
-                newWaitingForRematch.style.background = 'rgba(45, 41, 38, 0.95)';
-                newWaitingForRematch.style.border = '3px solid var(--gold)';
-                newWaitingForRematch.style.borderRadius = '15px';
-                newWaitingForRematch.style.maxWidth = '600px';
-                newWaitingForRematch.style.margin = '2rem auto';
-                newWaitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-                newWaitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-                newWaitingForRematch.textContent = '等待对手同意重开游戏...';
-                document.body.appendChild(newWaitingForRematch);
-            }
-        }
-
-        // 新增：检查玩家是否已经重新进入游戏
-        const opponentReentered = isHost? room.player2?.reentered : room.player1?.reentered;
-        if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
-            opponentJoinedMessage = document.createElement('div');
-            opponentJoinedMessage.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.9);
-                color: #fff;
-                padding: 20px;
-                border-radius: 10px;
-                z-index: 9999;
-                font-size: 2rem;
-                text-align: center;
-                width: 80%;
-                max-width: 300px;
-                box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
-            `;
-            opponentJoinedMessage.textContent = '🎮玩家已进場';
-            document.body.appendChild(opponentJoinedMessage);
-
-            // 一段时间后移除提示信息
-            setTimeout(() => {
-                opponentJoinedMessage.remove();
-                opponentJoinedMessage = null;
-            }, 3000);
+        if (room.gameEnded) {
+            handleGameEnd(room.winner);
         }
     });
 }
@@ -2522,18 +2381,6 @@ function listenToRoomChanges() {
             document.getElementById('waitingArea').style.display = 'none';
         }
 
-if (room.drawPhase && !hasSelected) {
-    showDrawCardInterface();
-}
-if (room.player1Drew && room.player2Drew) {
-    database.ref(`rooms/${currentRoomId}`).update({
-        drawPhase: false,
-        player1Drew: false,
-        player2Drew: false
-    });
-}
-
-        
         if (room.gameEnded) {
             handleGameEnd(room.winner);
             return;
@@ -2545,9 +2392,6 @@ if (room.player1Drew && room.player2Drew) {
             startGame(room);
         }
 
-
-
-        
         updateHealthDisplay(room);
 
         // 检查双方是否都同意重开
