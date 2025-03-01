@@ -985,6 +985,117 @@
     
 <script>
 
+
+    function getRandomCards(count) {
+    const shuffledCards = [...cards].sort(() => 0.5 - Math.random());
+    return shuffledCards.slice(0, count);
+}
+
+    function selectCard(card) {
+    selectedCard = card;
+    applyCardEffect(card);
+}
+
+    function applyCardEffect(card) {
+    const playerPath = isHost? 'player1' : 'player2';
+    const opponentPath = isHost? 'player2' : 'player1';
+
+    switch (card.id) {
+        case 1: // 恢复20%气血
+            const currentHealth = database.ref(`rooms/${currentRoomId}/${playerPath}/health`).val();
+            const healAmount = Math.floor(currentHealth * 0.2);
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(currentHealth + healAmount);
+            break;
+        case 2: // 增加10%攻击力，持续2回合
+            // 这里需要添加逻辑来记录持续回合数，例如在数据库中添加一个字段
+            database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).set(database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).val() * 1.1);
+            break;
+        case 3: // 获得一次额外答题机会
+            // 这里需要添加逻辑来实现额外答题机会，例如重置答题状态
+            break;
+        case 4: // 减少10%气血
+            const currentHealth2 = database.ref(`rooms/${currentRoomId}/${playerPath}/health`).val();
+            const damageAmount = Math.floor(currentHealth2 * 0.1);
+            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(currentHealth2 - damageAmount);
+            break;
+        case 5: // 减少10%攻击力，持续2回合
+            // 这里需要添加逻辑来记录持续回合数，例如在数据库中添加一个字段
+            database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).set(database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).val() * 0.9);
+            break;
+        case 6: // 下一次答题错误时，伤害翻倍
+            // 这里需要添加逻辑来记录这个效果，例如在数据库中添加一个字段
+            break;
+        default:
+            break;
+    }
+}
+
+function showDrawCardInterface() {
+    const drawCardDiv = document.createElement('div');
+    drawCardDiv.id = 'drawCardInterface';
+    drawCardDiv.style.position = 'fixed';
+    drawCardDiv.style.top = '50%';
+    drawCardDiv.style.left = '50%';
+    drawCardDiv.style.transform = 'translate(-50%, -50%)';
+    drawCardDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    drawCardDiv.style.padding = '20px';
+    drawCardDiv.style.zIndex = 9999;
+    drawCardDiv.style.color = 'white';
+    drawCardDiv.style.textAlign = 'center';
+
+    const cardContainer = document.createElement('div');
+    cardContainer.style.display = 'flex';
+    cardContainer.style.justifyContent ='space-around';
+    cardContainer.style.marginTop = '20px';
+
+    // 随机选择3张卡牌
+    const randomCards = getRandomCards(3);
+
+    randomCards.forEach(card => {
+        const cardElement = document.createElement('div');
+        cardElement.classList.add('card');
+        cardElement.dataset.cardId = card.id;
+        cardElement.style.width = '100px';
+        cardElement.style.height = '150px';
+        cardElement.style.backgroundColor = '#333';
+        cardElement.style.margin = '0 10px';
+        cardElement.style.cursor = 'pointer';
+        cardElement.style.position ='relative';
+
+        // 牌底图片，你需要准备一张牌底图片，并设置其路径
+        const cardBackImage = new Image();
+        cardBackImage.src = 'path/to/card_back.png'; // 替换为你的牌底图片路径
+        cardBackImage.style.width = '100%';
+        cardBackImage.style.height = '100%';
+        cardElement.appendChild(cardBackImage);
+
+        cardElement.onclick = () => {
+            selectCard(card);
+            drawCardDiv.remove();
+        };
+
+        cardContainer.appendChild(cardElement);
+    });
+
+    drawCardDiv.appendChild(cardContainer);
+    document.body.appendChild(drawCardDiv);
+}
+    
+
+let shouldDrawCard = false; // 标记是否进入抽牌环节
+let cards = [
+    // 正面效果卡牌
+    { id: 1, effect: "恢复20%气血", type: "positive" },
+    { id: 2, effect: "增加10%攻击力，持续2回合", type: "positive" },
+    { id: 3, effect: "获得一次额外答题机会", type: "positive" },
+    // 负面效果卡牌
+    { id: 4, effect: "减少10%气血", type: "negative" },
+    { id: 5, effect: "减少10%攻击力，持续2回合", type: "negative" },
+    { id: 6, effect: "下一次答题错误时，伤害翻倍", type: "negative" }
+]; // 定义卡牌效果
+let selectedCard = null; // 存储玩家选择的卡牌
+
+    
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1423,6 +1534,12 @@ setTimeout(() => {
     flash.remove();
 }, 400);
 
+if (Math.random() < 0.5) {
+        shouldDrawCard = true;
+        showDrawCardInterface();
+    }
+
+    
 // 添加顏色變化
 if(!isCorrect) {
     flash.style.background = `linear-gradient(
@@ -1472,7 +1589,7 @@ setTimeout(() => hitText.remove(), 300);
     
 }
     
-    
+
 // 修改 updateHealthDisplay 函數
 function updateHealthDisplay(room) {
     const myHealth = isHost ? room.player1.health : (room.player2?.health || 100);
