@@ -964,8 +964,6 @@
         </div>
     </div>
 
-        <div id="eventMessage" style="position: fixed; top: 10%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.7); color: white; padding: 10px 20px; border-radius: 10px; font-size: 1.5rem; z-index: 10000; display: none;"></div>
-
     <!-- 問題與選項區 -->
     <div id="question"></div>
     <div id="options"></div>
@@ -1655,25 +1653,6 @@ const soundEffects = {
     defeat: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
 };
 
-    // 隨機事件列表
-const randomEvents = [
-    { name: "恢復20%氣血", effect: "heal", value: 0.2, color: "rgba(0, 255, 0, 0.5)" },
-    { name: "減少20%氣血", effect: "damage", value: 0.2, color: "rgba(255, 0, 0, 0.5)" },
-    { name: "增加攻擊力", effect: "attackUp", value: 0.2, duration: 3, color: "rgba(255, 255, 0, 0.5)" },
-    { name: "減少攻擊力", effect: "attackDown", value: 0.2, duration: 3, color: "rgba(128, 128, 128, 0.5)" },
-    { name: "增加防禦力", effect: "defenseUp", value: 0.2, duration: 3, color: "rgba(0, 0, 255, 0.5)" },
-    { name: "減少防禦力", effect: "defenseDown", value: 0.2, duration: 3, color: "rgba(0, 0, 128, 0.5)" },
-    { name: "閃避提升", effect: "dodgeUp", value: 0.2, duration: 3, color: "rgba(0, 255, 255, 0.5)" },
-    { name: "閃避降低", effect: "dodgeDown", value: 0.2, duration: 3, color: "rgba(0, 128, 128, 0.5)" },
-    { name: "回合結束", effect: "endTurn", color: "rgba(0, 0, 0, 0.5)" },
-    { name: "額外行動", effect: "extraAction", color: "rgba(255, 215, 0, 0.5)" },
-    { name: "時間延長", effect: "timeExtend", value: 5, color: "rgba(0, 255, 128, 0.5)" },
-    { name: "時間縮短", effect: "timeReduce", value: 5, color: "rgba(255, 128, 0, 0.5)" },
-    { name: "交換問題", effect: "swapQuestion", color: "rgba(255, 0, 255, 0.5)" },
-    { name: "暫停對手", effect: "pauseOpponent", duration: 1, color: "rgba(128, 0, 255, 0.5)" },
-    { name: "自爆", effect: "selfDestruct", value: 0.5, color: "rgba(255, 69, 0, 0.5)" }
-];
-
 // 修改重點 2：初始按鈕文字設定
 document.querySelector('.music-control').textContent = '🔇';  // 加入這行初始化設定
 
@@ -1685,126 +1664,6 @@ function toggleMusic() {
     
     // 反轉按鈕顯示文字
     document.querySelector('.music-control').textContent = isMusicPlaying ? '🎵' : '🔇';
-}
-
-    // 获取 CANVAS 元素
-const eventCanvas = document.getElementById('animationCanvas');
-const eventCtx = eventCanvas.getContext('2d');
-
-// 簡單的動畫函數
-function playEventAnimation(event) {
-    eventCanvas.style.display = 'block'; // 顯示 CANVAS
-    eventCtx.clearRect(0, 0, eventCanvas.width, eventCanvas.height);
-
-    let progress = 0;
-    const duration = 1000; // 動畫持續 1 秒
-
-    const animate = () => {
-        progress += 16; // 每 16ms 更新一次
-        if (progress > duration) {
-            eventCanvas.style.display = 'none'; // 動畫結束後隱藏
-            return;
-        }
-
-        // 繪製半透明的顏色閃爍效果
-        eventCtx.fillStyle = event.color;
-        eventCtx.globalAlpha = 0.5 * (1 - progress / duration); // 逐漸透明
-        eventCtx.fillRect(0, 0, eventCanvas.width, eventCanvas.height);
-        requestAnimationFrame(animate);
-    };
-    requestAnimationFrame(animate);
-}
-
-    // 應用隨機事件效果
-function applyEvent(event) {
-    const eventMessage = document.getElementById('eventMessage');
-eventMessage.textContent = `隨機事件：${event.name}`;
-eventMessage.style.display = 'block';
-setTimeout(() => {
-    eventMessage.style.display = 'none';
-    }, 2000); // 2秒後隱藏
-    playEventAnimation(event); // 播放動畫
-
-    const playerPath = isHost ? 'player1' : 'player2';
-    const opponentPath = isHost ? 'player2' : 'player1';
-
-    switch (event.effect) {
-        case 'heal':
-            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-                firebase.database.ServerValue.increment(Math.floor(playerClass.health * event.value))
-            );
-            break;
-        case 'damage':
-            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-                firebase.database.ServerValue.increment(-Math.floor(playerClass.health * event.value))
-            );
-            break;
-        case 'attackUp':
-            database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-                attack: playerClass.attack + event.value,
-                attackBuffTurns: event.duration
-            });
-            break;
-        case 'attackDown':
-            database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-                attack: playerClass.attack - event.value,
-                attackBuffTurns: event.duration
-            });
-            break;
-        case 'defenseUp':
-            database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-                defense: playerClass.defense + event.value,
-                defenseBuffTurns: event.duration
-            });
-            break;
-        case 'defenseDown':
-            database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-                defense: playerClass.defense - event.value,
-                defenseBuffTurns: event.duration
-            });
-            break;
-        case 'dodgeUp':
-            database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-                dodge: playerClass.dodge + event.value,
-                dodgeBuffTurns: event.duration
-            });
-            break;
-        case 'dodgeDown':
-            database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-                dodge: playerClass.dodge - event.value,
-                dodgeBuffTurns: event.duration
-            });
-            break;
-        case 'endTurn':
-            clearInterval(timer);
-            loadNewQuestion();
-            break;
-        case 'extraAction':
-            answered = false; // 允許再次回答
-            break;
-        case 'timeExtend':
-            timeLeft += event.value;
-            document.getElementById('timer').textContent = `🕒${timeLeft}秒`;
-            break;
-        case 'timeReduce':
-            timeLeft -= event.value;
-            if (timeLeft <= 0) checkAnswer(false);
-            document.getElementById('timer').textContent = `🕒${timeLeft}秒`;
-            break;
-        case 'swapQuestion':
-            loadNewQuestion();
-            break;
-        case 'pauseOpponent':
-            database.ref(`rooms/${currentRoomId}/${opponentPath}`).update({
-                pausedTurns: event.duration
-            });
-            break;
-        case 'selfDestruct':
-            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-                firebase.database.ServerValue.increment(-Math.floor(playerClass.health * event.value))
-            );
-            break;
-    }
 }
 
 function createRoom() {
@@ -2044,46 +1903,11 @@ function shuffleArray(array) {
 
 function loadNewQuestion() {
     hasHealedThisTurn = false; // 重置恢復狀態
-    // 檢查並減少 Buff 持續時間
-const playerPath = isHost ? 'player1' : 'player2';
-database.ref(`rooms/${currentRoomId}/${playerPath}`).once('value', snapshot => {
-    const playerData = snapshot.val();
-    if (playerData.attackBuffTurns > 0) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-            attackBuffTurns: playerData.attackBuffTurns - 1
-        });
-        if (playerData.attackBuffTurns - 1 === 0) {
-            database.ref(`rooms/${currentRoomId}/${playerPath}/attack`).set(playerClass.attack);
-        }
-    }
-    if (playerData.defenseBuffTurns > 0) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-            defenseBuffTurns: playerData.defenseBuffTurns - 1
-        });
-        if (playerData.defenseBuffTurns - 1 === 0) {
-            database.ref(`rooms/${currentRoomId}/${playerPath}/defense`).set(playerClass.defense);
-        }
-    }
-    if (playerData.dodgeBuffTurns > 0) {
-        database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-            dodgeBuffTurns: playerData.dodgeBuffTurns - 1
-        });
-        if (playerData.dodgeBuffTurns - 1 === 0) {
-            database.ref(`rooms/${currentRoomId}/${playerPath}/dodge`).set(playerClass.dodge);
-        }
-    }
-});
+    // 假設問題總數為 100，可以從 Firebase 或本地配置中動態獲取
+    const totalQuestions = 622; 
+    const randomId = Math.floor(Math.random() * totalQuestions); // 隨機生成問題 ID
 
-    // 50% 機率觸發隨機事件
-    if (Math.random() < 0.5) {
-        const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
-        applyEvent(event);
-    }
-
-    // 原有代碼：加載新問題
-    const totalQuestions = 622;
-    const randomId = Math.floor(Math.random() * totalQuestions);
-
+    // 只下載特定問題的數據
     const questionRef = database.ref(`questions/${randomId}`);
     questionRef.once('value').then(snapshot => {
         const originalQuestion = snapshot.val();
@@ -2092,6 +1916,7 @@ database.ref(`rooms/${currentRoomId}/${playerPath}`).once('value', snapshot => {
             return;
         }
 
+        // 在客戶端處理問題數據（打亂選項等）
         const optionsCopy = [...originalQuestion.options];
         const correctAnswer = optionsCopy[originalQuestion.correctIndex];
         const shuffledOptions = shuffleArray(optionsCopy);
@@ -2101,15 +1926,17 @@ database.ref(`rooms/${currentRoomId}/${playerPath}`).once('value', snapshot => {
             question: originalQuestion.question,
             options: shuffledOptions,
             correctIndex: newCorrectIndex,
-            id: Date.now()
+            id: Date.now() // 生成唯一 ID 用於客戶端識別
         };
 
+        // 更新當前問題 ID 和房間數據
         currentQuestionId = processedQuestion.id;
         const playerPath = isHost ? 'player1' : 'player2';
-        database.ref('rooms/' + currentRoomId + '/' + playerPath).update({
-            currentQuestion: processedQuestion
+        database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ 
+            currentQuestion: processedQuestion 
         });
 
+        // 重置答題狀態並顯示問題
         isAnswered = false;
         displayQuestion(processedQuestion);
     }).catch(error => {
