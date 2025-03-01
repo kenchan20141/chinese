@@ -807,6 +807,15 @@
     <button class="music-control" onclick="toggleMusic()">🎵</button>
     
  <div id="roomControl">
+
+<div id="roomControl">
+    <!-- 其他現有內容 -->
+    <div id="userInfo" style="text-align: center; color: var(--gold); margin-bottom: 1rem; display: none;">
+        <span id="userName"></span> | 積分: <span id="userScore">0</span>
+    </div>
+    <!-- 其他現有內容 -->
+</div>
+     
         <!-- 新增裝飾性邊框 -->
         <div class="main-border"></div>
         
@@ -1609,16 +1618,29 @@ document.getElementById('logoutBtn').onclick = function() {
     
     const auth = firebase.auth();
     auth.onAuthStateChanged((user) => {
+    const userInfo = document.getElementById('userInfo');
+    const userName = document.getElementById('userName');
+    const userScore = document.getElementById('userScore');
+    
     if (user) {
         // 用戶已登入
         document.getElementById('loginBtn').style.display = 'none';
         document.getElementById('registerBtn').style.display = 'none';
         document.getElementById('logoutContainer').style.display = 'block';
+        userInfo.style.display = 'block';
+        userName.textContent = user.displayName || '未命名玩家';
+
+        // 從 leaderboard 獲取積分
+        database.ref('leaderboard/' + user.uid).once('value', (snapshot) => {
+            const data = snapshot.val();
+            userScore.textContent = data ? data.score : 0;
+        });
     } else {
         // 用戶未登入
         document.getElementById('loginBtn').style.display = 'inline-block';
         document.getElementById('registerBtn').style.display = 'inline-block';
         document.getElementById('logoutContainer').style.display = 'none';
+        userInfo.style.display = 'none';
     }
 });
 const database = firebase.database();
@@ -1887,6 +1909,13 @@ function startNewGameSession() {
 }
     
 function updateHealthDisplay(room) {
+    const user = auth.currentUser;
+    if (user) {
+        document.getElementById('myHealthContainer').innerHTML = `
+            <div>${user.displayName} 氣血: <span id="myHealth">${Math.max(isHost ? room.player1.health : (room.player2?.health || 100), 0)}</span></div>
+            <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
+        `;
+    }
      // 在原有代码前添加职业头像显示
     const myClass = isHost ? room.player1.class : (room.player2?.class || '');
     const opponentClass = isHost ? (room.player2?.class || '') : room.player1.class;
