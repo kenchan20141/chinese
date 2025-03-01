@@ -1527,20 +1527,35 @@ setTimeout(() => hitText.remove(), 300);
     
 // 修改 updateHealthDisplay 函數
 function updateHealthDisplay(room) {
+    const myClass = isHost ? room.player1.class : (room.player2?.class || '');
+    const opponentClass = isHost ? (room.player2?.class || '') : room.player1.class;
     const myHealth = isHost ? room.player1.health : (room.player2?.health || 100);
-    const myName = isHost ? (room.player1?.name || '玩家1') : (room.player2?.name || '玩家2');
-    const opponentName = isHost ? (room.player2?.name || '玩家2') : (room.player1?.name || '玩家1');
+    const opponentHealth = isHost ? (room.player2?.health || 100) : room.player1.health;
+    const classIcons = {
+        warrior: 'https://i.ibb.co/p6g4PFH4/1.png',
+        tank: 'https://i.ibb.co/4wksKZsF/image.png',
+        assassin: 'https://i.ibb.co/W4V5bX8X/image.png',
+        mage: 'https://i.ibb.co/tM82mXtr/3.png'
+    };
 
     document.getElementById('myHealthContainer').innerHTML = `
-        <div>${myName} 氣血: <span id="myHealth">${Math.max(myHealth, 0)}</span></div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+            <img src="${classIcons[myClass] || ''}" style="width:50px; height:50px; border-radius:50%;">
+            <div>🏹 你的氣血: <span id="myHealth">${Math.max(myHealth, 0)}</span></div>
+        </div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
     `;
+    
     document.getElementById('enemyHealthContainer').innerHTML = `
-        <div>${opponentName} 氣血: <span id="opponentHealth">${Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0)}</span></div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+            <img src="${classIcons[opponentClass] || ''}" style="width:50px; height:50px; border-radius:50%;">
+            <div>🗡 敵方氣血: <span id="opponentHealth">${Math.max(opponentHealth, 0)}</span></div>
+        </div>
         <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
     `;
+    
     document.getElementById('myHealthBar').style.width = Math.max(myHealth, 0) + '%';
-    document.getElementById('opponentHealthBar').style.width = Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0) + '%';
+    document.getElementById('opponentHealthBar').style.width = Math.max(opponentHealth, 0) + '%';
 }
     
 
