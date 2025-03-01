@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html>
     
@@ -998,94 +997,33 @@ window.onload = function() {
     img.src = 'https://i.ibb.co/tM82mXtr/3.png';
     img.crossOrigin = 'Anonymous'; // 解決跨域問題
 
-    img.onload = function() {
-        // 定義粒子類
-        class Particle {
-            constructor(x, y, color) {
-                this.x = x;
-                this.y = y;
-                this.startX = x; // 記錄初始X位置
-                this.startY = y; // 記錄初始Y位置
-                this.color = color;
-                this.vx = (Math.random() - 0.5) * 5; // 粒子分散速度
-                this.vy = (Math.random() - 0.5) * 5;
-                this.alpha = 1; // 初始透明度
-            }
-            update(progress) {
-                // 根據進度平滑更新位置和透明度
-                this.x = this.startX + this.vx * progress * 50;
-                this.y = this.startY + this.vy * progress * 50;
-                this.alpha = 1 - progress; // 透明度隨進度減少
-            }
-            draw() {
-                ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
-                ctx.fill();
-            }
+   img.onload = function() {
+    // 定義粒子類，增加初始位置記錄
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x;
+            this.y = y;
+            this.startX = x; // 記錄初始X位置
+            this.startY = y; // 記錄初始Y位置
+            this.color = color;
+            this.vx = (Math.random() - 0.5) * 5; // 粒子分散速度
+            this.vy = (Math.random() - 0.5) * 5;
+            this.alpha = 1; // 初始透明度
         }
-
-        // 創建粒子，從圖片像素獲取位置和顏色
-        const particles = [];
-        const particleCount = 1000; // 粒子數量
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
-        // 調整圖片大小以適應畫布，並居中顯示
-        const imgWidth = canvas.width * 0.8; // 圖片寬度為畫布的80%
-        const imgHeight = img.height * (imgWidth / img.width); // 按比例縮放高度
-        const imgX = (canvas.width - imgWidth) / 2; // 水平居中
-        const imgY = (canvas.height - imgHeight) / 2; // 垂直居中
-
-        // 初始繪製完整圖片到 Canvas
-        ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
-
-        // 從圖片區域內隨機生成粒子
-        for (let i = 0; i < particleCount; i++) {
-            const x = imgX + Math.random() * imgWidth;
-            const y = imgY + Math.random() * imgHeight;
-            const pixelX = Math.floor(x);
-            const pixelY = Math.floor(y);
-            const pixelIndex = (pixelY * canvas.width + pixelX) * 4;
-            const color = `${imageData[pixelIndex]}, ${imageData[pixelIndex + 1]}, ${imageData[pixelIndex + 2]}`;
-            particles.push(new Particle(x, y, color));
+        update(progress) {
+            // 根據進度更新位置
+            this.x = this.startX + this.vx * progress * 50;
+            this.y = this.startY + this.vy * progress * 50;
+            this.alpha = 1 - progress; // 透明度隨進度減少
         }
-
-        // 動畫開始時間
-        let startTime = Date.now();
-        const duration = 2; // 動畫持續2秒
-
-        function animate() {
-            const elapsedTime = (Date.now() - startTime) / 1000; // 已過秒數
-            const progress = Math.min(elapsedTime / duration, 1); // 進度從0到1
-
-            // 清除畫布
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 繪製圖片並隨時間漸淡
-            ctx.globalAlpha = 1 - progress; // 圖片透明度隨進度減少
-            ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
-            ctx.globalAlpha = 1; // 恢復全局透明度
-
-            // 更新並繪製粒子
-            particles.forEach(particle => {
-                particle.update(progress);
-                particle.draw();
-            });
-
-            // 如果動畫未結束，繼續執行
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                // 動畫結束，隱藏 Canvas，顯示主頁
-                canvas.style.display = 'none';
-                document.getElementById('roomControl').style.display = 'block';
-            }
+        draw() {
+            ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+            ctx.fill();
         }
+    }
 
-        // 立即開始動畫
-        requestAnimationFrame(animate);
-    };
-};
     // 先繪製完整的圖片到 Canvas
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
