@@ -894,6 +894,14 @@
         </button>
     </div>
 
+    <div id="singlePlayerMode" style="display: none;">
+    <h2>單機模式 - 選擇難度</h2>
+    <button onclick="startSinglePlayerGame('easy')">容易</button>
+    <button onclick="startSinglePlayerGame('normal')">普通</button>
+    <button onclick="startSinglePlayerGame('hard')">困難</button>
+    <button onclick="startSinglePlayerGame('hell')">地獄</button>
+</div>
+
    
      
     <div class="input-group">
@@ -1037,6 +1045,27 @@
 
     
 <script>
+
+    const difficultySettings = {
+    easy: {
+        answerRate: 0.6,
+        answerTime: 7 // 秒
+    },
+    normal: {
+        answerRate: 0.8,
+        answerTime: 5
+    },
+    hard: {
+        answerRate: 0.9,
+        answerTime: 3
+    },
+    hell: {
+        answerRate: 0.95,
+        answerTime: 2
+    }
+};
+
+
 
 // Canvas 動畫代碼
 window.onload = function() {
@@ -1201,6 +1230,28 @@ joinRoomBtn.onclick = function() {
     }
 };
 
+    function startSinglePlayerGame(difficulty) {
+    currentRoomId = 'singlePlayerRoom';
+    isHost = true;
+    document.getElementById('singlePlayerMode').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'block';
+    document.getElementById('waitingArea').style.display = 'block';
+    document.getElementById('displayRoomId').textContent = '單機模式 - ' + difficulty;
+
+    database.ref('rooms/' + currentRoomId).set({
+        player1: { health: 100, class: null, currentQuestion: null },
+        player2: { health: 100, class: null, currentQuestion: null },
+        gameStarted: false,
+        gameEnded: false,
+        winner: null
+    });
+
+    // 模擬電腦玩家的難度設置
+    const computerDifficulty = difficultySettings[difficulty];
+    window.computerDifficulty = computerDifficulty;
+
+    listenToRoomChanges();
+}
     
     
 function selectClass(className) {
@@ -1813,7 +1864,7 @@ function startGameSession() {
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.off('value'); // 移除舊的監聽器
+    roomRef.off('value');
 
     roomRef.on('value', (snapshot) => {
         const room = snapshot.val();
@@ -1825,74 +1876,106 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        // 當雙方選擇角色後開始遊戲
-        if (room.player1?.class && room.player2?.class && !room.gameStarted) {
+        if (room.player1?.class && room.player2?.class) {
             document.getElementById('waitingArea').style.display = 'none';
+        }
+
+        if (room.gameEnded) {
+            handleGameEnd(room.winner);
+            return;
+        }
+
+        if (room.player1?.class && room.player2?.class) {
             document.getElementById('classSelection').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
-            roomRef.update({ gameStarted: true });
             startGame(room);
+
+            // 單機模式下電腦玩家的答題邏輯
+            if (currentRoomId === 'singlePlayerRoom') {
+                const computerAnswerTime = window.computerDifficulty.answerTime;
+                setTimeout(() => {
+                    const isCorrect = Math.random() < window.computerDifficulty.answerRate;
+                    const question = room.player2?.currentQuestion;
+                    if (question) {
+                        const correctIndex = question.correctIndex;
+                        const selectedIndex = isCorrect ? correctIndex : Math.floor(Math.random() * question.options.length);
+                        checkAnswer(selectedIndex === correctIndex, question.id);
+                    }
+                }, computerAnswerTime * 1000);
+            }
         }
 
         updateHealthDisplay(room);
 
-        if (room.gameEnded) {
-            handleGameEnd(room.winner);
+        // 检查双方是否都同意重开
+        const bothAgreed = room.hostRematch && room.clientRematch;
+        if (bothAgreed &&!room.gameStarted) {
+            // 双方都同意重开，移除等待界面
+            const waitingForRematch = document.getElementById('waitingForRematch');
+            if (waitingForRematch) {
+                waitingForRematch.remove();
+            }
+
+            // 开始新游戏
+            const updates = {
+                gameStarted: true
+            };
+            database.ref('rooms/' + currentRoomId).update(updates, () => {
+                startNewGameSession();
+            });
+
+            // 重置等待对方同意的标志位
+            waitingForOpponent = false;
+        } else if (!bothAgreed && waitingForOpponent) {
+            // 如果只有一方同意且正在等待对方同意，保持等待界面显示
+            const waitingForRematch = document.getElementById('waitingForRematch');
+            if (!waitingForRematch) {
+                const newWaitingForRematch = document.createElement('div');
+                newWaitingForRematch.id = 'waitingForRematch';
+                newWaitingForRematch.style.textAlign = 'center';
+                newWaitingForRematch.style.fontSize = '2rem';
+                newWaitingForRematch.style.color = 'var(--gold)';
+                newWaitingForRematch.style.padding = '2rem';
+                newWaitingForRematch.style.background = 'rgba(45, 41, 38, 0.95)';
+                newWaitingForRematch.style.border = '3px solid var(--gold)';
+                newWaitingForRematch.style.borderRadius = '15px';
+                newWaitingForRematch.style.maxWidth = '600px';
+                newWaitingForRematch.style.margin = '2rem auto';
+                newWaitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+                newWaitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+                newWaitingForRematch.textContent = '等待对手同意重开游戏...';
+                document.body.appendChild(newWaitingForRematch);
+            }
         }
-    });
-}
 
-    function randomMatch() {
-        console.log("randomMatch called");
-    const waitingRef = database.ref('waitingRooms'); // 使用單一等待房間
-    const userId = Math.random().toString(36).substr(2, 9); // 臨時用戶 ID
+        // 新增：检查玩家是否已经重新进入游戏
+        const opponentReentered = isHost? room.player2?.reentered : room.player1?.reentered;
+        if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
+            opponentJoinedMessage = document.createElement('div');
+            opponentJoinedMessage.style.cssText = `
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translate(-50%, 0);
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 9999;
+            font-size: 2rem;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        `;
+            opponentJoinedMessage.textContent = '🎮玩家已進場';
+            document.body.appendChild(opponentJoinedMessage);
 
-    waitingRef.once('value', (snapshot) => {
-        console.log("Waiting data:", snapshot.val());
-        const waitingData = snapshot.val();
-
-        if (!waitingData || !waitingData.roomId) {
-            // 沒有等待房間，第一個玩家成為房主
-            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-            currentRoomId = roomId;
-            isHost = true;
-
-            // 創建房間並記錄到 waitingRoom
-            database.ref('rooms/' + roomId).set({
-                player1: { userId: userId, health: 100, class: null, currentQuestion: null, name: '玩家1' },
-                player2: null, // 等待第二個玩家
-                gameStarted: false,
-                gameEnded: false,
-                winner: null
-            });
-            waitingRef.set({ roomId: roomId, hostId: userId });
-
-            // 更新 UI
-            document.getElementById('roomControl').style.display = 'none';
-            document.getElementById('waitingArea').style.display = 'block';
-            document.getElementById('displayRoomId').textContent = '等待對手...';
-            document.getElementById('classSelection').style.display = 'block';
-
-            listenToRoomChanges();
-        } else {
-            // 有等待房間，第二個玩家加入
-            const roomId = waitingData.roomId;
-            currentRoomId = roomId;
-            isHost = false;
-
-            // 加入房間作為 player2
-            database.ref('rooms/' + roomId + '/player2').set({
-                userId: userId, health: 100, class: null, currentQuestion: null, name: '玩家2'
-            });
-            waitingRef.remove(); // 清除等待房間記錄
-
-            // 更新 UI
-            document.getElementById('roomControl').style.display = 'none';
-            document.getElementById('waitingArea').style.display = 'block';
-            document.getElementById('displayRoomId').textContent = '等待角色選擇...';
-            document.getElementById('classSelection').style.display = 'block';
-
-            listenToRoomChanges();
+            // 一段时间后移除提示信息
+            setTimeout(() => {
+                opponentJoinedMessage.remove();
+                opponentJoinedMessage = null;
+            }, 3000);
         }
     });
 }
