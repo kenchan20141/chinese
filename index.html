@@ -800,8 +800,7 @@
   pointer-events: none;
 }
 
-
-/* 玩家進入通知樣式 */
+    /* 玩家進入通知樣式 */
 .opponent-joined-notification {
     position: fixed;
     top: 20px;
@@ -817,7 +816,6 @@
     max-width: 200px;
     box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
 }
-    
     </style>
 </head>
 <body>
@@ -2180,8 +2178,6 @@ function handleRematchRequest() {
     waitingForOpponent = false;
 
     database.ref('rooms/' + currentRoomId).update(updates, (error) => {
-
-    database.ref('rooms/' + currentRoomId).update(updates, (error) => {
         isRematching = false;
         if (error) {
             console.error('更新数据库时出错:', error);
@@ -2294,7 +2290,7 @@ function listenToRoomChanges() {
             }
         }
 
-     // 檢查玩家是否重新進入並顯示通知
+// 檢查玩家是否重新進入並顯示通知
 const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
 if (opponentReentered && !opponentJoinedMessage && !room.gameStarted) {
     // 移除舊通知（如果存在）
@@ -2315,7 +2311,6 @@ if (opponentReentered && !opponentJoinedMessage && !room.gameStarted) {
         }
     }, 3000);
 }
-
     });
 }
 </script>
