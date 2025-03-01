@@ -1122,128 +1122,6 @@ let waitingForOpponent = false;
     let isAnswered = false; 
     let answeredQuestions = new Set();
     let hasHealedThisTurn = false;
-    // 隨機事件列表
-const events = [
-    // 正面效果
-    {
-        description: "恢復20%氣血",
-        effect: () => {
-            const playerPath = isHost ? 'player1' : 'player2';
-            const currentHealth = isHost ? room.player1.health : room.player2.health;
-            const healAmount = 20; // 假設最大氣血為100，恢復20%
-            const newHealth = Math.min(currentHealth + healAmount, 100);
-            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(newHealth);
-        }
-    },
-    {
-        description: "增加攻擊力",
-        effect: () => {
-            playerClass.attack *= 1.2; // 提升20%
-            setTimeout(() => { playerClass.attack /= 1.2; }, 15000); // 15秒後恢復
-        }
-    },
-    {
-        description: "提升防禦力",
-        effect: () => {
-            playerClass.defense *= 1.2; // 提升20%
-            setTimeout(() => { playerClass.defense /= 1.2; }, 15000); // 15秒後恢復
-        }
-    },
-    {
-        description: "減少敵人攻擊力",
-        effect: () => {
-            opponentDefense /= 1.2; // 降低20%
-            setTimeout(() => { opponentDefense *= 1.2; }, 15000); // 15秒後恢復
-        }
-    },
-    {
-        description: "敵人攻擊失誤",
-        effect: () => {
-            window.enemyAttackMissed = true; // 本回合敵人攻擊無效
-        }
-    },
-    {
-        description: "獲得額外時間",
-        effect: () => {
-            timeLeft += 5; // 增加5秒
-            document.getElementById('timer').textContent = `🕒${timeLeft}秒`;
-        }
-    },
-    {
-        description: "直接命中",
-        effect: () => {
-            window.doubleDamage = true; // 本回合傷害翻倍
-        }
-    },
-    {
-        description: "閃避提升",
-        effect: () => {
-            playerClass.dodge += 0.2; // 提升20%
-            setTimeout(() => { playerClass.dodge -= 0.2; }, 15000); // 15秒後恢復
-        }
-    },
-    // 負面效果
-    {
-        description: "失去20%氣血",
-        effect: () => {
-            const playerPath = isHost ? 'player1' : 'player2';
-            const currentHealth = isHost ? room.player1.health : room.player2.health;
-            const damageAmount = 20; // 減少20%
-            const newHealth = Math.max(currentHealth - damageAmount, 0);
-            database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(newHealth);
-        }
-    },
-    {
-        description: "降低攻擊力",
-        effect: () => {
-            playerClass.attack *= 0.8; // 降低20%
-            setTimeout(() => { playerClass.attack /= 0.8; }, 15000); // 15秒後恢復
-        }
-    },
-    {
-        description: "降低防禦力",
-        effect: () => {
-            playerClass.defense *= 0.8; // 降低20%
-            setTimeout(() => { playerClass.defense /= 0.8; }, 15000); // 15秒後恢復
-        }
-    },
-    {
-        description: "敵人攻擊力提升",
-        effect: () => {
-            opponentDefense *= 1.2; // 提升20%
-            setTimeout(() => { opponentDefense /= 1.2; }, 15000); // 15秒後恢復
-        }
-    },
-    {
-        description: "減少作答時間",
-        effect: () => {
-            timeLeft = Math.max(timeLeft - 5, 5); // 減少5秒，最低5秒
-            document.getElementById('timer').textContent = `🕒${timeLeft}秒`;
-        }
-    },
-    {
-        description: "干擾作答",
-        effect: () => {
-            const options = document.querySelectorAll('#options button');
-            const originalOptions = [...options].map(btn => btn.textContent);
-            const shuffledOptions = shuffleArray([...originalOptions]);
-            options.forEach((btn, i) => { btn.textContent = shuffledOptions[i]; });
-            setTimeout(() => {
-                options.forEach((btn, i) => { btn.textContent = originalOptions[i]; });
-            }, 5000); // 5秒後恢復
-        }
-    },
-    {
-        description: "敵人恢復氣血",
-        effect: () => {
-            const opponentPath = isHost ? 'player2' : 'player1';
-            const currentHealth = isHost ? room.player2.health : room.player1.health;
-            const healAmount = 20; // 恢復20%
-            const newHealth = Math.min(currentHealth + healAmount, 100);
-            database.ref(`rooms/${currentRoomId}/${opponentPath}/health`).set(newHealth);
-        }
-    }
-];
 
 // 在代码开头部分，获取按钮和输入框元素
 const createRoomBtn = document.querySelector('button[onclick="createRoom()"]');
@@ -1449,18 +1327,11 @@ if(playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
 
 let damage;
 if (isCorrect) {
+    // 攻击敌人：攻击力加成 × 敌人防御减免
     damage = Math.floor(baseDamage * playerClass.attack / opponentDefense);
-    if (window.doubleDamage) {
-        damage *= 2; // 直接命中，傷害翻倍
-        window.doubleDamage = false; // 重置
-    }
 } else {
-    if (window.enemyAttackMissed) {
-        damage = 0; // 敵人攻擊失誤，不扣血
-        window.enemyAttackMissed = false; // 重置
-    } else {
-        damage = Math.floor(baseDamage / playerClass.defense);
-    }
+    // 自己受伤：基础伤害 ÷ 自身防御减免
+    damage = Math.floor(baseDamage / playerClass.defense);
     
     // 玄天阁减伤30%（新增代码）
     if(playerClass.type === 'mage') {
@@ -2032,20 +1903,6 @@ function shuffleArray(array) {
 
 function loadNewQuestion() {
     hasHealedThisTurn = false; // 重置恢復狀態
-    // 重置隨機事件狀態
-window.enemyAttackMissed = false;
-window.doubleDamage = false;
-
-// 50%機率觸發隨機事件
-if (Math.random() < 0.5) {
-    const randomEvent = events[Math.floor(Math.random() * events.length)];
-    randomEvent.effect(); // 執行事件效果
-    // 顯示通知
-    const notification = document.getElementById('eventNotification');
-    notification.textContent = randomEvent.description;
-    notification.style.display = 'block';
-    setTimeout(() => { notification.style.display = 'none'; }, 3000); // 3秒後隱藏
-}
     // 假設問題總數為 100，可以從 Firebase 或本地配置中動態獲取
     const totalQuestions = 622; 
     const randomId = Math.floor(Math.random() * totalQuestions); // 隨機生成問題 ID
@@ -2445,10 +2302,6 @@ if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gam
 }
 </script>
 
-
-<div id="eventNotification" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; display: none; z-index: 1000;"></div>
-
-    
 <!-- 新增治疗提示 -->
 <div id="healText" style="display:none; position:fixed; top:30%; left:50%; transform:translate(-50%,-50%); font-size:2rem; color:#00ff00; text-shadow:0 0 10px rgba(0,255,0,0.5);">🛡️ 氣血恢復2點</div>
 
