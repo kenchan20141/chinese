@@ -1189,6 +1189,7 @@ window.onload = function() {
 let opponentJoinedMessage = null;
     let isRematching = false;
 let answered = false; 
+    let isSinglePlayerMode = false;
 let opponentDefense = 1.0; 
 // 新增变量
 let waitingForOpponent = false; 
@@ -1240,40 +1241,45 @@ function selectClass(className) {
         <p>等待對手選擇流派...</p>
     `;
 
-// 移除所有卡片的选中状态
-document.querySelectorAll('.class-card').forEach(card => {
-    card.classList.remove('selected');
-    card.querySelector('.selected-tick').style.display = 'none';
-});
+    // 移除所有卡片的选中状态
+    document.querySelectorAll('.class-card').forEach(card => {
+        card.classList.remove('selected');
+        card.querySelector('.selected-tick').style.display = 'none';
+    });
 
-// 设置当前选中卡片
-const selectedCard = document.querySelector(`.class-card[onclick="selectClass('${className}')"]`);
-selectedCard.classList.add('selected');
-selectedCard.querySelector('.selected-tick').style.display = 'flex';
+    // 设置当前选中卡片
+    const selectedCard = document.querySelector(`.class-card[onclick="selectClass('${className}')"]`);
+    selectedCard.classList.add('selected');
+    selectedCard.querySelector('.selected-tick').style.display = 'flex';
 
     // 显示确认信息
     document.getElementById('selectedClassInfo').innerHTML = `
         <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${selectedCard.querySelector('h3').textContent}</p>
-        <p>等待對手選擇流派...</p>
+        <p>${isSinglePlayerMode ? '請選擇難度...' : '等待對手選擇流派...'}</p>
     `;
-    
-    // 更新数据库
-    const playerPath = isHost ? 'player1' : 'player2';
-    database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-        class: className,
-        health: 100,
-        attack: playerClass.attack,
-        defense: playerClass.defense,
-        dodge: playerClass.dodge
-    });
 
-// 顯示彈出圖片並在動畫結束後隱藏
+    if (isSinglePlayerMode) {
+        // 單人模式，顯示難度選擇
+        document.getElementById('classSelection').style.display = 'none';
+        document.getElementById('singlePlayerDifficulty').style.display = 'block';
+    } else {
+        // 多人模式，更新數據庫
+        const playerPath = isHost ? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+            class: className,
+            health: 100,
+            attack: playerClass.attack,
+            defense: playerClass.defense,
+            dodge: playerClass.dodge
+        });
+    }
+
+    // 顯示彈出圖片並在動畫結束後隱藏
     const popupImage = selectedCard.querySelector('.popup-image');
     popupImage.style.display = 'block';
     setTimeout(() => {
         popupImage.style.display = 'none';
     }, 500); // 動畫持續時間為0.5秒
-    
 }
 
 
@@ -1305,49 +1311,8 @@ function displayQuestion(question) {
 }
 
 function checkAnswer(isCorrect, questionId) {
-    if (answeredQuestions.has(questionId)) return; // 如果已回答，則不執行
-    answeredQuestions.add(questionId); // 記錄已回答的問題ID
-
-    // 在傷害計算後添加特效元素
-    let effectElement = document.createElement('div');
-    if (playerClass.type === 'warrior' && isCorrect) {
-        effectElement.className = 'sword-animation';
-        effectElement.style.background = 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.7) 50%, transparent 100%)';
-        effectElement.style.width = '150px';
-        effectElement.style.height = '30px';
-        effectElement.style.position = 'fixed';
-        effectElement.style.top = '50%';
-    } else if (playerClass.type === 'tank' && !isCorrect) {
-        effectElement.className = 'shield-animation';
-        effectElement.innerHTML = '🛡️';
-        effectElement.style.fontSize = '4rem';
-        effectElement.style.position = 'fixed';
-        effectElement.style.left = '50%';
-        effectElement.style.transform = 'translateX(-50%)';
-    }
-
-    // 鐵甲宗治療代碼
-    if (playerClass && playerClass.type === 'tank' && !hasHealedThisTurn) {
-        hasHealedThisTurn = true;
-        const healAmount = 2;
-        const playerPath = isHost ? 'player1' : 'player2';
-        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-            firebase.database.ServerValue.increment(healAmount)
-        );
-        const myHealthElement = document.getElementById('myHealth');
-        const shieldIcon = document.createElement('span');
-        shieldIcon.className = 'shield-icon';
-        shieldIcon.innerHTML = '🛡️';
-        myHealthElement.appendChild(shieldIcon);
-        setTimeout(() => {
-            shieldIcon.remove();
-        }, 1000);
-    }
-
-    if (effectElement.className) {
-        document.body.appendChild(effectElement);
-        setTimeout(() => effectElement.remove(), 1000);
-    }
+    if (answeredQuestions.has(questionId)) return;
+    answeredQuestions.add(questionId);
 
     if (answered || gameOver) return;
     answered = true;
@@ -1371,24 +1336,6 @@ function checkAnswer(isCorrect, questionId) {
     // 傷害計算與動畫
     let baseDamage = Math.floor((timeLeft / 15) * 13);
 
-    // 霸刀門雙倍攻擊判定（30%概率）
-    if (playerClass.type === 'warrior' && isCorrect && Math.random() < 0.3) {
-        baseDamage *= 2;
-        const swordFlash = document.createElement('div');
-        swordFlash.className = 'sword-flash';
-        swordFlash.style.top = `${Math.random() * 40 + 30}%`;
-        document.body.appendChild(swordFlash);
-        setTimeout(() => swordFlash.remove(), 400);
-    }
-
-    // 影流教閃避判定（30%概率）
-    if (playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
-        baseDamage = 0;
-        const dodgeDisplay = document.getElementById('dodgeText');
-        dodgeDisplay.style.display = 'block';
-        setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
-    }
-
     let damage;
     if (isCorrect) {
         damage = Math.floor(baseDamage * playerClass.attack / opponentDefense);
@@ -1402,49 +1349,26 @@ function checkAnswer(isCorrect, questionId) {
         }
     }
 
-    const targetElement = isCorrect 
-        ? document.getElementById('opponentHealthBar')
-        : document.getElementById('myHealthBar');
+    if (isSinglePlayerMode) {
+        // 單人模式邏輯
+        if (isCorrect) {
+            const currentOpponentHealth = parseInt(document.getElementById('opponentHealth').textContent);
+            const newOpponentHealth = Math.max(currentOpponentHealth - damage, 0);
+            document.getElementById('opponentHealth').textContent = newOpponentHealth;
+            document.getElementById('opponentHealthBar').style.width = newOpponentHealth + '%';
+        } else {
+            const currentMyHealth = parseInt(document.getElementById('myHealth').textContent);
+            const newMyHealth = Math.max(currentMyHealth - damage, 0);
+            document.getElementById('myHealth').textContent = newMyHealth;
+            document.getElementById('myHealthBar').style.width = newMyHealth + '%';
+        }
 
-    // 觸發動畫效果
-    targetElement.classList.add('damage-flash');
-    document.getElementById('gameArea').classList.add('screen-shake');
-    document.querySelectorAll('.health-fill').forEach(bar => bar.classList.add('damage-effect'));
-
-    // 根據答對或答錯分開處理音效和震動
-    navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
-    if (isCorrect) {
-        // 答對時：音效 + 震動
-        soundEffects.attack.currentTime = 0;
-        soundEffects.attack.play();
-        if (navigator.vibrate) navigator.vibrate(200);
-    } else {
-        // 答錯時：僅震動
-        if (navigator.vibrate) navigator.vibrate(200);
-    }
-
-    // 移除動畫
-    setTimeout(() => {
-        targetElement.classList.remove('damage-flash');
-        document.getElementById('gameArea').classList.remove('screen-shake');
-        document.querySelectorAll('.health-fill').forEach(bar => bar.classList.remove('damage-effect'));
-    }, 500);
-
-    // 更新數據庫
-    const updates = {};
-    const playerPath = isHost ? 'player1' : 'player2';
-    const opponentPath = isHost ? 'player2' : 'player1';
-    
-    if (isCorrect) {
-        updates[`${opponentPath}/health`] = firebase.database.ServerValue.increment(-damage);
-    } else {
-        updates[`${playerPath}/health`] = firebase.database.ServerValue.increment(-damage);
-    }
-
-    database.ref('rooms/' + currentRoomId).update(updates, (error) => {
-        if (error) return;
-        checkGameOver();
-        if (!gameOver) {
+        // 檢查遊戲是否結束
+        if (parseInt(document.getElementById('opponentHealth').textContent) <= 0) {
+            handleGameEnd('victory');
+        } else if (parseInt(document.getElementById('myHealth').textContent) <= 0) {
+            handleGameEnd('defeat');
+        } else {
             setTimeout(() => {
                 buttons.forEach(btn => {
                     btn.style.cssText = '';
@@ -1454,66 +1378,33 @@ function checkAnswer(isCorrect, questionId) {
                 loadNewQuestion();
             }, 700);
         }
-    });
-
-    // 後續代碼保持不變（例如刀光特效、命中數字等）
-    setTimeout(() => {
-        const buttons = document.querySelectorAll('#options button');
-        const correctIndex = window.currentQuestion.correctIndex;
-        if (buttons[correctIndex]) {
-            buttons[correctIndex].style.cssText = `
-                background: #2ecc71 !important;
-                border: 2px solid #27ae60 !important;
-                transform: scale(1.05);
-            `;
-        }
-    }, 50);
-
-    const flash = document.createElement('div');
-    flash.className = 'sword-flash';
-    const startX = isHost ? '20%' : '80%';
-    flash.style.left = startX;
-    flash.style.top = `${Math.random() * 40 + 30}%`;
-    document.body.appendChild(flash);
-    setTimeout(() => flash.remove(), 400);
-
-    if (!isCorrect) {
-        flash.style.background = `linear-gradient(
-            90deg,
-            rgba(255,255,255,0) 0%,
-            rgba(255,100,100,0.7) 50%,
-            rgba(255,255,255,0) 100%
-        )`;
-    }
-
-    const gameArea = document.getElementById('gameArea');
-    gameArea.style.boxShadow = `0 0 30px ${isCorrect ? '#2ecc71' : '#e74c3c'}`;
-    setTimeout(() => gameArea.style.boxShadow = '0 0 20px var(--gold)', 300);
-
-    const healthBar = isCorrect ? document.getElementById('opponentHealthBar') : document.getElementById('myHealthBar');
-    const wave = document.createElement('div');
-    wave.className = 'health-wave';
-    wave.style.background = `linear-gradient(90deg, transparent 0%, ${isCorrect ? 'rgba(46,204,113,0.3)' : 'rgba(231,76,60,0.3)'} 50%, transparent 100%)`;
-    healthBar.appendChild(wave);
-    setTimeout(() => wave.remove(), 500);
-
-    const hitText = document.createElement('div');
-    hitText.className = 'hit-marker';
-    hitText.textContent = `-${damage}`;
-    if (isCorrect) {
-        const opponentHealthContainer = document.getElementById('enemyHealthContainer');
-        hitText.style.position = 'absolute';
-        hitText.style.left = `${Math.random() * opponentHealthContainer.offsetWidth + opponentHealthContainer.offsetLeft}px`;
-        hitText.style.top = `${opponentHealthContainer.offsetTop + opponentHealthContainer.offsetHeight / 2 - hitText.offsetHeight / 2}px`;
-        opponentHealthContainer.appendChild(hitText);
     } else {
-        const myHealthContainer = document.getElementById('myHealthContainer');
-        hitText.style.position = 'absolute';
-        hitText.style.left = `${Math.random() * myHealthContainer.offsetWidth + myHealthContainer.offsetLeft}px`;
-        hitText.style.top = `${myHealthContainer.offsetTop + myHealthContainer.offsetHeight / 2 - hitText.offsetHeight / 2}px`;
-        myHealthContainer.appendChild(hitText);
+        // 多人模式邏輯
+        const updates = {};
+        const playerPath = isHost ? 'player1' : 'player2';
+        const opponentPath = isHost ? 'player2' : 'player1';
+
+        if (isCorrect) {
+            updates[`${opponentPath}/health`] = firebase.database.ServerValue.increment(-damage);
+        } else {
+            updates[`${playerPath}/health`] = firebase.database.ServerValue.increment(-damage);
+        }
+
+        database.ref('rooms/' + currentRoomId).update(updates, (error) => {
+            if (error) return;
+            checkGameOver();
+            if (!gameOver) {
+                setTimeout(() => {
+                    buttons.forEach(btn => {
+                        btn.style.cssText = '';
+                        btn.style.pointerEvents = 'auto';
+                    });
+                    answered = false;
+                    loadNewQuestion();
+                }, 700);
+            }
+        });
     }
-    setTimeout(() => hitText.remove(), 300);
 }
     
     
@@ -1727,6 +1618,7 @@ function toggleMusic() {
 
 function createRoom() {
     currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
+    isSinglePlayerMode = false; // 新增這行
     isHost = true;
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('classSelection').style.display = 'block';
@@ -1745,6 +1637,7 @@ function createRoom() {
 
 function joinRoom() {
     currentRoomId = document.getElementById('roomId').value;
+    isSinglePlayerMode = false;
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('classSelection').style.display = 'block';
     listenToRoomChanges();
@@ -1939,6 +1832,7 @@ function listenToRoomChanges() {
 function startSinglePlayerMode() {
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('singlePlayerDifficulty').style.display = 'block';
+    isSinglePlayerMode = true; // 設置為單人模式
 }
 
 function startSinglePlayerGame(difficulty) {
@@ -1956,11 +1850,19 @@ function startSinglePlayerGame(difficulty) {
     document.getElementById('myHealth').textContent = myHealth;
     document.getElementById('myHealthBar').style.width = myHealth + '%';
 
+    // 初始化对手气血
+    const opponentHealth = 100;
+    document.getElementById('opponentHealth').textContent = opponentHealth;
+    document.getElementById('opponentHealthBar').style.width = opponentHealth + '%';
+
+    // 設置對手防禦力（根據難度）
+    opponentDefense = difficulty === 'hard' ? 1.2 : difficulty === 'hell' ? 1.5 : 1.0;
+
     // 开始单机游戏循环，根据难度扣减气血
     const params = singlePlayerDifficultyParams[difficulty];
     const singlePlayerTimer = setInterval(() => {
         if (Math.random() < params.probability) {
-            const damage = 10; // 每次扣减 10 点气血
+            const damage = 10;
             const newHealth = Math.max(parseInt(document.getElementById('myHealth').textContent) - damage, 0);
             document.getElementById('myHealth').textContent = newHealth;
             document.getElementById('myHealthBar').style.width = newHealth + '%';
