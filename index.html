@@ -14,7 +14,26 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
-    <style>        
+    <style>       
+
+        .difficulty-btn {
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+    margin-bottom: 1rem;
+}
+.difficulty-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+        .single-player-btn {
+    background: linear-gradient(45deg, #95a5a6, #bdc3c7);
+    box-shadow: 0 5px 15px rgba(189, 195, 199, 0.4);
+}
+.single-player-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
 
 .rematch-buttons {
     margin-top: 30px;
@@ -876,23 +895,48 @@
     </div>
     
     <!-- 按鈕容器 -->
-    <div class="button-group">
-        <button onclick="createRoom()" class="action-btn create-btn">
-            <i class="fas fa-fist-raised"></i>
-            <span>開闢戰場</span>
-            <div class="btn-glow"></div>
-        </button>
-        <button onclick="joinRoom()" class="action-btn join-btn">
-            <i class="fas fa-shield-alt"></i>
-            <span>加入征伐</span>
-            <div class="btn-glow"></div>
-        </button>
-        <button onclick="randomMatch()" class="action-btn random-match-btn">
-            <i class="fas fa-random"></i>
-            <span>隨機分配</span>
-            <div class="btn-glow"></div>
-        </button>
-    </div>
+   <div class="button-group">
+    <button onclick="createRoom()" class="action-btn create-btn">
+        <i class="fas fa-fist-raised"></i>
+        <span>開闢戰場</span>
+        <div class="btn-glow"></div>
+    </button>
+    <button onclick="joinRoom()" class="action-btn join-btn">
+        <i class="fas fa-shield-alt"></i>
+        <span>加入征伐</span>
+        <div class="btn-glow"></div>
+    </button>
+    <button onclick="randomMatch()" class="action-btn random-match-btn">
+        <i class="fas fa-random"></i>
+        <span>隨機分配</span>
+        <div class="btn-glow"></div>
+    </button>
+    <button onclick="startSinglePlayerMode()" class="action-btn single-player-btn">
+        <i class="fas fa-user"></i>
+        <span>單機模式</span>
+        <div class="btn-glow"></div>
+    </button>
+</div>
+
+    <div id="difficultySelection" style="display: none; text-align: center; padding: 2rem; background: rgba(45, 41, 38, 0.95); border: 3px solid var(--gold); border-radius: 15px; max-width: 600px; margin: 2rem auto; box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);">
+    <h2 style="color: var(--gold); margin-bottom: 2rem;">選擇難度</h2>
+    <button onclick="selectDifficulty('easy')" class="action-btn difficulty-btn">
+        <span>容易</span>
+        <div class="btn-glow"></div>
+    </button>
+    <button onclick="selectDifficulty('normal')" class="action-btn difficulty-btn">
+        <span>普通</span>
+        <div class="btn-glow"></div>
+    </button>
+    <button onclick="selectDifficulty('hard')" class="action-btn difficulty-btn">
+        <span>困難</span>
+        <div class="btn-glow"></div>
+    </button>
+    <button onclick="selectDifficulty('hell')" class="action-btn difficulty-btn">
+        <span>地獄</span>
+        <div class="btn-glow"></div>
+    </button>
+</div>
 
    
      
@@ -1037,6 +1081,56 @@
 
     
 <script>
+
+    function showDifficultySelection() {
+    document.getElementById('difficultySelection').style.display = 'block';
+}
+function selectDifficulty(difficulty) {
+    document.getElementById('difficultySelection').style.display = 'none';
+    // 根據選擇的難度設置電腦玩家的答中機率和答題時間
+    let computerAccuracy, questionTime;
+    switch (difficulty) {
+        case 'easy':
+            computerAccuracy = 0.3;
+            questionTime = 20;
+            break;
+        case 'normal':
+            computerAccuracy = 0.5;
+            questionTime = 15;
+            break;
+        case 'hard':
+            computerAccuracy = 0.7;
+            questionTime = 10;
+            break;
+        case 'hell':
+            computerAccuracy = 0.9;
+            questionTime = 5;
+            break;
+    }
+    // 開始單機模式遊戲
+    startSinglePlayerGame(difficulty, computerAccuracy, questionTime);
+}
+function startSinglePlayerGame(difficulty, computerAccuracy, questionTime) {
+    // 初始化單機模式的遊戲狀態
+    // 這裡可以設置電腦玩家的初始屬性等
+    document.getElementById('gameArea').style.display = 'block';
+    startTimer(questionTime); // 傳入答題時間
+    loadNewQuestion();
+}
+
+    function startSinglePlayerMode() {
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'block';
+    // 初始化單機模式的遊戲狀態
+    currentRoomId = 'singleplayer'; // 標記為單機模式
+    isHost = true;
+    playerClass = null;
+    gameOver = false;
+    answered = false;
+    // 顯示難度選擇界面
+    showDifficultySelection();
+}
+
 
 // Canvas 動畫代碼
 window.onload = function() {
@@ -1287,6 +1381,27 @@ function displayQuestion(question) {
 function checkAnswer(isCorrect, questionId) {
     if (answeredQuestions.has(questionId)) return; // 如果已回答，則不執行
     answeredQuestions.add(questionId); // 記錄已回答的問題ID
+
+     // 電腦玩家自動答題邏輯
+    if (currentRoomId === 'singleplayer') {
+        const computerAnswer = Math.random() < computerAccuracy; // 根據難度設置的答中機率
+        if (!computerAnswer) {
+            const baseDamage = Math.floor((timeLeft / 15) * 13);
+            const damage = Math.floor(baseDamage / playerClass.defense);
+            const updates = {
+                'player1/health': firebase.database.ServerValue.increment(-damage)
+            };
+            database.ref('rooms/' + currentRoomId).update(updates, (error) => {
+                if (error) return;
+                checkGameOver();
+                if (!gameOver) {
+                    setTimeout(() => {
+                        loadNewQuestion();
+                    }, 700);
+                }
+            });
+        }
+    }
 
     // 在傷害計算後添加特效元素
     let effectElement = document.createElement('div');
@@ -2050,12 +2165,11 @@ function displayQuestion(question) {
 }
 
 
-function startTimer() {
+function startTimer(duration) {
     clearInterval(timer);
-    // 新增以下兩行重置動畫狀態
     document.getElementById('gameArea').classList.remove('screen-shake');
     document.querySelectorAll('.health-fill').forEach(bar => bar.classList.remove('damage-effect'));
-    timeLeft = 15;
+    timeLeft = duration;
     document.getElementById('timer').textContent = `🕒${timeLeft}秒`;
     timer = setInterval(() => {
         timeLeft--;
