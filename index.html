@@ -16,6 +16,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>        
 
+.single-player-btn {
+    background: linear-gradient(45deg, #f39c12, #e67e22);
+    box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+}
+        
 .rematch-buttons {
     margin-top: 30px;
     display: flex;
@@ -892,6 +897,11 @@
             <span>隨機分配</span>
             <div class="btn-glow"></div>
         </button>
+        <button onclick="startSinglePlayerMode()" class="action-btn single-player-btn">
+    <i class="fas fa-user"></i>
+    <span>單機模式</span>
+    <div class="btn-glow"></div>
+</button>
     </div>
 
    
@@ -1034,6 +1044,16 @@
     <div class="victory-overlay">
         <div class="victory-text"></div>
     </div>
+
+    <div id="singlePlayerDifficulty" style="display: none;">
+    <h2 style="color: var(--gold); margin-bottom: 2rem;">選擇難度</h2>
+    <div class="button-group">
+        <button onclick="startSinglePlayerGame('easy')" class="action-btn">容易</button>
+        <button onclick="startSinglePlayerGame('normal')" class="action-btn">普通</button>
+        <button onclick="startSinglePlayerGame('hard')" class="action-btn">困難</button>
+        <button onclick="startSinglePlayerGame('hell')" class="action-btn">地獄</button>
+    </div>
+</div>
 
     
 <script>
@@ -1673,6 +1693,25 @@ const soundEffects = {
     defeat: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
 };
 
+    const singlePlayerDifficultyParams = {
+    easy: {
+        probability: 0.2, // 20% 的扣减概率
+        time: 10000 // 每 10 秒扣减一次
+    },
+    normal: {
+        probability: 0.4, // 40% 的扣减概率
+        time: 7000 // 每 7 秒扣减一次
+    },
+    hard: {
+        probability: 0.6, // 60% 的扣减概率
+        time: 4000 // 每 4 秒扣减一次
+    },
+    hell: {
+        probability: 0.8, // 80% 的扣减概率
+        time: 2000 // 每 2 秒扣减一次
+    }
+};
+
 // 修改重點 2：初始按鈕文字設定
 document.querySelector('.music-control').textContent = '🔇';  // 加入這行初始化設定
 
@@ -1896,6 +1935,118 @@ function listenToRoomChanges() {
         }
     });
 }
+
+function startSinglePlayerMode() {
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('singlePlayerDifficulty').style.display = 'block';
+}
+
+function startSinglePlayerGame(difficulty) {
+    document.getElementById('singlePlayerDifficulty').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+
+    // 重置游戏状态
+    gameOver = false;
+    answered = false;
+    answeredQuestions = new Set();
+    hasHealedThisTurn = false;
+
+    // 初始化玩家气血
+    const myHealth = 100;
+    document.getElementById('myHealth').textContent = myHealth;
+    document.getElementById('myHealthBar').style.width = myHealth + '%';
+
+    // 开始单机游戏循环，根据难度扣减气血
+    const params = singlePlayerDifficultyParams[difficulty];
+    const singlePlayerTimer = setInterval(() => {
+        if (Math.random() < params.probability) {
+            const damage = 10; // 每次扣减 10 点气血
+            const newHealth = Math.max(parseInt(document.getElementById('myHealth').textContent) - damage, 0);
+            document.getElementById('myHealth').textContent = newHealth;
+            document.getElementById('myHealthBar').style.width = newHealth + '%';
+
+            // 触发动画效果
+            const myHealthBar = document.getElementById('myHealthBar');
+            myHealthBar.classList.add('damage-flash');
+            document.getElementById('gameArea').classList.add('screen-shake');
+            document.querySelectorAll('.health-fill').forEach(bar => bar.classList.add('damage-effect'));
+
+            // 移除动画
+            setTimeout(() => {
+                myHealthBar.classList.remove('damage-flash');
+                document.getElementById('gameArea').classList.remove('screen-shake');
+                document.querySelectorAll('.health-fill').forEach(bar => bar.classList.remove('damage-effect'));
+            }, 500);
+
+            if (newHealth <= 0) {
+                clearInterval(singlePlayerTimer);
+                handleGameEnd('defeat');
+            }
+        }
+    }, params.time);
+
+    // 开始加载问题
+    loadNewQuestion();
+}
+
+function handleGameEnd(result) {
+    if (gameOver) return;
+    gameOver = true;
+
+    // 新增强制停止计时器
+    clearInterval(timer);
+    timeLeft = 0;
+    document.getElementById('timer').textContent = '🕒0秒';
+
+    // 新增禁用所有按钮
+    document.querySelectorAll('#options button').forEach(btn => {
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '0.5';
+    });
+
+    const victoryOverlay = document.querySelector('.victory-overlay');
+    const victoryText = document.querySelector('.victory-text');
+
+    victoryOverlay.style.display = 'flex';
+    if (result === 'defeat') {
+        victoryText.textContent = "雖敗猶榮！";
+    } else {
+        victoryText.textContent = "武道昌隆！";
+    }
+
+    const resultSound = result === 'defeat' ? soundEffects.defeat : soundEffects.victory;
+    resultSound.play();
+
+    victoryText.style.animation = 'none';
+    setTimeout(() => victoryText.style.animation = 'victoryPulse 1s ease-out', 10);
+
+    // 新增重赛按钮容器
+    const existingButtons = document.querySelector('.rematch-buttons');
+    if (existingButtons) existingButtons.remove();
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'rematch-buttons';
+
+    const rematchBtn = document.createElement('button');
+    rematchBtn.textContent = '再戰江湖';
+    const mainMenuBtn = document.createElement('button');
+    mainMenuBtn.textContent = '歸隱山林';
+
+    // 按钮点击处理
+    rematchBtn.onclick = () => startSinglePlayerMode();
+    mainMenuBtn.onclick = () => {
+        document.getElementById('gameArea').style.display = 'none';
+        document.getElementById('roomControl').style.display = 'block';
+        victoryOverlay.style.display = 'none';
+    };
+
+    buttonContainer.appendChild(rematchBtn);
+    buttonContainer.appendChild(mainMenuBtn);
+
+    victoryOverlay.appendChild(buttonContainer);
+}
+
+
     
 
 function startNewGameSession() {
