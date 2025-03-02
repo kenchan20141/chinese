@@ -1074,6 +1074,11 @@
     
 <script>
 
+    let isSelectingQuestionBank = false; // 标记是否正在选择题库
+let questionBankSelector; // 存储选择题库的玩家（'player1' 或 'player2'）
+let waitingForQuestionBankSelection = false; // 标记是否在等待对方选择题库
+let countdownTimer; // 倒计时计时器
+
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1272,6 +1277,34 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
         <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${selectedCard.querySelector('h3').textContent}</p>
         <p>等待對手選擇流派...</p>
     `;
+
+const playerPath = isHost? 'player1' : 'player2';
+    database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+        class: className,
+        health: 100,
+        attack: playerClass.attack,
+        defense: playerClass.defense,
+        dodge: playerClass.dodge
+    });
+
+    // 检查双方是否都选择了角色
+    database.ref(`rooms/${currentRoomId}`).once('value', (snapshot) => {
+        const room = snapshot.val();
+        if (room.player1.class && room.player2.class) {
+            // 随机选择一位玩家来挑选题库
+            questionBankSelector = Math.random() < 0.5? 'player1' : 'player2';
+            isSelectingQuestionBank = true;
+            if (isHost && questionBankSelector === 'player1' ||!isHost && questionBankSelector === 'player2') {
+                // 显示题库选择界面（需要新增）
+                showQuestionBankSelection();
+            } else {
+                // 显示等待对方选择题库的界面
+                showWaitingForQuestionBankSelection();
+            }
+        }
+    });
+
+
     
     // 更新数据库
     const playerPath = isHost ? 'player1' : 'player2';
@@ -1289,7 +1322,189 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
     setTimeout(() => {
         popupImage.style.display = 'none';
     }, 500); // 動畫持續時間為0.5秒
+
     
+}
+
+    function showQuestionBankSelection() {
+    // 显示全屏的题库选择界面
+    const questionBankSelection = document.createElement('div');
+    questionBankSelection.id = 'questionBankSelection';
+    questionBankSelection.style.position = 'fixed';
+    questionBankSelection.style.top = 0;
+    questionBankSelection.style.left = 0;
+    questionBankSelection.style.width = '100%';
+    questionBankSelection.style.height = '100%';
+    questionBankSelection.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    questionBankSelection.style.zIndex = 9999;
+    questionBankSelection.style.display = 'flex';
+    questionBankSelection.style.justifyContent = 'center';
+    questionBankSelection.style.alignItems = 'center';
+    questionBankSelection.style.flexDirection = 'column';
+
+    const gradeSelection = document.createElement('div');
+    gradeSelection.style.textAlign = 'center';
+    gradeSelection.style.color = 'white';
+    gradeSelection.style.fontSize = '2rem';
+    gradeSelection.style.marginBottom = '20px';
+    gradeSelection.textContent = '请选择年级：';
+
+    const middleOneButton = document.createElement('button');
+    middleOneButton.textContent = '中一';
+    middleOneButton.style.padding = '15px 30px';
+    middleOneButton.style.fontSize = '1.2em';
+    middleOneButton.style.backgroundColor = 'linear-gradient(45deg, #4CAF50, #45a049)';
+    middleOneButton.style.border = '2px solid #2d662f';
+    middleOneButton.style.borderRadius = '8px';
+    middleOneButton.style.color = 'white';
+    middleOneButton.style.cursor = 'pointer';
+    middleOneButton.onclick = () => {
+        // 选择中一，显示下一级选择（题目）
+        showQuestionSelection('中一');
+    };
+
+    const middleFiveButton = document.createElement('button');
+    middleFiveButton.textContent = '中五';
+    middleFiveButton.style.padding = '15px 30px';
+    middleFiveButton.style.fontSize = '1.2em';
+    middleFiveButton.style.backgroundColor = 'linear-gradient(45deg, #4CAF50, #45a049)';
+    middleFiveButton.style.border = '2px solid #2d662f';
+    middleFiveButton.style.borderRadius = '8px';
+    middleFiveButton.style.color = 'white';
+    middleFiveButton.style.cursor = 'pointer';
+    middleFiveButton.onclick = () => {
+        // 选择中五，显示下一级选择（题目）
+        showQuestionSelection('中五');
+    };
+
+    questionBankSelection.appendChild(gradeSelection);
+    questionBankSelection.appendChild(middleOneButton);
+    questionBankSelection.appendChild(middleFiveButton);
+
+    document.body.appendChild(questionBankSelection);
+}
+
+function showQuestionSelection(grade) {
+    // 移除年级选择界面
+    const questionBankSelection = document.getElementById('questionBankSelection');
+    questionBankSelection.remove();
+
+    // 显示题目选择界面
+    const questionSelection = document.createElement('div');
+    questionSelection.id = 'questionSelection';
+    questionSelection.style.position = 'fixed';
+    questionSelection.style.top = 0;
+    questionSelection.style.left = 0;
+    questionSelection.style.width = '100%';
+    questionSelection.style.height = '100%';
+    questionSelection.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    questionSelection.style.zIndex = 9999;
+    questionSelection.style.display = 'flex';
+    questionSelection.style.justifyContent = 'center';
+    questionSelection.style.alignItems = 'center';
+    questionSelection.style.flexDirection = 'column';
+
+    const questionText = document.createElement('div');
+    questionText.style.textAlign = 'center';
+    questionText.style.color = 'white';
+    questionText.style.fontSize = '2rem';
+    questionText.style.marginBottom = '20px';
+    if (grade === '中一') {
+        questionText.textContent = '請選擇題目：御人之妻';
+    } else {
+        questionText.textContent = '請選擇题目：廉頗藺相如列傳';
+    }
+
+    const confirmButton = document.createElement('button');
+    confirmButton.textContent = '確認';
+    confirmButton.style.padding = '15px 30px';
+    confirmButton.style.fontSize = '1.2em';
+    confirmButton.style.backgroundColor = 'linear-gradient(45deg, #4CAF50, #45a049)';
+    confirmButton.style.border = '2px solid #2d662f';
+    confirmButton.style.borderRadius = '8px';
+    confirmButton.style.color = 'white';
+    confirmButton.style.cursor = 'pointer';
+    confirmButton.onclick = () => {
+        // 确认选择，开始倒计时
+        startCountdown();
+        questionSelection.remove();
+    };
+
+    questionSelection.appendChild(questionText);
+    questionSelection.appendChild(confirmButton);
+
+    document.body.appendChild(questionSelection);
+
+const confirmButton = document.createElement('button');
+    confirmButton.textContent = '确认';
+    confirmButton.onclick = () => {
+        // 确认选择，将选择的题库记录到数据库中
+        const playerPath = isHost? 'player1' : 'player2';
+        database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+            selectedQuestionBank: grade
+        });
+        startCountdown();
+        questionSelection.remove();
+    };
+
+    
+}
+
+function showWaitingForQuestionBankSelection() {
+    // 显示等待对方选择题库的界面
+    const waiting = document.createElement('div');
+    waiting.id = 'waitingForQuestionBank';
+    waiting.style.position = 'fixed';
+    waiting.style.top = 0;
+    waiting.style.left = 0;
+    waiting.style.width = '100%';
+    waiting.style.height = '100%';
+    waiting.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    waiting.style.zIndex = 9999;
+    waiting.style.display = 'flex';
+    waiting.style.justifyContent = 'center';
+    waiting.style.alignItems = 'center';
+    waiting.style.color = 'white';
+    waiting.style.fontSize = '2rem';
+    waiting.textContent = '等待對方選擇題庫';
+
+    document.body.appendChild(waiting);
+}
+
+    function startCountdown() {
+    // 显示倒计时界面
+    const countdown = document.createElement('div');
+    countdown.id = 'countdown';
+    countdown.style.position = 'fixed';
+    countdown.style.top = 0;
+    countdown.style.left = 0;
+    countdown.style.width = '100%';
+    countdown.style.height = '100%';
+    countdown.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    countdown.style.zIndex = 9999;
+    countdown.style.display = 'flex';
+    countdown.style.justifyContent = 'center';
+    countdown.style.alignItems = 'center';
+    countdown.style.color = 'white';
+    countdown.style.fontSize = '5rem';
+
+    let time = 3;
+    const countdownText = document.createElement('div');
+    countdownText.textContent = time;
+
+    countdown.appendChild(countdownText);
+    document.body.appendChild(countdown);
+
+    countdownTimer = setInterval(() => {
+        time--;
+        countdownText.textContent = time;
+        if (time === 0) {
+            clearInterval(countdownTimer);
+            countdown.remove();
+            // 开始游戏
+            startGame(sessionStorage.getItem('currentRoomId'));
+        }
+    }, 1000);
 }
 
 
@@ -2234,6 +2449,30 @@ if (user) {
     });
 }
     victoryOverlay.appendChild(buttonContainer);
+
+// 新增代码：记录点击再战江湖的玩家
+    let rematchCount = 0;
+    const rematchCallback = () => {
+        rematchCount++;
+        if (rematchCount === 2) {
+            // 两位玩家都点击了再战江湖，重新随机选择一位玩家来挑选题库
+            questionBankSelector = Math.random() < 0.5? 'player1' : 'player2';
+            isSelectingQuestionBank = true;
+            if (isHost && questionBankSelector === 'player1' ||!isHost && questionBankSelector === 'player2') {
+                showQuestionBankSelection();
+            } else {
+                showWaitingForQuestionBankSelection();
+            }
+            // 移除胜利界面和按钮
+            victoryOverlay.style.display = 'none';
+            rematchBtn.remove();
+        }
+    };
+
+    rematchBtn.onclick = () => {
+        rematchCallback();
+
+    
 }
 
 
@@ -2635,6 +2874,29 @@ function listenToRoomChanges() {
 
         updateHealthDisplay(room);
 
+
+// 检查题库选择状态
+        if (isSelectingQuestionBank) {
+            if (isHost && questionBankSelector === 'player1' ||!isHost && questionBankSelector === 'player2') {
+                // 当前玩家是选择题库的玩家，检查是否已经选择了题库
+                if (room.selectedQuestionBank) {
+                    // 已经选择了题库，开始倒计时
+                    startCountdown();
+                    isSelectingQuestionBank = false;
+                }
+            } else {
+                // 当前玩家不是选择题库的玩家，检查对方是否已经选择了题库
+                if (room.selectedQuestionBank) {
+                    // 对方已经选择了题库，移除等待界面
+                    const waiting = document.getElementById('waitingForQuestionBank');
+                    if (waiting) {
+                        waiting.remove();
+                    }
+                    isSelectingQuestionBank = false;
+                }
+            }
+        }
+        
         // 重開相關邏輯保持不變
         const bothAgreed = room.hostRematch && room.clientRematch;
         if (bothAgreed && !room.gameStarted) {
