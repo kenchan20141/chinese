@@ -876,23 +876,28 @@
     </div>
     
     <!-- 按鈕容器 -->
-    <div class="button-group">
-        <button onclick="createRoom()" class="action-btn create-btn">
-            <i class="fas fa-fist-raised"></i>
-            <span>開闢戰場</span>
-            <div class="btn-glow"></div>
-        </button>
-        <button onclick="joinRoom()" class="action-btn join-btn">
-            <i class="fas fa-shield-alt"></i>
-            <span>加入征伐</span>
-            <div class="btn-glow"></div>
-        </button>
-        <button onclick="randomMatch()" class="action-btn random-match-btn">
-            <i class="fas fa-random"></i>
-            <span>隨機分配</span>
-            <div class="btn-glow"></div>
-        </button>
-    </div>
+   <div class="button-group">
+    <button onclick="createRoom()" class="action-btn create-btn">
+        <i class="fas fa-fist-raised"></i>
+        <span>開闢戰場</span>
+        <div class="btn-glow"></div>
+    </button>
+    <button onclick="joinRoom()" class="action-btn join-btn">
+        <i class="fas fa-shield-alt"></i>
+        <span>加入征伐</span>
+        <div class="btn-glow"></div>
+    </button>
+    <button onclick="randomMatch()" class="action-btn random-match-btn">
+        <i class="fas fa-random"></i>
+        <span>隨機分配</span>
+        <div class="btn-glow"></div>
+    </button>
+    <button onclick="startSinglePlayerMode()" class="action-btn single-player-btn">
+        <i class="fas fa-user"></i>
+        <span>單機模式</span>
+        <div class="btn-glow"></div>
+    </button>
+</div>
 
    
      
@@ -1016,6 +1021,18 @@
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
         </div>
     </div>
+
+        <div id="difficultySelection" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+    <div style="background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold); border-radius: 15px; text-align: center;">
+        <h2 style="color: var(--gold); margin-bottom: 2rem;">選擇難度</h2>
+        <div class="button-group" style="display: grid; gap: 1rem;">
+            <button onclick="selectDifficulty('easy')" class="action-btn">容易</button>
+            <button onclick="selectDifficulty('normal')" class="action-btn">普通</button>
+            <button onclick="selectDifficulty('hard')" class="action-btn">困難</button>
+            <button onclick="selectDifficulty('hell')" class="action-btn">地獄</button>
+        </div>
+    </div>
+</div>
 
     <!-- 問題與選項區 -->
     <div id="question"></div>
@@ -1684,6 +1701,93 @@ function toggleMusic() {
     
     // 反轉按鈕顯示文字
     document.querySelector('.music-control').textContent = isMusicPlaying ? '🎵' : '🔇';
+}
+
+    function startSinglePlayerMode() {
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('difficultySelection').style.display = 'flex'; // 使用 flex 確保居中
+}
+
+    const difficultySettings = {
+    easy: { damageProbability: 0.3, damageInterval: 6000 },
+    normal: { damageProbability: 0.5, damageInterval: 4000 },
+    hard: { damageProbability: 0.7, damageInterval: 3000 },
+    hell: { damageProbability: 0.9, damageInterval: 2000 }
+};
+
+let currentDifficulty = null;
+let damageTimer = null; // 用於清除定時器
+
+function selectDifficulty(difficulty) {
+    currentDifficulty = difficulty;
+    document.getElementById('difficultySelection').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+    startSinglePlayerGame();
+}
+
+function startSinglePlayerGame() {
+    let playerHealth = 100;
+    const damageAmount = 10;
+
+    // 顯示玩家氣血
+    document.getElementById('myHealthContainer').innerHTML = `
+        <div>🏹 你的氣血: <span id="myHealth">${playerHealth}</span></div>
+        <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${playerHealth}%"></div></div>
+    `;
+    // 隱藏敵方氣血（單機模式不需要）
+    document.getElementById('enemyHealthContainer').style.display = 'none';
+
+    // 設置定時器扣減氣血
+    const settings = difficultySettings[currentDifficulty];
+    clearInterval(damageTimer); // 清除之前的定時器
+    damageTimer = setInterval(() => {
+        if (Math.random() < settings.damageProbability) {
+            playerHealth = Math.max(0, playerHealth - damageAmount);
+            document.getElementById('myHealth').textContent = playerHealth;
+            document.getElementById('myHealthBar').style.width = playerHealth + '%';
+            if (playerHealth <= 0) {
+                clearInterval(damageTimer);
+                endSinglePlayerGame();
+            }
+        }
+    }, settings.damageInterval);
+
+    // 開始遊戲（加載問題）
+    loadNewQuestion();
+}
+
+    function endSinglePlayerGame() {
+    const victoryOverlay = document.querySelector('.victory-overlay');
+    const victoryText = document.querySelector('.victory-text');
+    victoryText.textContent = "遊戲結束";
+    victoryOverlay.style.display = 'flex';
+
+    // 移除舊的重賽按鈕（如果存在）
+    const existingButtons = victoryOverlay.querySelector('.rematch-buttons');
+    if (existingButtons) existingButtons.remove();
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'rematch-buttons';
+
+    const rematchBtn = document.createElement('button');
+    rematchBtn.textContent = '再戰江湖';
+    const mainMenuBtn = document.createElement('button');
+    mainMenuBtn.textContent = '歸隱山林';
+
+    rematchBtn.onclick = () => {
+        victoryOverlay.style.display = 'none';
+        startSinglePlayerGame();
+    };
+    mainMenuBtn.onclick = () => {
+        victoryOverlay.style.display = 'none';
+        document.getElementById('gameArea').style.display = 'none';
+        document.getElementById('enemyHealthContainer').style.display = 'block'; // 恢復敵方氣血顯示
+        document.getElementById('roomControl').style.display = 'block';
+    };
+
+    buttonContainer.appendChild(rematchBtn);
+    buttonContainer.appendChild(mainMenuBtn);
+    victoryOverlay.appendChild(buttonContainer);
 }
 
 function createRoom() {
