@@ -1842,9 +1842,9 @@ function listenToRoomChanges() {
     });
 }
 
-    function randomMatch() {
-        console.log("randomMatch called");
-    const waitingRef = database.ref('waitingRooms'); // 使用單一等待房間
+  function randomMatch() {
+    console.log("randomMatch called");
+    const waitingRef = database.ref('waitingRooms');
     const userId = Math.random().toString(36).substr(2, 9); // 臨時用戶 ID
 
     waitingRef.once('value', (snapshot) => {
@@ -1852,27 +1852,29 @@ function listenToRoomChanges() {
         const waitingData = snapshot.val();
 
         if (!waitingData || !waitingData.roomId) {
-            // 沒有等待房間，第一個玩家成為房主
             const roomId = Math.floor(1000 + Math.random() * 9000).toString();
             currentRoomId = roomId;
             isHost = true;
 
-            // 創建房間並記錄到 waitingRoom
             database.ref('rooms/' + roomId).set({
-    player1: { userId: userId, health: 100, class: null, currentQuestion: null, name: '玩家1' },
-    player2: null, // 等待第二個玩家
-    gameStarted: false,
-    gameEnded: false,
-    winner: null,
-    createdAt: firebase.database.ServerValue.TIMESTAMP // 添加時間戳
-});
+                player1: { userId: userId, health: 100, class: null, currentQuestion: null, name: '玩家1' },
+                player2: null,
+                gameStarted: false,
+                gameEnded: false,
+                winner: null,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
             waitingRef.set({
-    roomId: roomId,
-    hostId: userId,
-    createdAt: firebase.database.ServerValue.TIMESTAMP // 添加時間戳
-});
+                roomId: roomId,
+                hostId: userId,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
 
-            // 更新 UI
+            // 房主斷線時清理
+            const roomRef = database.ref('rooms/' + roomId);
+            roomRef.onDisconnect().remove();
+            waitingRef.onDisconnect().remove();
+
             document.getElementById('roomControl').style.display = 'none';
             document.getElementById('waitingArea').style.display = 'block';
             document.getElementById('displayRoomId').textContent = '等待對手...';
@@ -1880,18 +1882,22 @@ function listenToRoomChanges() {
 
             listenToRoomChanges();
         } else {
-            // 有等待房間，第二個玩家加入
             const roomId = waitingData.roomId;
             currentRoomId = roomId;
             isHost = false;
 
-            // 加入房間作為 player2
-            database.ref('rooms/' + roomId + '/player2').set({
+            const player2Ref = database.ref('rooms/' + roomId + '/player2');
+            player2Ref.set({
                 userId: userId, health: 100, class: null, currentQuestion: null, name: '玩家2'
+            }).then(() => {
+                waitingRef.remove();
+            }).catch((error) => {
+                console.error("設置 player2 失敗:", error);
             });
-            waitingRef.remove(); // 清除等待房間記錄
 
-            // 更新 UI
+            // 第二位玩家斷線時清理自身記錄
+            player2Ref.onDisconnect().remove();
+
             document.getElementById('roomControl').style.display = 'none';
             document.getElementById('waitingArea').style.display = 'block';
             document.getElementById('displayRoomId').textContent = '等待角色選擇...';
@@ -2300,20 +2306,16 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        // 如果是房主且尚未有對手加入，檢查等待時間
-        if (isHost && room.player2 === null) {
+        // 超時檢查
+        if (isHost && room.player2 === null && !room.gameStarted) {
             const now = Date.now();
-            const roomRef = database.ref('rooms/' + currentRoomId);
-            roomRef.once('value', (roomSnapshot) => {
-                const roomData = roomSnapshot.val();
-                const createdAt = roomData?.createdAt || 0;
-                if (now - createdAt > 30000) { // 30秒超時
-                    alert('等待對手超時，請重新嘗試匹配。');
-                    database.ref('rooms/' + currentRoomId).remove();
-                    database.ref('waitingRooms').remove();
-                    window.location.reload();
-                }
-            });
+            const createdAt = room.createdAt || 0;
+            if (now - createdAt > 30000) { // 30秒超時
+                alert('等待對手超時，請重新嘗試匹配。');
+                database.ref('rooms/' + currentRoomId).remove();
+                database.ref('waitingRooms').remove();
+                window.location.reload();
+            }
         }
 
         if (room.player1?.class && room.player2?.class) {
@@ -2333,27 +2335,18 @@ function listenToRoomChanges() {
 
         updateHealthDisplay(room);
 
-        // 检查双方是否都同意重开
+        // 重開相關邏輯保持不變
         const bothAgreed = room.hostRematch && room.clientRematch;
-        if (bothAgreed &&!room.gameStarted) {
-            // 双方都同意重开，移除等待界面
+        if (bothAgreed && !room.gameStarted) {
             const waitingForRematch = document.getElementById('waitingForRematch');
-            if (waitingForRematch) {
-                waitingForRematch.remove();
-            }
+            if (waitingForRematch) waitingForRematch.remove();
 
-            // 开始新游戏
-            const updates = {
-                gameStarted: true
-            };
+            const updates = { gameStarted: true };
             database.ref('rooms/' + currentRoomId).update(updates, () => {
                 startNewGameSession();
             });
-
-            // 重置等待对方同意的标志位
             waitingForOpponent = false;
         } else if (!bothAgreed && waitingForOpponent) {
-            // 如果只有一方同意且正在等待对方同意，保持等待界面显示
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (!waitingForRematch) {
                 const newWaitingForRematch = document.createElement('div');
@@ -2369,40 +2362,29 @@ function listenToRoomChanges() {
                 newWaitingForRematch.style.margin = '2rem auto';
                 newWaitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
                 newWaitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-                newWaitingForRematch.textContent = '等待对手同意重开游戏...';
+                newWaitingForRematch.textContent = '等待對手同意重開遊戲...';
                 document.body.appendChild(newWaitingForRematch);
             }
         }
 
-       // 新增：检查玩家是否已经重新进入游戏
-const opponentReentered = isHost? room.player2?.reentered : room.player1?.reentered;
-if (opponentReentered &&!opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
-    opponentJoinedMessage = document.createElement('div');
-    opponentJoinedMessage.style.cssText = `
-    position: fixed;
-    top: 10%;
-    left: 50%;
-    transform: translate(-50%, 0);
-    background: rgba(0, 0, 0, 0.9);
-    color: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    z-index: 9999;
-    font-size: 2rem;
-    text-align: center;
-    width: 80%;
-    max-width: 300px;
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
-`;
-    opponentJoinedMessage.textContent = '🎮玩家已進場';
-    document.body.appendChild(opponentJoinedMessage);
+        // 玩家重新進入提示保持不變
+        const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
+        if (opponentReentered && !opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
+            opponentJoinedMessage = document.createElement('div');
+            opponentJoinedMessage.style.cssText = `
+                position: fixed; top: 10%; left: 50%; transform: translate(-50%, 0);
+                background: rgba(0, 0, 0, 0.9); color: #fff; padding: 20px; 
+                border-radius: 10px; z-index: 9999; font-size: 2rem; text-align: center;
+                width: 80%; max-width: 300px; box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            `;
+            opponentJoinedMessage.textContent = '🎮玩家已進場';
+            document.body.appendChild(opponentJoinedMessage);
 
-    // 一段时间后移除提示信息
-    setTimeout(() => {
-        opponentJoinedMessage.remove();
-        opponentJoinedMessage = null;
-    }, 3000);
-}
+            setTimeout(() => {
+                opponentJoinedMessage.remove();
+                opponentJoinedMessage = null;
+            }, 3000);
+        }
     });
 }
 </script>
