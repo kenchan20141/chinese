@@ -2108,15 +2108,24 @@ function checkGameOver() {
         const player2Health = Math.max(room.player2?.health || 0, 0);
 
         let winner = null;
-        if (player1Health <= 0 || player2Health <= 0) {
-            if (player1Health > player2Health) {
+       if (isHost && currentRoomId.startsWith('single_')) {
+            // 单机模式，敌方气血为0则玩家胜利
+            if (player2Health <= 0) {
                 winner = 'player1';
-            } else if (player2Health > player1Health) {
+            } else if (player1Health <= 0) {
                 winner = 'player2';
-            } else {
-                winner = 'draw';
             }
-
+        } else {
+            if (player1Health <= 0 || player2Health <= 0) {
+                if (player1Health > player2Health) {
+                    winner = 'player1';
+                } else if (player2Health > player1Health) {
+                    winner = 'player2';
+                } else {
+                    winner = 'draw';
+                }
+            }
+        }
             // 新增強制血量歸零
             const updates = {
                 gameEnded: true,
