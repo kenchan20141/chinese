@@ -2249,6 +2249,8 @@ function selectDifficulty(difficulty) {
     // 显示游戏区域
     document.getElementById('difficultySelection').style.display = 'none';
     document.getElementById('gameArea').style.display = 'block';
+    const victoryOverlay = document.querySelector('.victory-overlay');
+victoryOverlay.style.display = 'none';
 
     // 开始扣血计时器，确保按照难度设置的时间间距扣血
     clearInterval(timer); // 清除可能存在的旧计时器
@@ -2441,6 +2443,10 @@ victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
 
     restartBtn.onclick = () => {
         database.ref('rooms/' + currentRoomId).remove();
+        const victoryOverlay = document.querySelector('.victory-overlay');
+const buttons = victoryOverlay.querySelector('.rematch-buttons');
+if (buttons) buttons.remove();
+victoryOverlay.style.display = 'none';
         startSinglePlayer();
     };
     mainMenuBtn.onclick = () => {
