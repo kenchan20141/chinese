@@ -1084,9 +1084,18 @@
 
     function showDifficultySelection() {
     document.getElementById('difficultySelection').style.display = 'block';
+    // 隐藏游戏区域和职业选择界面
+    document.getElementById('gameArea').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'none';
 }
+    
 function selectDifficulty(difficulty) {
     document.getElementById('difficultySelection').style.display = 'none';
+    // 检查职业是否已经选择
+    if (!playerClass) {
+        alert('请先选择职业');
+        return;
+    }
     // 根據選擇的難度設置電腦玩家的答中機率和答題時間
     let computerAccuracy, questionTime;
     switch (difficulty) {
@@ -1110,9 +1119,45 @@ function selectDifficulty(difficulty) {
     // 開始單機模式遊戲
     startSinglePlayerGame(difficulty, computerAccuracy, questionTime);
 }
+    
 function startSinglePlayerGame(difficulty, computerAccuracy, questionTime) {
     // 初始化單機模式的遊戲狀態
-    // 這裡可以設置電腦玩家的初始屬性等
+    // 根据选择的难度和职业，设置玩家和电脑玩家的属性
+    // 例如，设置电脑玩家的初始气血、攻击、防御等属性
+    let computerHealth = 100;
+    let computerAttack = 1.0;
+    let computerDefense = 1.0;
+    switch (difficulty) {
+        case 'easy':
+            computerHealth = 80;
+            computerAttack = 0.8;
+            break;
+        case 'normal':
+            computerHealth = 100;
+            computerAttack = 1.0;
+            break;
+        case 'hard':
+            computerHealth = 120;
+            computerAttack = 1.2;
+            break;
+        case 'hell':
+            computerHealth = 150;
+            computerAttack = 1.5;
+            break;
+    }
+    // 设置玩家的初始属性
+    const playerHealth = 100;
+    const playerAttack = playerClass.attack;
+    const playerDefense = playerClass.defense;
+
+    // 存储电脑玩家的属性
+    window.computerPlayer = {
+        health: computerHealth,
+        attack: computerAttack,
+        defense: computerDefense,
+        accuracy: computerAccuracy
+    };
+
     document.getElementById('gameArea').style.display = 'block';
     startTimer(questionTime); // 傳入答題時間
     loadNewQuestion();
@@ -1120,15 +1165,15 @@ function startSinglePlayerGame(difficulty, computerAccuracy, questionTime) {
 
     function startSinglePlayerMode() {
     document.getElementById('roomControl').style.display = 'none';
+    // 先显示难度选择界面
+    showDifficultySelection();
+    // 等难度选择完成后再进行其他初始化操作
     document.getElementById('classSelection').style.display = 'block';
-    // 初始化單機模式的遊戲狀態
-    currentRoomId = 'singleplayer'; // 標記為單機模式
+    currentRoomId ='singleplayer'; // 標記為單機模式
     isHost = true;
     playerClass = null;
     gameOver = false;
     answered = false;
-    // 顯示難度選擇界面
-    showDifficultySelection();
 }
 
 
@@ -1379,15 +1424,28 @@ function displayQuestion(question) {
 }
 
 function checkAnswer(isCorrect, questionId) {
-    if (answeredQuestions.has(questionId)) return; // 如果已回答，則不執行
-    answeredQuestions.add(questionId); // 記錄已回答的問題ID
-
-     // 電腦玩家自動答題邏輯
-    if (currentRoomId === 'singleplayer') {
+    // 電腦玩家自動答題邏輯
+    if (currentRoomId ==='singleplayer') {
         const computerAnswer = Math.random() < computerAccuracy; // 根據難度設置的答中機率
         if (!computerAnswer) {
             const baseDamage = Math.floor((timeLeft / 15) * 13);
             const damage = Math.floor(baseDamage / playerClass.defense);
+            const updates = {
+                'player1/health': firebase.database.ServerValue.increment(-damage)
+            };
+            database.ref('rooms/' + currentRoomId).update(updates, (error) => {
+                if (error) return;
+                checkGameOver();
+                if (!gameOver) {
+                    setTimeout(() => {
+                        loadNewQuestion();
+                    }, 700);
+                }
+            });
+        } else {
+            // 电脑玩家答对时，计算玩家受到的伤害
+            const baseDamage = Math.floor((timeLeft / 15) * 13);
+            const damage = Math.floor(baseDamage * window.computerPlayer.attack / playerDefense);
             const updates = {
                 'player1/health': firebase.database.ServerValue.increment(-damage)
             };
