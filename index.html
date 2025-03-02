@@ -1311,6 +1311,7 @@ function displayQuestion(question) {
 }
 
 function checkAnswer(isCorrect, questionId) {
+    console.log('checkAnswer called with isCorrect:', isCorrect, 'questionId:', questionId);
     if (answeredQuestions.has(questionId)) return;
     answeredQuestions.add(questionId);
 
@@ -1350,6 +1351,7 @@ function checkAnswer(isCorrect, questionId) {
     }
 
     if (isSinglePlayerMode) {
+        console.log('Single player mode, isCorrect:', isCorrect, 'damage:', damage);
         // 單人模式邏輯
         if (isCorrect) {
             const currentOpponentHealth = parseInt(document.getElementById('opponentHealth').textContent);
@@ -1836,6 +1838,8 @@ function startSinglePlayerMode() {
 }
 
 function startSinglePlayerGame(difficulty) {
+    isSinglePlayerMode = true; // 確保進入遊戲時設置為單人模式
+    console.log('Single player mode activated, isSinglePlayerMode:', isSinglePlayerMode);
     document.getElementById('singlePlayerDifficulty').style.display = 'none';
     document.getElementById('gameArea').style.display = 'block';
 
