@@ -1698,9 +1698,11 @@ let timeLeft = 15;
 let gameOver = false;
 let playerClass = null; // 存储玩家选择的职业
 
-const bgMusic = new Audio('https://amachamusic.chagasi.com/mp3/umioiku.mp3');
+const bgMusic = new Audio('https://amachamusic.chagasi.com/mp3/sunaarashi.mp3');
+let isMusicPlaying = false;
 bgMusic.loop = true;
 bgMusic.volume = 0.3;
+
 
 const soundEffects = {
     attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3'),
