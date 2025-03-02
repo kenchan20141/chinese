@@ -875,8 +875,7 @@
         </div>
     </div>
     
-    <div id="roomControl">
-    <!-- 原有內容保持不變 -->
+    <!-- 按鈕組 -->
     <div class="button-group">
         <button onclick="createRoom()" class="action-btn create-btn">
             <i class="fas fa-fist-raised"></i>
@@ -899,6 +898,8 @@
             <div class="btn-glow"></div>
         </button>
     </div>
+    
+    <!-- 難度選擇 -->
     <div class="input-group">
         <select id="difficulty">
             <option value="easy">容易</option>
@@ -907,22 +908,20 @@
             <option value="hell">地獄</option>
         </select>
     </div>
-    <!-- 後續內容保持不變 -->
-</div>
-
-   
-     
+    
+    <!-- 註冊與登入按鈕 -->
     <div class="input-group">
-         <button id="registerBtn" class="action-btn" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">
-        <i class="fas fa-user-plus"></i>
-        <span>註冊</span>
-    </button>
+        <button id="registerBtn" class="action-btn" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">
+            <i class="fas fa-user-plus"></i>
+            <span>註冊</span>
+        </button>
         <button id="loginBtn" class="action-btn" style="background: linear-gradient(45deg, #8e44ad, #9b59b6);">
             <i class="fas fa-user"></i>
             <span>登入</span>
         </button>
     </div>
 
+    <!-- 登出按鈕 -->
     <div id="logoutContainer" style="display: none; margin-top: 1rem;">
         <button id="logoutBtn" class="action-btn" style="background: linear-gradient(45deg, #e74c3c, #c0392b);">
             <i class="fas fa-sign-out-alt"></i>
@@ -930,7 +929,7 @@
         </button>
     </div>
 
-    <!-- 新增頁腳 -->
+    <!-- 頁腳 -->
     <div class="footer">
         <div class="decor-line"></div>
         <p>⚔️ 選擇你的征戰之路 ⚔️</p>
