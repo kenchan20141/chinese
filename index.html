@@ -14,7 +14,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
-    <style>      
+    <style>  
+
+        .difficulty-btn {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
 
 .single-player-btn {
     /* 啡色渐变，这里使用了 #A52A2A 和 #D2691E 两种常见的啡色 */
@@ -48,7 +57,11 @@
 }
 
 .rematch-buttons button {
-    padding: 15px 30px;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.2em;
     background: linear-gradient(45deg, #4CAF50, #45a049);
     border: 2px solid #2d662f;
@@ -1062,7 +1075,7 @@
     
 <div id="difficultySelection" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid #d4af37; border-radius: 15px; z-index: 9999;">
     <h2 style="color: #d4af37; text-align: center;">選擇難度</h2>
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem;">
+   <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; width: 300px;">
         <button onclick="selectDifficulty('easy')" class="difficulty-btn">容易</button>
         <button onclick="selectDifficulty('normal')" class="difficulty-btn">普通</button>
         <button onclick="selectDifficulty('hard')" class="difficulty-btn">困難</button>
