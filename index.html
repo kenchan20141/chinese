@@ -867,15 +867,6 @@
     </div>
     
     <!-- 美化輸入框區域 -->
-    <div class="input-group">
-        <div class="input-decor">
-            <i class="fas fa-flag icon"></i>
-            <input type="text" id="roomId" placeholder="輸入四位戰場編號">
-            <div class="glow"></div>
-        </div>
-    </div>
-    
-    <!-- 按鈕組 -->
     <div class="button-group">
         <button onclick="createRoom()" class="action-btn create-btn">
             <i class="fas fa-fist-raised"></i>
@@ -898,30 +889,39 @@
             <div class="btn-glow"></div>
         </button>
     </div>
-    
-    <!-- 難度選擇 -->
-    <div class="input-group">
-        <select id="difficulty">
-            <option value="easy">容易</option>
-            <option value="normal" selected>普通</option>
-            <option value="hard">困難</option>
-            <option value="hell">地獄</option>
-        </select>
-    </div>
-    
-    <!-- 註冊與登入按鈕 -->
-    <div class="input-group">
-        <button id="registerBtn" class="action-btn" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">
-            <i class="fas fa-user-plus"></i>
-            <span>註冊</span>
+</div>
+
+    <div id="difficultySelection" style="display: none; text-align: center; padding: 2rem;">
+    <h2 style="color: var(--gold); margin-bottom: 2rem;">選擇難度</h2>
+    <div class="button-group">
+        <button onclick="selectDifficulty('easy')" class="action-btn">
+            <span>容易</span>
         </button>
+        <button onclick="selectDifficulty('normal')" class="action-btn">
+            <span>普通</span>
+        </button>
+        <button onclick="selectDifficulty('hard')" class="action-btn">
+            <span>困難</span>
+        </button>
+        <button onclick="selectDifficulty('hell')" class="action-btn">
+            <span>地獄</span>
+        </button>
+    </div>
+</div>
+
+   
+     
+    <div class="input-group">
+         <button id="registerBtn" class="action-btn" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">
+        <i class="fas fa-user-plus"></i>
+        <span>註冊</span>
+    </button>
         <button id="loginBtn" class="action-btn" style="background: linear-gradient(45deg, #8e44ad, #9b59b6);">
             <i class="fas fa-user"></i>
             <span>登入</span>
         </button>
     </div>
 
-    <!-- 登出按鈕 -->
     <div id="logoutContainer" style="display: none; margin-top: 1rem;">
         <button id="logoutBtn" class="action-btn" style="background: linear-gradient(45deg, #e74c3c, #c0392b);">
             <i class="fas fa-sign-out-alt"></i>
@@ -929,7 +929,7 @@
         </button>
     </div>
 
-    <!-- 頁腳 -->
+    <!-- 新增頁腳 -->
     <div class="footer">
         <div class="decor-line"></div>
         <p>⚔️ 選擇你的征戰之路 ⚔️</p>
@@ -1679,27 +1679,32 @@ let timeLeft = 15;
 let gameOver = false;
 let playerClass = null; // 存储玩家选择的职业
 
-    function startSinglePlayer() {
-    const difficulty = document.getElementById('difficulty').value;
-    currentRoomId = 'single_' + Math.random().toString(36).substr(2, 9); // 生成唯一的單機房間 ID
+   
+    function selectDifficulty(difficulty) {
+    // 儲存所選難度
+    singlePlayerDifficulty = difficulty;
+
+    // 生成單機房間 ID
+    currentRoomId = 'single_' + Math.random().toString(36).substr(2, 9);
     isHost = true;
     isSinglePlayer = true;
-    singlePlayerDifficulty = difficulty;
-    
-    // 隱藏房間控制區，顯示職業選擇
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    document.getElementById('waitingArea').style.display = 'none'; // 單機模式不需要等待區
 
-    // 在 Firebase 中創建單機房間
+    // 隱藏難度選擇頁面，進入下一步（例如職業選擇或遊戲開始）
+    document.getElementById('difficultySelection').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'block'; // 假設有職業選擇頁面
+    document.getElementById('waitingArea').style.display = 'none'; // 單機模式無需等待區
+
+    // 在 Firebase 中創建單機房間，包含電腦玩家
     database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null },
-        player2: { health: 100, class: 'ai', currentQuestion: null, difficulty: difficulty },
+        player1: { health: 100, class: null, currentQuestion: null }, // 玩家
+        player2: { health: 100, class: 'ai', currentQuestion: null, difficulty: difficulty }, // 電腦對手
         gameStarted: false,
         gameEnded: false,
         winner: null,
         isSinglePlayer: true
     });
+
+    // 監聽房間變化（假設你已有此函數）
     listenToRoomChanges();
 }
 
