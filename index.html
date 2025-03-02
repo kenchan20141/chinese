@@ -1091,12 +1091,8 @@
     
 function selectDifficulty(difficulty) {
     document.getElementById('difficultySelection').style.display = 'none';
-    // 检查职业是否已经选择
-    if (!playerClass) {
-        alert('请先选择职业');
-        return;
-    }
-    // 根據選擇的難度設置電腦玩家的答中機率和答題時間
+
+    // 根據難度設置電腦的答題準確率和答題時間
     let computerAccuracy, questionTime;
     switch (difficulty) {
         case 'easy':
@@ -1116,62 +1112,51 @@ function selectDifficulty(difficulty) {
             questionTime = 5;
             break;
     }
-    // 開始單機模式遊戲
-    startSinglePlayerGame(difficulty, computerAccuracy, questionTime);
+
+    // 檢查是否已選擇職業
+    if (!playerClass) {
+        document.getElementById('classSelection').style.display = 'block';
+        window.selectedDifficulty = { difficulty, computerAccuracy, questionTime }; // 暫存難度選擇
+    } else {
+        startSinglePlayerGame(computerAccuracy, questionTime);
+    }
 }
     
-function startSinglePlayerGame(difficulty, computerAccuracy, questionTime) {
-    // 初始化單機模式的遊戲狀態
-    // 根据选择的难度和职业，设置玩家和电脑玩家的属性
-    // 例如，设置电脑玩家的初始气血、攻击、防御等属性
-    let computerHealth = 100;
-    let computerAttack = 1.0;
-    let computerDefense = 1.0;
-    switch (difficulty) {
-        case 'easy':
-            computerHealth = 80;
-            computerAttack = 0.8;
-            break;
-        case 'normal':
-            computerHealth = 100;
-            computerAttack = 1.0;
-            break;
-        case 'hard':
-            computerHealth = 120;
-            computerAttack = 1.2;
-            break;
-        case 'hell':
-            computerHealth = 150;
-            computerAttack = 1.5;
-            break;
-    }
-    // 设置玩家的初始属性
-    const playerHealth = 100;
-    const playerAttack = playerClass.attack;
-    const playerDefense = playerClass.defense;
+function startSinglePlayerGame(computerAccuracy, questionTime) {
+    // 初始化玩家和電腦的氣血
+    window.playerHealth = 100;
+    window.computerHealth = 100;
+    window.computerAccuracy = computerAccuracy;
+    window.questionTime = questionTime;
 
-    // 存储电脑玩家的属性
-    window.computerPlayer = {
-        health: computerHealth,
-        attack: computerAttack,
-        defense: computerDefense,
-        accuracy: computerAccuracy
-    };
+    // 更新 UI
+    document.getElementById('myHealth').textContent = window.playerHealth;
+    document.getElementById('myHealthBar').style.width = window.playerHealth + '%';
+    document.getElementById('opponentHealth').textContent = window.computerHealth;
+    document.getElementById('opponentHealthBar').style.width = window.computerHealth + '%';
 
+    // 顯示遊戲區域
     document.getElementById('gameArea').style.display = 'block';
-    startTimer(questionTime); // 傳入答題時間
+
+    // 啟動計時器並加載新問題
+    startTimer(questionTime);
     loadNewQuestion();
 }
 
-    function startSinglePlayerMode() {
+  function startSinglePlayerMode() {
+    // 隱藏房間控制和遊戲區域
     document.getElementById('roomControl').style.display = 'none';
-    // 先显示难度选择界面
-    showDifficultySelection();
-    // 等难度选择完成后再进行其他初始化操作
-    document.getElementById('classSelection').style.display = 'block';
-    currentRoomId ='singleplayer'; // 標記為單機模式
+    document.getElementById('gameArea').style.display = 'none';
+    document.getElementById('waitingArea').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'none'; // 先隱藏職業選擇
+
+    // 顯示難度選擇界面
+    document.getElementById('difficultySelection').style.display = 'block';
+
+    // 初始化單人模式相關變量
+    currentRoomId = 'singleplayer'; // 標記為單機模式
     isHost = true;
-    playerClass = null;
+    playerClass = null; // 重置職業選擇
     gameOver = false;
     answered = false;
 }
@@ -1349,52 +1334,32 @@ function selectClass(className) {
         assassin: { attack: 1.0, defense: 0.9, dodge: 0.3, skill: 'dodge' },
         mage: { attack: 1.1, defense: 1, dodge: 0, skill: 'counter' }
     };
-    
+
     playerClass = classData[className];
     playerClass.type = className;
-    
-    // 显示选择反馈
+
+    // 顯示選擇反饋
     document.getElementById('selectedClassInfo').innerHTML = `
-        <p>已選擇：${document.querySelector(`.class-card[onclick="selectClass('${className}')"] h3`).textContent}</p>
-        <p>等待對手選擇流派...</p>
+        <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${document.querySelector(`.class-card[onclick="selectClass('${className}')"] h3`).textContent}</p>
     `;
 
-// 移除所有卡片的选中状态
-document.querySelectorAll('.class-card').forEach(card => {
-    card.classList.remove('selected');
-    card.querySelector('.selected-tick').style.display = 'none';
-});
-
-// 设置当前选中卡片
-const selectedCard = document.querySelector(`.class-card[onclick="selectClass('${className}')"]`);
-selectedCard.classList.add('selected');
-selectedCard.querySelector('.selected-tick').style.display = 'flex';
-
-    // 显示确认信息
-    document.getElementById('selectedClassInfo').innerHTML = `
-        <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${selectedCard.querySelector('h3').textContent}</p>
-        <p>等待對手選擇流派...</p>
-    `;
-    
-    // 更新数据库
-    const playerPath = isHost ? 'player1' : 'player2';
-    database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-        class: className,
-        health: 100,
-        attack: playerClass.attack,
-        defense: playerClass.defense,
-        dodge: playerClass.dodge
+    // 更新職業選擇 UI
+    document.querySelectorAll('.class-card').forEach(card => {
+        card.classList.remove('selected');
+        card.querySelector('.selected-tick').style.display = 'none';
     });
+    const selectedCard = document.querySelector(`.class-card[onclick="selectClass('${className}')"]`);
+    selectedCard.classList.add('selected');
+    selectedCard.querySelector('.selected-tick').style.display = 'flex';
 
-// 顯示彈出圖片並在動畫結束後隱藏
-    const popupImage = selectedCard.querySelector('.popup-image');
-    popupImage.style.display = 'block';
-    setTimeout(() => {
-        popupImage.style.display = 'none';
-    }, 500); // 動畫持續時間為0.5秒
-    
+    // 隱藏職業選擇界面
+    document.getElementById('classSelection').style.display = 'none';
+
+    // 如果已有難度選擇，則啟動遊戲
+    if (window.selectedDifficulty) {
+        startSinglePlayerGame(window.selectedDifficulty.computerAccuracy, window.selectedDifficulty.questionTime);
+    }
 }
-
 
 function displayQuestion(question) {
     
@@ -1424,42 +1389,68 @@ function displayQuestion(question) {
 }
 
 function checkAnswer(isCorrect, questionId) {
-    // 電腦玩家自動答題邏輯
-    if (currentRoomId ==='singleplayer') {
-        const computerAnswer = Math.random() < computerAccuracy; // 根據難度設置的答中機率
-        if (!computerAnswer) {
-            const baseDamage = Math.floor((timeLeft / 15) * 13);
-            const damage = Math.floor(baseDamage / playerClass.defense);
-            const updates = {
-                'player1/health': firebase.database.ServerValue.increment(-damage)
-            };
-            database.ref('rooms/' + currentRoomId).update(updates, (error) => {
-                if (error) return;
-                checkGameOver();
-                if (!gameOver) {
-                    setTimeout(() => {
-                        loadNewQuestion();
-                    }, 700);
-                }
-            });
+    if (answered || gameOver) return;
+    answered = true;
+    clearInterval(timer);
+
+    // 玩家答題處理
+    const buttons = document.querySelectorAll('#options button');
+    const correctIndex = window.currentQuestion.correctIndex;
+    buttons.forEach((btn, index) => {
+        btn.style.pointerEvents = 'none';
+        if (index === correctIndex) {
+            btn.style.background = '#2ecc71';
+            btn.style.border = '2px solid #27ae60';
+            btn.style.transform = 'scale(1.05)';
+        }
+    });
+
+    let baseDamage = Math.floor((timeLeft / window.questionTime) * 13);
+    if (isCorrect) {
+        const damage = Math.floor(baseDamage * playerClass.attack);
+        window.computerHealth = Math.max(0, window.computerHealth - damage);
+        document.getElementById('opponentHealth').textContent = window.computerHealth;
+        document.getElementById('opponentHealthBar').style.width = window.computerHealth + '%';
+    } else {
+        const damage = Math.floor(baseDamage / playerClass.defense);
+        window.playerHealth = Math.max(0, window.playerHealth - damage);
+        document.getElementById('myHealth').textContent = window.playerHealth;
+        document.getElementById('myHealthBar').style.width = window.playerHealth + '%';
+    }
+
+    // 單人模式下電腦自動答題
+    if (currentRoomId === 'singleplayer') {
+        const computerAnswer = Math.random() < window.computerAccuracy;
+        if (computerAnswer) {
+            // 電腦答對，玩家扣血
+            const computerDamage = Math.floor(Math.random() * 10) + 5; // 隨機傷害 5-14
+            window.playerHealth = Math.max(0, window.playerHealth - computerDamage);
+            document.getElementById('myHealth').textContent = window.playerHealth;
+            document.getElementById('myHealthBar').style.width = window.playerHealth + '%';
         } else {
-            // 电脑玩家答对时，计算玩家受到的伤害
-            const baseDamage = Math.floor((timeLeft / 15) * 13);
-            const damage = Math.floor(baseDamage * window.computerPlayer.attack / playerDefense);
-            const updates = {
-                'player1/health': firebase.database.ServerValue.increment(-damage)
-            };
-            database.ref('rooms/' + currentRoomId).update(updates, (error) => {
-                if (error) return;
-                checkGameOver();
-                if (!gameOver) {
-                    setTimeout(() => {
-                        loadNewQuestion();
-                    }, 700);
-                }
-            });
+            // 電腦答錯，電腦扣血
+            const computerDamage = Math.floor(Math.random() * 10) + 5;
+            window.computerHealth = Math.max(0, window.computerHealth - computerDamage);
+            document.getElementById('opponentHealth').textContent = window.computerHealth;
+            document.getElementById('opponentHealthBar').style.width = window.computerHealth + '%';
         }
     }
+
+    // 檢查遊戲是否結束
+    checkGameOver();
+
+    // 如果遊戲未結束，繼續下一題
+    if (!gameOver) {
+        setTimeout(() => {
+            buttons.forEach(btn => {
+                btn.style.cssText = '';
+                btn.style.pointerEvents = 'auto';
+            });
+            answered = false;
+            loadNewQuestion();
+        }, 700);
+    }
+}
 
     // 在傷害計算後添加特效元素
     let effectElement = document.createElement('div');
@@ -2237,39 +2228,35 @@ function startTimer(duration) {
 }
 
 function checkGameOver() {
-    const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.once('value').then(snapshot => {
-        const room = snapshot.val();
-        if (!room) return;
-
-        // 新增血量下限處理
-        const player1Health = Math.max(room.player1?.health || 0, 0);
-        const player2Health = Math.max(room.player2?.health || 0, 0);
-
-        let winner = null;
-        if (player1Health <= 0 || player2Health <= 0) {
-            if (player1Health > player2Health) {
-                winner = 'player1';
-            } else if (player2Health > player1Health) {
-                winner = 'player2';
-            } else {
-                winner = 'draw';
-            }
-
-            // 新增強制血量歸零
-            const updates = {
-                gameEnded: true,
-                winner: winner,
-                'player1/health': player1Health,
-                'player2/health': player2Health
-            };
-
-            roomRef.update(updates, () => {
-                // 新增直接觸發結束處理
-                handleGameEnd(winner);
-            });
+    if (currentRoomId === 'singleplayer') {
+        if (window.playerHealth <= 0) {
+            handleGameEnd('computer');
+        } else if (window.computerHealth <= 0) {
+            handleGameEnd('player');
         }
-    });
+    } else {
+        // 多人模式邏輯保持不變
+        const roomRef = database.ref('rooms/' + currentRoomId);
+        roomRef.once('value').then(snapshot => {
+            const room = snapshot.val();
+            if (!room) return;
+
+            const player1Health = Math.max(room.player1?.health || 0, 0);
+            const player2Health = Math.max(room.player2?.health || 0, 0);
+
+            let winner = null;
+            if (player1Health <= 0 || player2Health <= 0) {
+                if (player1Health > player2Health) {
+                    winner = 'player1';
+                } else if (player2Health > player1Health) {
+                    winner = 'player2';
+                } else {
+                    winner = 'draw';
+                }
+                roomRef.update({ gameEnded: true, winner: winner });
+            }
+        });
+    }
 }
 
 function handleGameEnd(winnerType) {
