@@ -1,4 +1,4 @@
-
+最新備份
 
 <!DOCTYPE html>
 <html>
@@ -1041,6 +1041,8 @@
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
         </div>
     </div>
+
+        <div id="countdown" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); font-size:5rem; color:white; text-shadow:0 0 10px black; z-index:9999;"></div>
 
     <!-- 問題與選項區 -->
     <div id="question"></div>
@@ -2510,11 +2512,11 @@ document.getElementById('showLeaderboardBtn').onclick = function() {
         leaderboardHTML += '</ul>';
         
         const leaderboardDiv = document.createElement('div');
-        leaderboardDiv.style.cssText = `
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
-            border-radius: 15px; max-width: 400px; z-index: 10000; color: white;
-        `;
+       leaderboardDiv.style.cssText = `
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
+    border-radius: 15px; max-width: 600px; z-index: 10000; color: white;
+`;
         leaderboardDiv.innerHTML = leaderboardHTML + '<button onclick="this.parentElement.remove()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #e74c3c; border: none; border-radius: 5px; color: white;">關閉</button>';
         document.body.appendChild(leaderboardDiv);
     });
@@ -2606,41 +2608,41 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        // 超時檢查
-        if (isHost && room.player2 === null && !room.gameStarted) {
-            const now = Date.now();
-            const createdAt = room.createdAt || 0;
-            if (now - createdAt > 30000) { // 30秒超時
-                alert('等待對手超時，請重新嘗試匹配。');
-                database.ref('rooms/' + currentRoomId).remove();
-                database.ref('waitingRooms').remove();
-                window.location.reload();
-            }
-        }
-
-        if (room.player1?.class && room.player2?.class) {
+        // 當雙方選擇職業且遊戲未開始時，執行倒數
+        if (room.player1?.class && room.player2?.class && !room.gameStarted) {
             document.getElementById('waitingArea').style.display = 'none';
-        }
-
-        if (room.gameEnded) {
-            handleGameEnd(room.winner);
-            return;
-        }
-
-        if (room.player1?.class && room.player2?.class) {
             document.getElementById('classSelection').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
+
+            // 顯示倒數
+            const countdownDiv = document.getElementById('countdown');
+            countdownDiv.style.display = 'block';
+            let countdown = 3;
+            countdownDiv.textContent = countdown;
+
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    countdownDiv.textContent = countdown;
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownDiv.style.display = 'none';
+                    roomRef.update({ gameStarted: true });
+                    startGame(room);
+                }
+            }, 1000);
+        } else if (room.gameStarted) {
+            // 如果遊戲已開始，直接進入遊戲
             startGame(room);
         }
 
         updateHealthDisplay(room);
 
-        // 重開相關邏輯保持不變
+        // 重開遊戲邏輯保持不變
         const bothAgreed = room.hostRematch && room.clientRematch;
         if (bothAgreed && !room.gameStarted) {
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (waitingForRematch) waitingForRematch.remove();
-
             const updates = { gameStarted: true };
             database.ref('rooms/' + currentRoomId).update(updates, () => {
                 startNewGameSession();
@@ -2666,6 +2668,12 @@ function listenToRoomChanges() {
                 document.body.appendChild(newWaitingForRematch);
             }
         }
+
+        if (room.gameEnded) {
+            handleGameEnd(room.winner);
+        }
+    });
+}
 
         // 玩家重新進入提示保持不變
         const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
