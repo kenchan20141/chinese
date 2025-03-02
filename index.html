@@ -1702,8 +1702,6 @@ const bgMusic = new Audio('https://amachamusic.chagasi.com/mp3/umioiku.mp3');
 bgMusic.loop = true;
 bgMusic.volume = 0.3;
 
-bgMusic.addEventListener('error', function() {
-    console.error('背景音乐加载失败，请检查音频 URL 或网络连接。');
 });
 
 const soundEffects = {
