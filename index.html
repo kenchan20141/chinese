@@ -2606,6 +2606,35 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
+
+// 當雙方選擇職業且遊戲未開始時，執行倒數
+        if (room.player1?.class && room.player2?.class && !room.gameStarted) {
+            document.getElementById('waitingArea').style.display = 'none';
+            document.getElementById('classSelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+
+            // 顯示倒數
+            const countdownDiv = document.getElementById('countdown');
+            countdownDiv.style.display = 'block';
+            let countdown = 3;
+            countdownDiv.textContent = countdown;
+
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    countdownDiv.textContent = countdown;
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownDiv.style.display = 'none';
+                    roomRef.update({ gameStarted: true });
+                    startGame(room);
+                }
+            }, 1000);
+        } else if (room.gameStarted) {
+            // 如果遊戲已開始，直接進入遊戲
+            startGame(room);
+        }
+        
         // 超時檢查
         if (isHost && room.player2 === null && !room.gameStarted) {
             const now = Date.now();
