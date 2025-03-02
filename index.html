@@ -2427,16 +2427,16 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    victoryText.textContent = "气血耗尽，游戏结束！";
+    victoryText.textContent = "氣血耗盡，遊戲结束！";
     victoryOverlay.style.display = 'flex';
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'rematch-buttons';
 
     const restartBtn = document.createElement('button');
-    restartBtn.textContent = '再战江湖';
+    restartBtn.textContent = '再戰江湖';
     const mainMenuBtn = document.createElement('button');
-    mainMenuBtn.textContent = '归隐山林';
+    mainMenuBtn.textContent = '歸隱山林';
 
     restartBtn.onclick = () => {
         database.ref('rooms/' + currentRoomId).remove();
