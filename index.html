@@ -1703,6 +1703,10 @@ let isMusicPlaying = false;
 bgMusic.loop = true;
 bgMusic.volume = 0.3;
 
+bgMusic.addEventListener('error', function() {
+    console.error('背景音乐加载失败，请检查音频 URL 或网络连接。');
+});
+
 const soundEffects = {
     attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3'),
     victory: new Audio('https://taira-komori.jpn.org/sound_os2/event01/clapping_short2.mp3'),
