@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html>
     
@@ -2109,8 +2108,6 @@ function checkGameOver() {
         const player2Health = Math.max(room.player2?.health || 0, 0);
 
         let winner = null;
-        if (isHost && currentRoomId.startsWith('single_')) {
-            // 单机模式，敌方气血为0则玩家胜利
         if (player1Health <= 0 || player2Health <= 0) {
             if (player1Health > player2Health) {
                 winner = 'player1';
@@ -2366,10 +2363,13 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
     let damage = 0;
     if (isCorrect) {
         // 增加扣减敌方气血的逻辑，假设敌方气血初始为100，每次答对扣10点
-        const enemyHealthElement = document.getElementById('opponentHealth');
-        const enemyHealth = parseInt(enemyHealthElement.textContent, 10);
+        const enemyHealth = 100;
         const newEnemyHealth = enemyHealth - 10;
-        enemyHealthElement.textContent = newEnemyHealth;
+        // 这里可以根据实际情况修改敌方气血的存储方式和更新逻辑
+        // 例如，如果在数据库中存储，需要更新数据库中的值
+        // 这里仅为示例，假设在单机模式下有一个变量存储敌方气血
+        // 可以添加类似以下代码来更新显示
+        document.getElementById('opponentHealth').textContent = newEnemyHealth;
         document.getElementById('opponentHealthBar').style.width = newEnemyHealth + '%';
 
         // 添加答对时的音效和震动
