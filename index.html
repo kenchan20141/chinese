@@ -1718,12 +1718,12 @@ function createRoom() {
     document.getElementById('displayRoomId').textContent = currentRoomId;
 
     database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        gameStarted: false,
-        gameEnded: false,
-        winner: null
-    });
+    player1: { health: initialHealth },
+    enemy: { health: initialHealth }, // 新增敵方氣血
+    gameStarted: true,
+    gameEnded: false,
+    winner: null
+});
     listenToRoomChanges();
 }
 
@@ -2269,12 +2269,16 @@ function listenToSinglePlayerHealth() {
         const room = snapshot.val();
         if (!room) return;
 
-        const health = room.player1.health;
-        document.getElementById('myHealth').textContent = Math.max(health, 0);
-        document.getElementById('myHealthBar').style.width = Math.max(health, 0) + '%';
+        const playerHealth = room.player1.health;
+        const enemyHealth = room.enemy.health;
 
-        if (health <= 0) {
-            handleSinglePlayerGameOver();
+        document.getElementById('myHealth').textContent = Math.max(playerHealth, 0);
+        document.getElementById('myHealthBar').style.width = Math.max(playerHealth, 0) + '%';
+        document.getElementById('opponentHealth').textContent = Math.max(enemyHealth, 0);
+        document.getElementById('opponentHealthBar').style.width = Math.max(enemyHealth, 0) + '%';
+
+        if (playerHealth <= 0 || enemyHealth <= 0) {
+            handleSinglePlayerGameOver(playerHealth, enemyHealth);
         }
     });
 }
@@ -2360,23 +2364,29 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    let damage = 0;
-    if (!isCorrect) {
-        damage = 10; // 答錯扣 10 點氣血
+    let damage = 10; // 每次答對或答錯扣減 10 點氣血
+    if (isCorrect) {
+        // 答對時扣減敵方氣血
+        database.ref('rooms/' + currentRoomId + '/enemy/health').set(
+            firebase.database.ServerValue.increment(-damage)
+        );
+        // 觸發聲效和震動
+        soundEffects.attack.currentTime = 0;
+        soundEffects.attack.play();
+        if (navigator.vibrate) navigator.vibrate(200);
+    } else {
+        // 答錯時扣減玩家氣血
         database.ref('rooms/' + currentRoomId + '/player1/health').set(
             firebase.database.ServerValue.increment(-damage)
         );
+        // 僅觸發震動
+        if (navigator.vibrate) navigator.vibrate(200);
     }
 
-    const targetElement = document.getElementById('myHealthBar');
+    const targetElement = isCorrect ? document.getElementById('opponentHealthBar') : document.getElementById('myHealthBar');
     targetElement.classList.add('damage-flash');
     document.getElementById('gameArea').classList.add('screen-shake');
     document.querySelectorAll('.health-fill').forEach(bar => bar.classList.add('damage-effect'));
-
-    navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
-    if (!isCorrect) {
-        if (navigator.vibrate) navigator.vibrate(200);
-    }
 
     setTimeout(() => {
         targetElement.classList.remove('damage-flash');
@@ -2395,7 +2405,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 }
 
 
-    function handleSinglePlayerGameOver() {
+    function handleSinglePlayerGameOver(playerHealth, enemyHealth) {
     if (gameOver) return;
     gameOver = true;
 
@@ -2404,7 +2414,12 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    victoryText.textContent = "氣血耗盡，遊戲結束！";
+
+    if (playerHealth <= 0) {
+        victoryText.textContent = "氣血耗盡，遊戲結束！";
+    } else if (enemyHealth <= 0) {
+        victoryText.textContent = "敵方氣血耗盡，你勝利了！";
+    }
     victoryOverlay.style.display = 'flex';
 
     const buttonContainer = document.createElement('div');
