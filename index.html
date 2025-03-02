@@ -2236,8 +2236,11 @@ function selectDifficulty(difficulty) {
 
     // 设置玩家气血
     const initialHealth = 100;
+    // 添加敌方初始气血设置
+    const enemyInitialHealth = 100;
     database.ref('rooms/' + currentRoomId).set({
         player1: { health: initialHealth },
+        enemy: { health: enemyInitialHealth }, // 添加敌方气血
         gameStarted: true,
         gameEnded: false,
         winner: null
@@ -2378,6 +2381,11 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         soundEffects.attack.play();
         navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
         if (navigator.vibrate) navigator.vibrate(200);
+
+        // 检查敌方气血是否归零
+        if (newEnemyHealth <= 0) {
+            handleSinglePlayerGameOver(true); // 传递参数表示胜利
+        }
     } else {
         damage = 10; // 答错扣 10 点气血
         database.ref('rooms/' + currentRoomId + '/player1/health').set(
