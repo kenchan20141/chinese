@@ -1957,8 +1957,8 @@ document.getElementById('opponentHealth').textContent = Math.max(opponentHealth,
 }
 
 function startGame(room) {
-    if (!room.player1 || !room.player2) {
-        console.log('等待對手加入...');
+    if (!room.player1 || !room.player2 || !room.player1.class || !room.player2.class) {
+        console.log('不能開始遊戲，缺少玩家或角色');
         return;
     }
 
