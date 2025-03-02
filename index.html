@@ -1718,12 +1718,12 @@ function createRoom() {
     document.getElementById('displayRoomId').textContent = currentRoomId;
 
     database.ref('rooms/' + currentRoomId).set({
-    player1: { health: initialHealth },
-    enemy: { health: initialHealth }, // 新增敵方氣血
-    gameStarted: true,
-    gameEnded: false,
-    winner: null
-});
+        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        gameStarted: false,
+        gameEnded: false,
+        winner: null
+    });
     listenToRoomChanges();
 }
 
@@ -2220,14 +2220,6 @@ if (user) {
 function startSinglePlayer() {
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('difficultySelection').style.display = 'block';
-    const initialHealth = 100; // 明確定義初始氣血
-database.ref('rooms/' + currentRoomId).set({
-    player1: { health: initialHealth },
-    enemy: { health: initialHealth }, // 添加敵方初始氣血
-    gameStarted: true,
-    gameEnded: false,
-    winner: null
-});
 }
 
 // 選擇難度並啟動遊戲
@@ -2277,18 +2269,12 @@ function listenToSinglePlayerHealth() {
         const room = snapshot.val();
         if (!room) return;
 
-        const playerHealth = room.player1.health;
-        const enemyHealth = room.enemy ? room.enemy.health : 100; // 確保敵方氣血有默認值
+        const health = room.player1.health;
+        document.getElementById('myHealth').textContent = Math.max(health, 0);
+        document.getElementById('myHealthBar').style.width = Math.max(health, 0) + '%';
 
-        console.log(`玩家氣血: ${playerHealth}, 敵方氣血: ${enemyHealth}`); // 添加日誌
-
-        document.getElementById('myHealth').textContent = Math.max(playerHealth, 0);
-        document.getElementById('myHealthBar').style.width = Math.max(playerHealth, 0) + '%';
-        document.getElementById('opponentHealth').textContent = Math.max(enemyHealth, 0);
-        document.getElementById('opponentHealthBar').style.width = Math.max(enemyHealth, 0) + '%';
-
-        if (playerHealth <= 0 || enemyHealth <= 0) {
-            handleSinglePlayerGameOver(playerHealth, enemyHealth);
+        if (health <= 0) {
+            handleSinglePlayerGameOver();
         }
     });
 }
@@ -2374,31 +2360,23 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    const damage = 10; // 使用 const 確保值不被修改
-    if (isCorrect) {
-       // 答對時扣減敵方氣血
-    database.ref('rooms/' + currentRoomId + '/enemy/health').set(
-        firebase.database.ServerValue.increment(-damage)
-    );
-    console.log(`敵方扣減 ${damage} 點氣血`); // 添加日誌以便檢查
-    soundEffects.attack.currentTime = 0;
-    soundEffects.attack.play();
-    if (navigator.vibrate) navigator.vibrate(200);
-}
-        
-    } else {
-        // 答錯時扣減玩家氣血
+    let damage = 0;
+    if (!isCorrect) {
+        damage = 10; // 答錯扣 10 點氣血
         database.ref('rooms/' + currentRoomId + '/player1/health').set(
             firebase.database.ServerValue.increment(-damage)
         );
-        // 僅觸發震動
-        if (navigator.vibrate) navigator.vibrate(200);
     }
 
-    const targetElement = isCorrect ? document.getElementById('opponentHealthBar') : document.getElementById('myHealthBar');
+    const targetElement = document.getElementById('myHealthBar');
     targetElement.classList.add('damage-flash');
     document.getElementById('gameArea').classList.add('screen-shake');
     document.querySelectorAll('.health-fill').forEach(bar => bar.classList.add('damage-effect'));
+
+    navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+    if (!isCorrect) {
+        if (navigator.vibrate) navigator.vibrate(200);
+    }
 
     setTimeout(() => {
         targetElement.classList.remove('damage-flash');
@@ -2417,7 +2395,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 }
 
 
-    function handleSinglePlayerGameOver(playerHealth, enemyHealth) {
+    function handleSinglePlayerGameOver() {
     if (gameOver) return;
     gameOver = true;
 
@@ -2426,12 +2404,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-
-    if (playerHealth <= 0) {
-        victoryText.textContent = "氣血耗盡，遊戲結束！";
-    } else if (enemyHealth <= 0) {
-        victoryText.textContent = "敵方氣血耗盡，你勝利了！";
-    }
+    victoryText.textContent = "氣血耗盡，遊戲結束！";
     victoryOverlay.style.display = 'flex';
 
     const buttonContainer = document.createElement('div');
