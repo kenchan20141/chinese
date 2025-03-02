@@ -2707,24 +2707,26 @@ function listenToRoomChanges() {
         const room = snapshot.val();
         if (!room) return;
 
-        if (isHost) {
-            opponentDefense = room.player2?.defense || 1.0;
-        } else {
-            opponentDefense = room.player1?.defense || 1.0;
-        }
-
-        // 角色選擇完成後檢查題庫選擇
         if (room.player1?.class && room.player2?.class && !room.librarySelectedMulti) {
+            console.log('雙方已選擇角色，進入題庫選擇階段');
             document.getElementById('waitingArea').style.display = 'none';
             document.getElementById('classSelection').style.display = 'none';
 
             if (!room.libraryChooser) {
+                console.log('隨機選擇題庫選擇者');
                 const chooser = Math.random() < 0.5 ? 'player1' : 'player2';
                 roomRef.update({ libraryChooser: chooser });
             } else {
                 isLibraryChooser = (isHost && room.libraryChooser === 'player1') || (!isHost && room.libraryChooser === 'player2');
+                console.log(`isLibraryChooser: ${isLibraryChooser}`);
                 if (isLibraryChooser) {
-                    document.getElementById('librarySelectionMulti').style.display = 'block';
+                    console.log('顯示題庫選擇界面');
+                    const librarySelection = document.getElementById('librarySelectionMulti');
+                    if (librarySelection) {
+                        librarySelection.style.display = 'block';
+                    } else {
+                        console.error('librarySelectionMulti 元素未找到');
+                    }
                 } else {
                     showWaitingForLibraryMulti();
                 }
@@ -2735,61 +2737,7 @@ function listenToRoomChanges() {
         }
 
         updateHealthDisplay(room);
-
-        if (room.gameEnded) {
-            handleGameEnd(room.winner);
-            return;
-        }
-
-        // 重賽邏輯保持不變
-        const bothAgreed = room.hostRematch && room.clientRematch;
-        if (bothAgreed && !room.gameStarted) {
-            const waitingForRematch = document.getElementById('waitingForRematch');
-            if (waitingForRematch) waitingForRematch.remove();
-
-            const updates = {
-                gameStarted: true,
-                librarySelectedMulti: false, // 重置題庫選擇狀態
-                selectedLibraryMulti: null,
-                selectedSubLibraryMulti: null,
-                libraryChooser: null
-            };
-            database.ref('rooms/' + currentRoomId).update(updates, () => {
-                startNewGameSession();
-            });
-            waitingForOpponent = false;
-        } else if (!bothAgreed && waitingForOpponent) {
-            const waitingForRematch = document.getElementById('waitingForRematch');
-            if (!waitingForRematch) {
-                const newWaitingForRematch = document.createElement('div');
-                newWaitingForRematch.id = 'waitingForRematch';
-                newWaitingForRematch.style.cssText = `
-                    text-align: center; font-size: 2rem; color: var(--gold); padding: 2rem;
-                    background: rgba(45, 41, 38, 0.95); border: 3px solid var(--gold);
-                    border-radius: 15px; max-width: 600px; margin: 2rem auto;
-                    box-shadow: 0 0 20px rgba(212, 175, 55, 0.5); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-                `;
-                newWaitingForRematch.textContent = '等待對手同意重開遊戲...';
-                document.body.appendChild(newWaitingForRematch);
-            }
-        }
-
-        const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
-        if (opponentReentered && !opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
-            opponentJoinedMessage = document.createElement('div');
-            opponentJoinedMessage.style.cssText = `
-                position: fixed; top: 10%; left: 50%; transform: translate(-50%, 0);
-                background: rgba(0, 0, 0, 0.9); color: #fff; padding: 20px; border-radius: 10px;
-                z-index: 9999; font-size: 2rem; text-align: center; width: 80%; max-width: 300px;
-                box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
-            `;
-            opponentJoinedMessage.textContent = '🎮玩家已進場';
-            document.body.appendChild(opponentJoinedMessage);
-            setTimeout(() => {
-                opponentJoinedMessage.remove();
-                opponentJoinedMessage = null;
-            }, 3000);
-        }
+        // ... 其他邏輯 ...
     });
 }
 </script>
