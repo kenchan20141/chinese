@@ -1042,6 +1042,18 @@
         </div>
     </div>
 
+        <div id="questionBankSelection" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+    <div style="background: rgba(45, 41, 38, 0.95); border: 3px solid var(--gold); border-radius: 15px; padding: 2rem; text-align: center;">
+        <h2 style="color: var(--gold); margin-bottom: 2rem;">选择题库</h2>
+        <button id="grade1Button" style="margin-bottom: 1rem; padding: 1rem 2rem; font-size: 1.2rem; background: linear-gradient(45deg, #4CAF50, #45a049); border: 2px solid #2d662f; border-radius: 8px; color: white; cursor: pointer;">中一</button>
+        <button id="grade5Button" style="margin-bottom: 1rem; padding: 1rem 2rem; font-size: 1.2rem; background: linear-gradient(45deg, #2196F3, #1976D2); border: 2px solid #1565C0; border-radius: 8px; color: white; cursor: pointer;">中五</button>
+        <div id="subQuestionBank" style="display: none;">
+            <button id="questionBank1Button" style="margin-bottom: 0.5rem; padding: 1rem 2rem; font-size: 1.2rem; background: linear-gradient(45deg, #4CAF50, #45a049); border: 2px solid #2d662f; border-radius: 8px; color: white; cursor: pointer;">御人之妻</button>
+            <button id="questionBank2Button" style="margin-bottom: 0.5rem; padding: 1rem 2rem; font-size: 1.2rem; background: linear-gradient(45deg, #2196F3, #1976D2); border: 2px solid #1565C0; border-radius: 8px; color: white; cursor: pointer;">廉頗藺相如列傳</button>
+        </div>
+    </div>
+</div>
+
     <!-- 問題與選項區 -->
     <div id="question"></div>
     <div id="options"></div>
@@ -1730,6 +1742,87 @@ function toggleMusic() {
     document.querySelector('.music-control').textContent = isMusicPlaying ? '🎵' : '🔇';
 }
 
+    function showQuestionBankSelection() {
+    document.getElementById('questionBankSelection').style.display = 'flex';
+    const grade1Button = document.getElementById('grade1Button');
+    const grade5Button = document.getElementById('grade5Button');
+    const subQuestionBank = document.getElementById('subQuestionBank');
+    const questionBank1Button = document.getElementById('questionBank1Button');
+    const questionBank2Button = document.getElementById('questionBank2Button');
+
+    grade1Button.onclick = function() {
+        subQuestionBank.style.display = 'block';
+        questionBank1Button.textContent = '御人之妻';
+        questionBank2Button.style.display = 'none'; // 中一只有一个题库，隐藏第二个按钮
+    };
+
+    grade5Button.onclick = function() {
+        subQuestionBank.style.display = 'block';
+        questionBank1Button.textContent = '廉頗藺相如列傳';
+        questionBank2Button.style.display = 'none'; // 中五只有一个题库，隐藏第二个按钮
+    };
+
+    questionBank1Button.onclick = function() {
+        const selectedBank = grade1Button.style.display === 'none'? '中五' : '中一';
+        // 这里可以添加将选择的题库信息保存到数据库的逻辑
+        const roomRef = database.ref('rooms/' + currentRoomId);
+        roomRef.update({ selectedQuestionBank: selectedBank });
+        document.getElementById('questionBankSelection').style.display = 'none';
+        startCountdown();
+    };
+
+const randomPlayer = Math.random() < 0.5? 'player1' : 'player2';
+const isCurrentPlayer = (randomPlayer === 'player1' && isHost) || (randomPlayer === 'player2' &&!isHost);
+if (isCurrentPlayer) {
+    showQuestionBankSelection();
+} else {
+    const waitingForSelection = document.createElement('div');
+    waitingForSelection.id = 'waitingForSelection';
+    waitingForSelection.style.textAlign = 'center';
+    waitingForSelection.style.fontSize = '2rem';
+    waitingForSelection.style.color = 'var(--gold)';
+    waitingForSelection.style.padding = '2rem';
+    waitingForSelection.style.background = 'rgba(45, 41, 38, 0.95)';
+    waitingForSelection.style.border = '3px solid var(--gold)';
+    waitingForSelection.style.borderRadius = '15px';
+    waitingForSelection.style.maxWidth = '600px';
+    waitingForSelection.style.margin = '2rem auto';
+    waitingForSelection.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+    waitingForSelection.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+    waitingForSelection.textContent = '等待对方选择题库...';
+    document.body.appendChild(waitingForSelection);
+    waitingForOpponent = true;
+}
+
+        
+}
+
+    function startCountdown() {
+    let countdown = 3;
+    const countdownElement = document.createElement('div');
+    countdownElement.id = 'countdown';
+    countdownElement.style.textAlign = 'center';
+    countdownElement.style.fontSize = '3rem';
+    countdownElement.style.color = 'var(--gold)';
+    countdownElement.style.padding = '2rem';
+    countdownElement.style.position = 'fixed';
+    countdownElement.style.top: '50%';
+    countdownElement.style.left: '50%';
+    countdownElement.style.transform = 'translate(-50%, -50%)';
+    countdownElement.style.zIndex = '9999';
+    document.body.appendChild(countdownElement);
+
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        countdownElement.textContent = countdown;
+        if (countdown < 0) {
+            clearInterval(countdownInterval);
+            countdownElement.remove();
+            startGame(room); // 这里假设 startGame 函数已经定义并可以开始游戏
+        }
+    }, 1000);
+}
+
 function createRoom() {
     currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
     isHost = true;
@@ -2205,6 +2298,30 @@ const buttonContainer = document.createElement('div');
     const mainMenuBtn = document.createElement('button');
     mainMenuBtn.textContent = '歸隱山林';
 
+
+const randomPlayer = Math.random() < 0.5? 'player1' : 'player2';
+const isCurrentPlayer = (randomPlayer === 'player1' && isHost) || (randomPlayer === 'player2' &&!isHost);
+if (isCurrentPlayer) {
+    showQuestionBankSelection();
+} else {
+    const waitingForSelection = document.createElement('div');
+    waitingForSelection.id = 'waitingForSelection';
+    waitingForSelection.style.textAlign = 'center';
+    waitingForSelection.style.fontSize = '2rem';
+    waitingForSelection.style.color = 'var(--gold)';
+    waitingForSelection.style.padding = '2rem';
+    waitingForSelection.style.background = 'rgba(45, 41, 38, 0.95)';
+    waitingForSelection.style.border = '3px solid var(--gold)';
+    waitingForSelection.style.borderRadius = '15px';
+    waitingForSelection.style.maxWidth = '600px';
+    waitingForSelection.style.margin = '2rem auto';
+    waitingForSelection.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+    waitingForSelection.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+    waitingForSelection.textContent = '等待对方选择题库...';
+    document.body.appendChild(waitingForSelection);
+    waitingForOpponent = true;
+}
+    
     // 按钮点击处理
     rematchBtn.onclick = () => handleRematchRequest();
     mainMenuBtn.onclick = () => {
@@ -2519,6 +2636,8 @@ document.getElementById('showLeaderboardBtn').onclick = function() {
         document.body.appendChild(leaderboardDiv);
     });
 };
+
+
     
 
 function handleRematchRequest() {
@@ -2605,6 +2724,25 @@ function listenToRoomChanges() {
         } else {
             opponentDefense = room.player1?.defense || 1.0;
         }
+
+        if (room.selectedQuestionBank &&!waitingForOpponent) {
+    const waitingForSelection = document.createElement('div');
+    waitingForSelection.id = 'waitingForSelection';
+    waitingForSelection.style.textAlign = 'center';
+    waitingForSelection.style.fontSize = '2rem';
+    waitingForSelection.style.color = 'var(--gold)';
+    waitingForSelection.style.padding = '2rem';
+    waitingForSelection.style.background = 'rgba(45, 41, 38, 0.95)';
+    waitingForSelection.style.border = '3px solid var(--gold)';
+    waitingForSelection.style.borderRadius = '15px';
+    waitingForSelection.style.maxWidth = '600px';
+    waitingForSelection.style.margin = '2rem auto';
+    waitingForSelection.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+    waitingForSelection.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+    waitingForSelection.textContent = '等待对方选择题库...';
+    document.body.appendChild(waitingForSelection);
+    waitingForOpponent = true;
+}
 
         // 超時檢查
         if (isHost && room.player2 === null && !room.gameStarted) {
