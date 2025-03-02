@@ -1859,12 +1859,13 @@ function listenToRoomChanges() {
 
             // 創建房間並記錄到 waitingRoom
             database.ref('rooms/' + roomId).set({
-                player1: { userId: userId, health: 100, class: null, currentQuestion: null, name: '玩家1' },
-                player2: null, // 等待第二個玩家
-                gameStarted: false,
-                gameEnded: false,
-                winner: null
-            });
+    player1: { userId: userId, health: 100, class: null, currentQuestion: null, name: '玩家1' },
+    player2: null, // 等待第二個玩家
+    gameStarted: false,
+    gameEnded: false,
+    winner: null,
+    createdAt: firebase.database.ServerValue.TIMESTAMP // 添加時間戳
+});
             waitingRef.set({
     roomId: roomId,
     hostId: userId,
