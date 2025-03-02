@@ -1727,8 +1727,6 @@ function createRoom() {
     listenToRoomChanges();
 }
 
-    
-
 function joinRoom() {
     currentRoomId = document.getElementById('roomId').value;
     document.getElementById('roomControl').style.display = 'none';
@@ -2226,7 +2224,6 @@ function startSinglePlayer() {
 
 // 選擇難度並啟動遊戲
 function selectDifficulty(difficulty) {
-    currentRoomId = 'single_' + Date.now();
     const settings = difficultySettings[difficulty];
     if (!settings) return;
 
@@ -2245,8 +2242,6 @@ function selectDifficulty(difficulty) {
         gameEnded: false,
         winner: null
     });
-    // 設置敵方氣血
-database.ref('rooms/' + currentRoomId + '/enemy').set({ health: 100 });
 
     // 顯示遊戲區域
     document.getElementById('difficultySelection').style.display = 'none';
@@ -2272,9 +2267,6 @@ function listenToSinglePlayerHealth() {
     const roomRef = database.ref('rooms/' + currentRoomId);
     roomRef.on('value', (snapshot) => {
         const room = snapshot.val();
-        const enemyHealth = room.enemy?.health || 100;
-document.getElementById('opponentHealth').textContent = Math.max(enemyHealth, 0);
-document.getElementById('opponentHealthBar').style.width = Math.max(enemyHealth, 0) + '%';
         if (!room) return;
 
         const health = room.player1.health;
@@ -2349,16 +2341,8 @@ function displayQuestionSinglePlayer(question) {
 function checkAnswerSinglePlayer(isCorrect, questionId) {
     if (answeredQuestions.has(questionId)) return;
     answeredQuestions.add(questionId);
+
     if (answered || gameOver) return;
-    const damage = 10; // 每次答對扣減敵方 10 點氣血
-    database.ref('rooms/' + currentRoomId + '/enemy/health').set(
-        firebase.database.ServerValue.increment(-damage)
-    );
-    // 添加音效和震動
-    soundEffects.attack.currentTime = 0;
-    soundEffects.attack.play();
-    if (navigator.vibrate) navigator.vibrate(200);
-    
     answered = true;
 
     clearInterval(timer);
@@ -2432,17 +2416,9 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
     mainMenuBtn.textContent = '歸隱山林';
 
     restartBtn.onclick = () => {
-    database.ref('rooms/' + currentRoomId).remove(); // 清除舊房間數據
-    document.getElementById('gameArea').style.display = 'none';
-    document.getElementById('victory-overlay').style.display = 'none'; // 隱藏結束畫面
-    document.getElementById('difficultySelection').style.display = 'block';
-    gameOver = false;
-    answered = false;
-    answeredQuestions.clear(); // 重置已回答問題集合
-    buttonContainer.remove(); // 移除按鈕容器
-    // 清除監聽器
-    database.ref('rooms/' + currentRoomId).off();
-};
+        database.ref('rooms/' + currentRoomId).remove();
+        startSinglePlayer();
+    };
     mainMenuBtn.onclick = () => {
         database.ref('rooms/' + currentRoomId).remove();
         window.location.reload();
@@ -2663,4 +2639,3 @@ function listenToRoomChanges() {
 
     
 </html>
-
