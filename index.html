@@ -2427,7 +2427,8 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    victoryText.textContent = "氣血耗盡，遊戲结束！";
+    const isWinner = /* 判断是否为胜方的逻辑，这里假设敌方气血先归零则为胜方，你可能需要根据实际情况调整 */ document.getElementById('opponentHealth').textContent <= 0;
+victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
     victoryOverlay.style.display = 'flex';
 
     const buttonContainer = document.createElement('div');
