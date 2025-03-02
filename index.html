@@ -2220,6 +2220,14 @@ if (user) {
 function startSinglePlayer() {
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('difficultySelection').style.display = 'block';
+    const initialHealth = 100; // 明確定義初始氣血
+database.ref('rooms/' + currentRoomId).set({
+    player1: { health: initialHealth },
+    enemy: { health: initialHealth }, // 添加敵方初始氣血
+    gameStarted: true,
+    gameEnded: false,
+    winner: null
+});
 }
 
 // 選擇難度並啟動遊戲
@@ -2270,7 +2278,9 @@ function listenToSinglePlayerHealth() {
         if (!room) return;
 
         const playerHealth = room.player1.health;
-        const enemyHealth = room.enemy.health;
+        const enemyHealth = room.enemy ? room.enemy.health : 100; // 確保敵方氣血有默認值
+
+        console.log(`玩家氣血: ${playerHealth}, 敵方氣血: ${enemyHealth}`); // 添加日誌
 
         document.getElementById('myHealth').textContent = Math.max(playerHealth, 0);
         document.getElementById('myHealthBar').style.width = Math.max(playerHealth, 0) + '%';
@@ -2364,16 +2374,18 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    let damage = 10; // 每次答對或答錯扣減 10 點氣血
+    const damage = 10; // 使用 const 確保值不被修改
     if (isCorrect) {
-        // 答對時扣減敵方氣血
-        database.ref('rooms/' + currentRoomId + '/enemy/health').set(
-            firebase.database.ServerValue.increment(-damage)
-        );
-        // 觸發聲效和震動
-        soundEffects.attack.currentTime = 0;
-        soundEffects.attack.play();
-        if (navigator.vibrate) navigator.vibrate(200);
+       // 答對時扣減敵方氣血
+    database.ref('rooms/' + currentRoomId + '/enemy/health').set(
+        firebase.database.ServerValue.increment(-damage)
+    );
+    console.log(`敵方扣減 ${damage} 點氣血`); // 添加日誌以便檢查
+    soundEffects.attack.currentTime = 0;
+    soundEffects.attack.play();
+    if (navigator.vibrate) navigator.vibrate(200);
+}
+        
     } else {
         // 答錯時扣減玩家氣血
         database.ref('rooms/' + currentRoomId + '/player1/health').set(
