@@ -14,26 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
-    <style>       
-
-        .difficulty-btn {
-    background: linear-gradient(45deg, #3498db, #2980b9);
-    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
-    margin-bottom: 1rem;
-}
-.difficulty-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-        .single-player-btn {
-    background: linear-gradient(45deg, #95a5a6, #bdc3c7);
-    box-shadow: 0 5px 15px rgba(189, 195, 199, 0.4);
-}
-.single-player-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
+    <style>        
 
 .rematch-buttons {
     margin-top: 30px;
@@ -895,48 +876,23 @@
     </div>
     
     <!-- 按鈕容器 -->
-   <div class="button-group">
-    <button onclick="createRoom()" class="action-btn create-btn">
-        <i class="fas fa-fist-raised"></i>
-        <span>開闢戰場</span>
-        <div class="btn-glow"></div>
-    </button>
-    <button onclick="joinRoom()" class="action-btn join-btn">
-        <i class="fas fa-shield-alt"></i>
-        <span>加入征伐</span>
-        <div class="btn-glow"></div>
-    </button>
-    <button onclick="randomMatch()" class="action-btn random-match-btn">
-        <i class="fas fa-random"></i>
-        <span>隨機分配</span>
-        <div class="btn-glow"></div>
-    </button>
-    <button onclick="startSinglePlayerMode()" class="action-btn single-player-btn">
-        <i class="fas fa-user"></i>
-        <span>單機模式</span>
-        <div class="btn-glow"></div>
-    </button>
-</div>
-
-    <div id="difficultySelection" style="display: none; text-align: center; padding: 2rem; background: rgba(45, 41, 38, 0.95); border: 3px solid var(--gold); border-radius: 15px; max-width: 600px; margin: 2rem auto; box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);">
-    <h2 style="color: var(--gold); margin-bottom: 2rem;">選擇難度</h2>
-    <button onclick="selectDifficulty('easy')" class="action-btn difficulty-btn">
-        <span>容易</span>
-        <div class="btn-glow"></div>
-    </button>
-    <button onclick="selectDifficulty('normal')" class="action-btn difficulty-btn">
-        <span>普通</span>
-        <div class="btn-glow"></div>
-    </button>
-    <button onclick="selectDifficulty('hard')" class="action-btn difficulty-btn">
-        <span>困難</span>
-        <div class="btn-glow"></div>
-    </button>
-    <button onclick="selectDifficulty('hell')" class="action-btn difficulty-btn">
-        <span>地獄</span>
-        <div class="btn-glow"></div>
-    </button>
-</div>
+    <div class="button-group">
+        <button onclick="createRoom()" class="action-btn create-btn">
+            <i class="fas fa-fist-raised"></i>
+            <span>開闢戰場</span>
+            <div class="btn-glow"></div>
+        </button>
+        <button onclick="joinRoom()" class="action-btn join-btn">
+            <i class="fas fa-shield-alt"></i>
+            <span>加入征伐</span>
+            <div class="btn-glow"></div>
+        </button>
+        <button onclick="randomMatch()" class="action-btn random-match-btn">
+            <i class="fas fa-random"></i>
+            <span>隨機分配</span>
+            <div class="btn-glow"></div>
+        </button>
+    </div>
 
    
      
@@ -1081,86 +1037,6 @@
 
     
 <script>
-
-    function showDifficultySelection() {
-    document.getElementById('difficultySelection').style.display = 'block';
-    // 隐藏游戏区域和职业选择界面
-    document.getElementById('gameArea').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'none';
-}
-    
-function selectDifficulty(difficulty) {
-    document.getElementById('difficultySelection').style.display = 'none';
-
-    // 根據難度設置電腦的答題準確率和答題時間
-    let computerAccuracy, questionTime;
-    switch (difficulty) {
-        case 'easy':
-            computerAccuracy = 0.3;
-            questionTime = 20;
-            break;
-        case 'normal':
-            computerAccuracy = 0.5;
-            questionTime = 15;
-            break;
-        case 'hard':
-            computerAccuracy = 0.7;
-            questionTime = 10;
-            break;
-        case 'hell':
-            computerAccuracy = 0.9;
-            questionTime = 5;
-            break;
-    }
-
-    // 檢查是否已選擇職業
-    if (!playerClass) {
-        document.getElementById('classSelection').style.display = 'block';
-        window.selectedDifficulty = { difficulty, computerAccuracy, questionTime }; // 暫存難度選擇
-    } else {
-        startSinglePlayerGame(computerAccuracy, questionTime);
-    }
-}
-    
-function startSinglePlayerGame(computerAccuracy, questionTime) {
-    // 初始化玩家和電腦的氣血
-    window.playerHealth = 100;
-    window.computerHealth = 100;
-    window.computerAccuracy = computerAccuracy;
-    window.questionTime = questionTime;
-
-    // 更新 UI
-    document.getElementById('myHealth').textContent = window.playerHealth;
-    document.getElementById('myHealthBar').style.width = window.playerHealth + '%';
-    document.getElementById('opponentHealth').textContent = window.computerHealth;
-    document.getElementById('opponentHealthBar').style.width = window.computerHealth + '%';
-
-    // 顯示遊戲區域
-    document.getElementById('gameArea').style.display = 'block';
-
-    // 啟動計時器並加載新問題
-    startTimer(questionTime);
-    loadNewQuestion();
-}
-
-  function startSinglePlayerMode() {
-    // 隱藏房間控制和遊戲區域
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('gameArea').style.display = 'none';
-    document.getElementById('waitingArea').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'none'; // 先隱藏職業選擇
-
-    // 顯示難度選擇界面
-    document.getElementById('difficultySelection').style.display = 'block';
-
-    // 初始化單人模式相關變量
-    currentRoomId = 'singleplayer'; // 標記為單機模式
-    isHost = true;
-    playerClass = null; // 重置職業選擇
-    gameOver = false;
-    answered = false;
-}
-
 
 // Canvas 動畫代碼
 window.onload = function() {
@@ -1334,32 +1210,52 @@ function selectClass(className) {
         assassin: { attack: 1.0, defense: 0.9, dodge: 0.3, skill: 'dodge' },
         mage: { attack: 1.1, defense: 1, dodge: 0, skill: 'counter' }
     };
-
+    
     playerClass = classData[className];
     playerClass.type = className;
-
-    // 顯示選擇反饋
+    
+    // 显示选择反馈
     document.getElementById('selectedClassInfo').innerHTML = `
-        <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${document.querySelector(`.class-card[onclick="selectClass('${className}')"] h3`).textContent}</p>
+        <p>已選擇：${document.querySelector(`.class-card[onclick="selectClass('${className}')"] h3`).textContent}</p>
+        <p>等待對手選擇流派...</p>
     `;
 
-    // 更新職業選擇 UI
-    document.querySelectorAll('.class-card').forEach(card => {
-        card.classList.remove('selected');
-        card.querySelector('.selected-tick').style.display = 'none';
+// 移除所有卡片的选中状态
+document.querySelectorAll('.class-card').forEach(card => {
+    card.classList.remove('selected');
+    card.querySelector('.selected-tick').style.display = 'none';
+});
+
+// 设置当前选中卡片
+const selectedCard = document.querySelector(`.class-card[onclick="selectClass('${className}')"]`);
+selectedCard.classList.add('selected');
+selectedCard.querySelector('.selected-tick').style.display = 'flex';
+
+    // 显示确认信息
+    document.getElementById('selectedClassInfo').innerHTML = `
+        <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${selectedCard.querySelector('h3').textContent}</p>
+        <p>等待對手選擇流派...</p>
+    `;
+    
+    // 更新数据库
+    const playerPath = isHost ? 'player1' : 'player2';
+    database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+        class: className,
+        health: 100,
+        attack: playerClass.attack,
+        defense: playerClass.defense,
+        dodge: playerClass.dodge
     });
-    const selectedCard = document.querySelector(`.class-card[onclick="selectClass('${className}')"]`);
-    selectedCard.classList.add('selected');
-    selectedCard.querySelector('.selected-tick').style.display = 'flex';
 
-    // 隱藏職業選擇界面
-    document.getElementById('classSelection').style.display = 'none';
-
-    // 如果已有難度選擇，則啟動遊戲
-    if (window.selectedDifficulty) {
-        startSinglePlayerGame(window.selectedDifficulty.computerAccuracy, window.selectedDifficulty.questionTime);
-    }
+// 顯示彈出圖片並在動畫結束後隱藏
+    const popupImage = selectedCard.querySelector('.popup-image');
+    popupImage.style.display = 'block';
+    setTimeout(() => {
+        popupImage.style.display = 'none';
+    }, 500); // 動畫持續時間為0.5秒
+    
 }
+
 
 function displayQuestion(question) {
     
@@ -1389,68 +1285,8 @@ function displayQuestion(question) {
 }
 
 function checkAnswer(isCorrect, questionId) {
-    if (answered || gameOver) return;
-    answered = true;
-    clearInterval(timer);
-
-    // 玩家答題處理
-    const buttons = document.querySelectorAll('#options button');
-    const correctIndex = window.currentQuestion.correctIndex;
-    buttons.forEach((btn, index) => {
-        btn.style.pointerEvents = 'none';
-        if (index === correctIndex) {
-            btn.style.background = '#2ecc71';
-            btn.style.border = '2px solid #27ae60';
-            btn.style.transform = 'scale(1.05)';
-        }
-    });
-
-    let baseDamage = Math.floor((timeLeft / window.questionTime) * 13);
-    if (isCorrect) {
-        const damage = Math.floor(baseDamage * playerClass.attack);
-        window.computerHealth = Math.max(0, window.computerHealth - damage);
-        document.getElementById('opponentHealth').textContent = window.computerHealth;
-        document.getElementById('opponentHealthBar').style.width = window.computerHealth + '%';
-    } else {
-        const damage = Math.floor(baseDamage / playerClass.defense);
-        window.playerHealth = Math.max(0, window.playerHealth - damage);
-        document.getElementById('myHealth').textContent = window.playerHealth;
-        document.getElementById('myHealthBar').style.width = window.playerHealth + '%';
-    }
-
-    // 單人模式下電腦自動答題
-    if (currentRoomId === 'singleplayer') {
-        const computerAnswer = Math.random() < window.computerAccuracy;
-        if (computerAnswer) {
-            // 電腦答對，玩家扣血
-            const computerDamage = Math.floor(Math.random() * 10) + 5; // 隨機傷害 5-14
-            window.playerHealth = Math.max(0, window.playerHealth - computerDamage);
-            document.getElementById('myHealth').textContent = window.playerHealth;
-            document.getElementById('myHealthBar').style.width = window.playerHealth + '%';
-        } else {
-            // 電腦答錯，電腦扣血
-            const computerDamage = Math.floor(Math.random() * 10) + 5;
-            window.computerHealth = Math.max(0, window.computerHealth - computerDamage);
-            document.getElementById('opponentHealth').textContent = window.computerHealth;
-            document.getElementById('opponentHealthBar').style.width = window.computerHealth + '%';
-        }
-    }
-
-    // 檢查遊戲是否結束
-    checkGameOver();
-
-    // 如果遊戲未結束，繼續下一題
-    if (!gameOver) {
-        setTimeout(() => {
-            buttons.forEach(btn => {
-                btn.style.cssText = '';
-                btn.style.pointerEvents = 'auto';
-            });
-            answered = false;
-            loadNewQuestion();
-        }, 700);
-    }
-}
+    if (answeredQuestions.has(questionId)) return; // 如果已回答，則不執行
+    answeredQuestions.add(questionId); // 記錄已回答的問題ID
 
     // 在傷害計算後添加特效元素
     let effectElement = document.createElement('div');
@@ -2214,11 +2050,12 @@ function displayQuestion(question) {
 }
 
 
-function startTimer(duration) {
+function startTimer() {
     clearInterval(timer);
+    // 新增以下兩行重置動畫狀態
     document.getElementById('gameArea').classList.remove('screen-shake');
     document.querySelectorAll('.health-fill').forEach(bar => bar.classList.remove('damage-effect'));
-    timeLeft = duration;
+    timeLeft = 15;
     document.getElementById('timer').textContent = `🕒${timeLeft}秒`;
     timer = setInterval(() => {
         timeLeft--;
@@ -2228,35 +2065,39 @@ function startTimer(duration) {
 }
 
 function checkGameOver() {
-    if (currentRoomId === 'singleplayer') {
-        if (window.playerHealth <= 0) {
-            handleGameEnd('computer');
-        } else if (window.computerHealth <= 0) {
-            handleGameEnd('player');
-        }
-    } else {
-        // 多人模式邏輯保持不變
-        const roomRef = database.ref('rooms/' + currentRoomId);
-        roomRef.once('value').then(snapshot => {
-            const room = snapshot.val();
-            if (!room) return;
+    const roomRef = database.ref('rooms/' + currentRoomId);
+    roomRef.once('value').then(snapshot => {
+        const room = snapshot.val();
+        if (!room) return;
 
-            const player1Health = Math.max(room.player1?.health || 0, 0);
-            const player2Health = Math.max(room.player2?.health || 0, 0);
+        // 新增血量下限處理
+        const player1Health = Math.max(room.player1?.health || 0, 0);
+        const player2Health = Math.max(room.player2?.health || 0, 0);
 
-            let winner = null;
-            if (player1Health <= 0 || player2Health <= 0) {
-                if (player1Health > player2Health) {
-                    winner = 'player1';
-                } else if (player2Health > player1Health) {
-                    winner = 'player2';
-                } else {
-                    winner = 'draw';
-                }
-                roomRef.update({ gameEnded: true, winner: winner });
+        let winner = null;
+        if (player1Health <= 0 || player2Health <= 0) {
+            if (player1Health > player2Health) {
+                winner = 'player1';
+            } else if (player2Health > player1Health) {
+                winner = 'player2';
+            } else {
+                winner = 'draw';
             }
-        });
-    }
+
+            // 新增強制血量歸零
+            const updates = {
+                gameEnded: true,
+                winner: winner,
+                'player1/health': player1Health,
+                'player2/health': player2Health
+            };
+
+            roomRef.update(updates, () => {
+                // 新增直接觸發結束處理
+                handleGameEnd(winner);
+            });
+        }
+    });
 }
 
 function handleGameEnd(winnerType) {
