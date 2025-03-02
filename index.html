@@ -1095,6 +1095,28 @@
     
 <script>
 
+    if (room.player1?.class && room.player2?.class && !room.librarySelectedMulti) {
+    console.log('雙方已選擇角色，準備選擇題庫');
+    document.getElementById('waitingArea').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'none';
+
+    if (!room.libraryChooser) {
+        console.log('尚未選擇題庫選擇者，隨機選擇');
+        const chooser = Math.random() < 0.5 ? 'player1' : 'player2';
+        roomRef.update({ libraryChooser: chooser });
+    } else {
+        isLibraryChooser = (isHost && room.libraryChooser === 'player1') || (!isHost && room.libraryChooser === 'player2');
+        console.log(`isHost: ${isHost}, libraryChooser: ${room.libraryChooser}, isLibraryChooser: ${isLibraryChooser}`);
+        if (isLibraryChooser) {
+            console.log('顯示題庫選擇界面');
+            document.getElementById('librarySelectionMulti').style.display = 'block';
+        } else {
+            console.log('顯示等待對方選擇題庫');
+            showWaitingForLibraryMulti();
+        }
+    }
+}
+
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1270,6 +1292,7 @@ function selectClass(className) {
     
     playerClass = classData[className];
     playerClass.type = className;
+
     
     // 显示选择反馈
     document.getElementById('selectedClassInfo').innerHTML = `
@@ -1310,8 +1333,29 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
     setTimeout(() => {
         popupImage.style.display = 'none';
     }, 500); // 動畫持續時間為0.5秒
-    
+
+const playerPath = isHost ? 'player1' : 'player2';
+    database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+        class: className,
+        health: 100,
+        attack: playerClass.attack,
+        defense: playerClass.defense,
+        dodge: playerClass.dodge
+    }).then(() => {
+        // 檢查雙方是否都選擇了角色
+        database.ref(`rooms/${currentRoomId}`).once('value', (snapshot) => {
+            const room = snapshot.val();
+            if (room.player1?.class && room.player2?.class && !room.libraryChooser) {
+                const chooser = Math.random() < 0.5 ? 'player1' : 'player2';
+                database.ref(`rooms/${currentRoomId}`).update({ libraryChooser: chooser });
+            }
+        });
+    });
 }
+
+
+    
+
 
 
 function displayQuestion(question) {
