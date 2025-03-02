@@ -14,7 +14,29 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
-    <style>        
+    <style>    
+
+        .solo-btn {
+    background: linear-gradient(45deg, #8e44ad, #9b59b6);
+    box-shadow: 0 5px 15px rgba(142, 68, 173, 0.4);
+}
+
+.solo-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(155, 89, 182, 0.6);
+}
+
+.difficulty-grid button {
+    padding: 1.5rem;
+    font-size: 1.4rem;
+    border-radius: 12px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.difficulty-grid button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
 
 .rematch-buttons {
     margin-top: 30px;
@@ -892,6 +914,11 @@
             <span>隨機分配</span>
             <div class="btn-glow"></div>
         </button>
+        <button onclick="startSoloMode()" class="action-btn solo-btn">
+    <i class="fas fa-user-ninja"></i>
+    <span>單機修行</span>
+    <div class="btn-glow"></div>
+</button>
     </div>
 
    
@@ -985,6 +1012,26 @@
     </div>
     <div id="selectedClassInfo" style="margin-top: 2rem;"></div>
 </div>
+
+    <div id="soloDifficulty" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9998; padding: 2rem;">
+    <h2 style="color: var(--gold); text-align: center; margin-bottom: 2rem;">選擇修行難度</h2>
+    <div class="difficulty-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; max-width: 800px; margin: 0 auto;">
+        <button onclick="startSoloGame('easy')" class="action-btn" style="background: linear-gradient(45deg, #27ae60, #2ecc71);">
+            <span>容易</span>
+        </button>
+        <button onclick="startSoloGame('normal')" class="action-btn" style="background: linear-gradient(45deg, #f1c40f, #f39c12);">
+            <span>普通</span>
+        </button>
+        <button onclick="startSoloGame('hard')" class="action-btn" style="background: linear-gradient(45deg, #e67e22, #d35400);">
+            <span>困難</span>
+        </button>
+        <button onclick="startSoloGame('hell')" class="action-btn" style="background: linear-gradient(45deg, #c0392b, #e74c3c);">
+            <span>地獄</span>
+        </button>
+    </div>
+</div>
+
+    
     
    <div id="waitingArea" style="
     text-align: center;
@@ -1037,6 +1084,195 @@
 
     
 <script>
+
+    // 全局變數，獨立於多人模式
+let soloMode = false;
+let soloDifficulty = null;
+let soloTimer = null;
+let soloHealthDeductionInterval = null;
+let enemyHealth = 100;
+let playerHealth = 100;
+
+// 難度參數設置
+const difficultySettings = {
+    easy: { deductionChance: 0.2, deductionInterval: 10000 }, // 20%機率，每10秒扣血
+    normal: { deductionChance: 0.4, deductionInterval: 7000 }, // 40%機率，每7秒扣血
+    hard: { deductionChance: 0.6, deductionInterval: 5000 }, // 60%機率，每5秒扣血
+    hell: { deductionChance: 0.8, deductionInterval: 3000 } // 80%機率，每3秒扣血
+};
+
+// 啟動單機模式
+function startSoloMode() {
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('soloDifficulty').style.display = 'block';
+}
+
+// 開始單機遊戲
+function startSoloGame(difficulty) {
+    soloMode = true;
+    soloDifficulty = difficulty;
+    enemyHealth = 100;
+    playerHealth = 100;
+    document.getElementById('soloDifficulty').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+    updateSoloHealthDisplay();
+    loadSoloQuestion();
+    startSoloHealthDeduction();
+}
+
+// 更新單機模式血量顯示
+function updateSoloHealthDisplay() {
+    document.getElementById('enemyHealthContainer').innerHTML = `
+        <div>🗡 敵方氣血: <span id="opponentHealth">${Math.max(enemyHealth, 0)}</span></div>
+        <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${enemyHealth}%"></div></div>
+    `;
+    document.getElementById('myHealthContainer').innerHTML = `
+        <div>🏹 你的氣血: <span id="myHealth">${Math.max(playerHealth, 0)}</span></div>
+        <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${playerHealth}%"></div></div>
+    `;
+}
+
+// 載入單機模式問題
+function loadSoloQuestion() {
+    const totalQuestions = 622;
+    const randomId = Math.floor(Math.random() * totalQuestions);
+    database.ref(`questions/${randomId}`).once('value').then(snapshot => {
+        const question = snapshot.val();
+        if (!question) return;
+        const optionsCopy = [...question.options];
+        const correctAnswer = optionsCopy[question.correctIndex];
+        const shuffledOptions = shuffleArray(optionsCopy);
+        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+        const soloQuestion = {
+            question: question.question,
+            options: shuffledOptions,
+            correctIndex: newCorrectIndex,
+            id: Date.now()
+        };
+        window.currentSoloQuestion = soloQuestion;
+        displaySoloQuestion(soloQuestion);
+    });
+}
+
+// 顯示單機模式問題
+function displaySoloQuestion(question) {
+    answered = false;
+    document.getElementById('question').textContent = question.question;
+    const optionsDiv = document.getElementById('options');
+    optionsDiv.innerHTML = '';
+    question.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.textContent = option;
+        button.onclick = () => {
+            if (!answered) {
+                checkSoloAnswer(index === question.correctIndex);
+            }
+        };
+        optionsDiv.appendChild(button);
+    });
+    startSoloTimer();
+}
+
+// 單機模式計時器
+function startSoloTimer() {
+    clearInterval(soloTimer);
+    timeLeft = 15;
+    document.getElementById('timer').textContent = `🕒${timeLeft}秒`;
+    soloTimer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').textContent = `🕒${timeLeft}秒`;
+        if (timeLeft <= 0) checkSoloAnswer(false);
+    }, 1000);
+}
+
+// 檢查單機模式答案
+function checkSoloAnswer(isCorrect) {
+    if (answered) return;
+    answered = true;
+    clearInterval(soloTimer);
+
+    const buttons = document.querySelectorAll('#options button');
+    buttons.forEach((btn, index) => {
+        btn.style.pointerEvents = 'none';
+        if (index === window.currentSoloQuestion.correctIndex) {
+            btn.style.background = '#2ecc71';
+        }
+    });
+
+    const baseDamage = Math.floor((timeLeft / 15) * 13);
+    if (isCorrect) {
+        enemyHealth -= baseDamage;
+    } else {
+        playerHealth -= baseDamage;
+    }
+    updateSoloHealthDisplay();
+    checkSoloGameOver();
+
+    if (!gameOver) {
+        setTimeout(() => {
+            buttons.forEach(btn => {
+                btn.style.cssText = '';
+                btn.style.pointerEvents = 'auto';
+            });
+            answered = false;
+            loadSoloQuestion();
+        }, 700);
+    }
+}
+
+// 定時扣減玩家氣血
+function startSoloHealthDeduction() {
+    clearInterval(soloHealthDeductionInterval);
+    const settings = difficultySettings[soloDifficulty];
+    soloHealthDeductionInterval = setInterval(() => {
+        if (Math.random() < settings.deductionChance) {
+            playerHealth -= 5; // 每次扣5點氣血
+            updateSoloHealthDisplay();
+            checkSoloGameOver();
+        }
+    }, settings.deductionInterval);
+}
+
+// 檢查單機模式遊戲是否結束
+function checkSoloGameOver() {
+    if (playerHealth <= 0 || enemyHealth <= 0) {
+        gameOver = true;
+        clearInterval(soloTimer);
+        clearInterval(soloHealthDeductionInterval);
+        showSoloGameEnd();
+    }
+}
+
+// 顯示單機模式遊戲結束界面
+function showSoloGameEnd() {
+    const victoryOverlay = document.querySelector('.victory-overlay');
+    const victoryText = document.querySelector('.victory-text');
+    victoryOverlay.style.display = 'flex';
+    victoryText.textContent = enemyHealth <= 0 ? '武道昌隆！' : '雖敗猶榮！';
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'rematch-buttons';
+    const rematchBtn = document.createElement('button');
+    rematchBtn.textContent = '再戰江湖';
+    const mainMenuBtn = document.createElement('button');
+    mainMenuBtn.textContent = '歸隱山林';
+
+    rematchBtn.onclick = () => {
+        victoryOverlay.style.display = 'none';
+        startSoloGame(soloDifficulty);
+    };
+    mainMenuBtn.onclick = () => {
+        victoryOverlay.style.display = 'none';
+        document.getElementById('gameArea').style.display = 'none';
+        document.getElementById('roomControl').style.display = 'block';
+        soloMode = false;
+        gameOver = false;
+    };
+
+    buttonContainer.appendChild(rematchBtn);
+    buttonContainer.appendChild(mainMenuBtn);
+    victoryOverlay.appendChild(buttonContainer);
+}
 
 // Canvas 動畫代碼
 window.onload = function() {
@@ -1835,6 +2071,10 @@ function listenToRoomChanges() {
         }
     });
 }
+
+
+
+    
 
     function randomMatch() {
     console.log("randomMatch called");
