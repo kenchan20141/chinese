@@ -1699,39 +1699,12 @@ let gameOver = false;
 let playerClass = null; // 存储玩家选择的职业
 
 const bgMusic = new Audio('https://incompetech.com/music/royalty-free/mp3-royaltyfree/Clash%20Defiant.mp3');
-bgMusic.preload = 'auto'; // 預加載音頻文件
 bgMusic.loop = true;
 bgMusic.volume = 0.3;
 
 bgMusic.addEventListener('error', function() {
-    console.error('背景音樂加載失敗，請檢查音頻 URL 或網絡連接。');
+    console.error('背景音乐加载失败，请检查音频 URL 或网络连接。');
 });
-
-// 當音樂結束時，如果應播放則手動重啟（針對 loop 失效的情況）
-bgMusic.addEventListener('ended', function() {
-    console.log('背景音樂結束，正在重啟');
-    bgMusic.currentTime = 0; // 重置播放位置
-    if (isMusicPlaying) {
-        bgMusic.play();
-    }
-});
-
-// 監聽播放和暫停事件以便調試
-bgMusic.addEventListener('play', function() {
-    console.log('背景音樂開始播放');
-});
-
-bgMusic.addEventListener('pause', function() {
-    console.log('背景音樂已暫停');
-});
-
-// 每5秒檢查一次，若應播放但已暫停，則恢復播放
-setInterval(function() {
-    if (isMusicPlaying && bgMusic.paused && bgMusic.currentTime < bgMusic.duration) {
-        console.log('音樂意外暫停，正在恢復');
-        bgMusic.play();
-    }
-}, 5000);
 
 const soundEffects = {
     attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3'),
