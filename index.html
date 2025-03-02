@@ -1855,36 +1855,6 @@ function startGameSession() {
     listenToRoomChanges();
 }
 
-function listenToRoomChanges() {
-    const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.off('value'); // 移除舊的監聽器
-
-    roomRef.on('value', (snapshot) => {
-        const room = snapshot.val();
-        if (!room) return;
-
-        if (isHost) {
-            opponentDefense = room.player2?.defense || 1.0;
-        } else {
-            opponentDefense = room.player1?.defense || 1.0;
-        }
-
-        // 當雙方選擇角色後開始遊戲
-        if (room.player1?.class && room.player2?.class && !room.gameStarted) {
-            document.getElementById('waitingArea').style.display = 'none';
-            document.getElementById('classSelection').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            roomRef.update({ gameStarted: true });
-            startGame(room);
-        }
-
-        updateHealthDisplay(room);
-
-        if (room.gameEnded) {
-            handleGameEnd(room.winner);
-        }
-    });
-}
 
   function randomMatch() {
     console.log("randomMatch called");
