@@ -1865,7 +1865,11 @@ function listenToRoomChanges() {
                 gameEnded: false,
                 winner: null
             });
-            waitingRef.set({ roomId: roomId, hostId: userId });
+            waitingRef.set({
+    roomId: roomId,
+    hostId: userId,
+    createdAt: firebase.database.ServerValue.TIMESTAMP // 添加時間戳
+});
 
             // 更新 UI
             document.getElementById('roomControl').style.display = 'none';
