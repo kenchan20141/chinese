@@ -2227,14 +2227,14 @@ function selectDifficulty(difficulty) {
     const settings = difficultySettings[difficulty];
     if (!settings) return;
 
-    // 初始化單機模式
-    currentRoomId = 'single_' + Date.now();
+    // 初始化单机模式
+    currentRoomId ='single_' + Date.now();
     isHost = true;
     gameOver = false;
     answered = false;
-    playerClass = null; // 單機模式不需要職業
+    playerClass = null; // 单机模式不需要职业
 
-    // 設置玩家氣血
+    // 设置玩家气血
     const initialHealth = 100;
     database.ref('rooms/' + currentRoomId).set({
         player1: { health: initialHealth },
@@ -2243,21 +2243,22 @@ function selectDifficulty(difficulty) {
         winner: null
     });
 
-    // 顯示遊戲區域
+    // 显示游戏区域
     document.getElementById('difficultySelection').style.display = 'none';
     document.getElementById('gameArea').style.display = 'block';
 
-    // 開始扣血計時器
+    // 开始扣血计时器，确保按照难度设置的时间间距扣血
+    clearInterval(timer); // 清除可能存在的旧计时器
     setInterval(() => {
         if (Math.random() < settings.damageChance) {
-            const damage = 10; // 每次扣減 10 點氣血
+            const damage = 10; // 每次扣减 10 点气血
             database.ref('rooms/' + currentRoomId + '/player1/health').set(
                 firebase.database.ServerValue.increment(-damage)
             );
         }
     }, settings.damageInterval);
 
-    // 監聽氣血變化
+    // 监听气血变化
     listenToSinglePlayerHealth();
     loadNewQuestionSinglePlayer();
 }
@@ -2361,22 +2362,39 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
     });
 
     let damage = 0;
-    if (!isCorrect) {
-        damage = 10; // 答錯扣 10 點氣血
+    if (isCorrect) {
+        // 增加扣减敌方气血的逻辑，假设敌方气血初始为100，每次答对扣10点
+        const enemyHealth = 100;
+        const newEnemyHealth = enemyHealth - 10;
+        // 这里可以根据实际情况修改敌方气血的存储方式和更新逻辑
+        // 例如，如果在数据库中存储，需要更新数据库中的值
+        // 这里仅为示例，假设在单机模式下有一个变量存储敌方气血
+        // 可以添加类似以下代码来更新显示
+        document.getElementById('opponentHealth').textContent = newEnemyHealth;
+        document.getElementById('opponentHealthBar').style.width = newEnemyHealth + '%';
+
+        // 添加答对时的音效和震动
+        const soundEffects = {
+            attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
+        };
+        soundEffects.attack.currentTime = 0;
+        soundEffects.attack.play();
+        navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+        if (navigator.vibrate) navigator.vibrate(200);
+    } else {
+        damage = 10; // 答错扣 10 点气血
         database.ref('rooms/' + currentRoomId + '/player1/health').set(
             firebase.database.ServerValue.increment(-damage)
         );
+        // 答错时仅震动
+        navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+        if (navigator.vibrate) navigator.vibrate(200);
     }
 
     const targetElement = document.getElementById('myHealthBar');
     targetElement.classList.add('damage-flash');
     document.getElementById('gameArea').classList.add('screen-shake');
     document.querySelectorAll('.health-fill').forEach(bar => bar.classList.add('damage-effect'));
-
-    navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
-    if (!isCorrect) {
-        if (navigator.vibrate) navigator.vibrate(200);
-    }
 
     setTimeout(() => {
         targetElement.classList.remove('damage-flash');
@@ -2404,16 +2422,16 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    victoryText.textContent = "氣血耗盡，遊戲結束！";
+    victoryText.textContent = "气血耗尽，游戏结束！";
     victoryOverlay.style.display = 'flex';
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'rematch-buttons';
 
     const restartBtn = document.createElement('button');
-    restartBtn.textContent = '再戰江湖';
+    restartBtn.textContent = '再战江湖';
     const mainMenuBtn = document.createElement('button');
-    mainMenuBtn.textContent = '歸隱山林';
+    mainMenuBtn.textContent = '归隐山林';
 
     restartBtn.onclick = () => {
         database.ref('rooms/' + currentRoomId).remove();
@@ -2427,6 +2445,10 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
     buttonContainer.appendChild(restartBtn);
     buttonContainer.appendChild(mainMenuBtn);
     victoryOverlay.appendChild(buttonContainer);
+
+    // 新增逻辑：在点击“再战江湖”时，清除可能存在的遮挡画面
+    const waitingForRematch = document.getElementById('waitingForRematch');
+    if (waitingForRematch) waitingForRematch.remove();
 }
 
 document.getElementById('showLeaderboardBtn').onclick = function() {
