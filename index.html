@@ -2700,6 +2700,14 @@ function handleRematchRequest() {
 
 
 function listenToRoomChanges() {
+
+if (isLibraryChooser) {
+    console.log('強制顯示題庫選擇界面');
+    const librarySelection = document.getElementById('librarySelectionMulti');
+    librarySelection.style.display = 'block';
+    librarySelection.style.background = 'red'; // 添加明顯顏色以確認顯示
+}
+    
     const roomRef = database.ref('rooms/' + currentRoomId);
     roomRef.off('value');
 
