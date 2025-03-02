@@ -2300,6 +2300,22 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
+        // 如果是房主且尚未有對手加入，檢查等待時間
+        if (isHost && room.player2 === null) {
+            const now = Date.now();
+            const roomRef = database.ref('rooms/' + currentRoomId);
+            roomRef.once('value', (roomSnapshot) => {
+                const roomData = roomSnapshot.val();
+                const createdAt = roomData?.createdAt || 0;
+                if (now - createdAt > 30000) { // 30秒超時
+                    alert('等待對手超時，請重新嘗試匹配。');
+                    database.ref('rooms/' + currentRoomId).remove();
+                    database.ref('waitingRooms').remove();
+                    window.location.reload();
+                }
+            });
+        }
+
         if (room.player1?.class && room.player2?.class) {
             document.getElementById('waitingArea').style.display = 'none';
         }
