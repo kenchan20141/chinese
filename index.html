@@ -2447,6 +2447,14 @@ victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
 const buttons = victoryOverlay.querySelector('.rematch-buttons');
 if (buttons) buttons.remove();
 victoryOverlay.style.display = 'none';
+
+
+// 初始化敌方气血
+        const enemyInitialHealth = 100;
+        document.getElementById('opponentHealth').textContent = enemyInitialHealth;
+        document.getElementById('opponentHealthBar').style.width = enemyInitialHealth + '%';
+
+        
         startSinglePlayer();
     };
     mainMenuBtn.onclick = () => {
