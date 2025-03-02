@@ -2348,6 +2348,8 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
     answeredQuestions.add(questionId);
 
     if (answered || gameOver) return;
+    answered = true;
+    
     if (isCorrect) {
     const damage = 10; // 每次答對扣減敵方 10 點氣血
     database.ref('rooms/' + currentRoomId + '/enemy/health').set(
@@ -2358,7 +2360,6 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
     soundEffects.attack.play();
     if (navigator.vibrate) navigator.vibrate(200);
 }
-    answered = true;
 
     clearInterval(timer);
 
