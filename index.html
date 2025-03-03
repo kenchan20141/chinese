@@ -1,3 +1,5 @@
+搞緊題庫分類，但重開有問題
+
 
 
 <!DOCTYPE html>
@@ -540,29 +542,6 @@
             display: none;
         }
 
-
-        #topicSelection {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(45, 41, 38, 0.95);
-    padding: 2rem;
-    border: none;
-    border-radius: 0;
-    z-index: 9999;
-    overflow-y: auto;
-}
-
-        #gradeSelection, #topicDetail {
-    max-width: 90%;
-    margin: 0 auto;
-}
-
-
-        
         .health-bar {
             width: 100%;
             height: 40px;
@@ -1393,47 +1372,28 @@ function selectTopic(topic) {
     startCountdown();
 }
 
-   function startCountdown() {
-    const countdownContainer = document.createElement('div');
-    countdownContainer.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 10000;
-    `;
-    document.body.appendChild(countdownContainer);
-
-    const countdownElement = document.createElement('div');
-    countdownElement.style.cssText = `
-        font-size: 10rem;
-        color: var(--gold);
-        text-shadow: 0 0 20px var(--gold);
-        opacity: 0;
-        transition: opacity 0.5s ease-in-out;
-    `;
-    countdownContainer.appendChild(countdownElement);
-
+    function startCountdown() {
     let countdown = 3;
-    const showNumber = (num) => {
-        countdownElement.textContent = num;
-        countdownElement.style.opacity = '1';
-        setTimeout(() => {
-            countdownElement.style.opacity = '0';
-        }, 500);
-    };
+    const countdownElement = document.createElement('div');
+    countdownElement.id = 'countdown';
+    countdownElement.style.position = 'fixed';
+    countdownElement.style.top = '50%';
+    countdownElement.style.left = '50%';
+    countdownElement.style.transform = 'translate(-50%, -50%)';
+    countdownElement.style.fontSize = '5rem';
+    countdownElement.style.color = 'var(--gold)';
+    countdownElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+    countdownElement.textContent = countdown;
+    document.body.appendChild(countdownElement);
 
     const countdownInterval = setInterval(() => {
-        showNumber(countdown);
         countdown--;
-        if (countdown < 0) {
+        if (countdown > 0) {
+            countdownElement.textContent = countdown;
+        } else {
             clearInterval(countdownInterval);
-            countdownContainer.remove();
+            countdownElement.remove();
+            // 開始遊戲
             database.ref(`rooms/${currentRoomId}`).update({
                 gameStarted: true
             });
@@ -2147,25 +2107,22 @@ function startGame(room) {
             document.getElementById('topicSelection').style.display = 'block';
         } else {
             isSelectingTopic = false;
+            // 顯示等待對方選擇題庫
             const waitingMessage = document.createElement('div');
-waitingMessage.id = 'waitingForTopic';
-waitingMessage.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(45, 41, 38, 0.95);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    font-size: 2rem;
-    color: var(--gold);
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-`;
-waitingMessage.textContent = '等待對方選擇題庫...';
-document.body.appendChild(waitingMessage);
+            waitingMessage.id = 'waitingForTopic';
+            waitingMessage.style.textAlign = 'center';
+            waitingMessage.style.fontSize = '2rem';
+            waitingMessage.style.color = 'var(--gold)';
+            waitingMessage.style.padding = '2rem';
+            waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+            waitingMessage.style.border = '3px solid var(--gold)';
+            waitingMessage.style.borderRadius = '15px';
+            waitingMessage.style.maxWidth = '600px';
+            waitingMessage.style.margin = '2rem auto';
+            waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+            waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+            waitingMessage.textContent = '等待對方選擇題庫...';
+            document.body.appendChild(waitingMessage);
         }
     } else {
         // 題庫已選擇，開始遊戲
@@ -2822,6 +2779,7 @@ function listenToRoomChanges() {
         `;
         waitingMessage.textContent = '等待對方選擇題庫...';
         document.body.appendChild(waitingMessage);
+    }
     // 移除等待消息
     const waitingForTopic = document.getElementById('waitingForTopic');
     if (waitingForTopic) waitingForTopic.remove();
@@ -2901,3 +2859,5 @@ if (room.gameStarted) {
 
     
 </html>
+
+
