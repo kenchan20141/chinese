@@ -2676,51 +2676,49 @@ function handleRematchRequest() {
     if (isRematching) return;
     isRematching = true;
 
-    // 强制移除胜利界面元素
+    // 移除勝利畫面
     const victoryOverlay = document.querySelector('.victory-overlay');
     victoryOverlay.style.display = 'none';
     const buttons = victoryOverlay.querySelector('.rematch-buttons');
     if (buttons) buttons.remove();
 
-    // 获取当前玩家对应的重开字段
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
+    const newSelector = Math.random() < 0.5 ? 'player1' : 'player2'; // 隨機分配新的題庫選擇者
 
-    // 原子性重置数据库状态
+    // 更新數據庫，重置所有狀態
     const updates = {
         'player1/health': 100,
         'player2/health': 100,
+        'player1/class': null,
+        'player2/class': null,
+        'player1/currentQuestion': null,
+        'player2/currentQuestion': null,
         gameEnded: false,
-        currentQuestion: null,
         winner: null,
         gameStarted: false,
-        topicSelected: false, // 重置題庫選擇
+        topicSelected: false,
         selectedGrade: null,
         selectedTopic: null,
-        topicSelector: null,
-        [rematchField]: true,
-        'player1/reentered': isHost,
-        'player2/reentered': !isHost,
-        clientEntered: isHost ? false : true
+        topicSelector: newSelector,
+        [rematchField]: true
     };
-
-    waitingForOpponent = false;
 
     database.ref('rooms/' + currentRoomId).update(updates, (error) => {
         isRematching = false;
         if (error) {
-            console.error('更新数据库时出错:', error);
+            console.error('更新數據庫時出錯:', error);
             return;
         }
 
-        // 本地强制重置
+        // 重置客戶端狀態
         gameOver = false;
         answered = false;
-
-        // 清除旧问题显示
+        playerClass = null;
+        answeredQuestions.clear();
         document.getElementById('question').textContent = '';
         document.getElementById('options').innerHTML = '';
 
-        // 显示等待界面
+        // 顯示等待對手畫面
         const waitingForRematch = document.createElement('div');
         waitingForRematch.id = 'waitingForRematch';
         waitingForRematch.style.textAlign = 'center';
@@ -2733,15 +2731,10 @@ function handleRematchRequest() {
         waitingForRematch.style.maxWidth = '600px';
         waitingForRematch.style.margin = '2rem auto';
         waitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-        waitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
         waitingForRematch.textContent = '等待對手同意重開遊戲...';
         document.body.appendChild(waitingForRematch);
 
-        // 添加等待对方同意的标志位
         waitingForOpponent = true;
-
-        // 重新绑定监听器
-        listenToRoomChanges();
     });
 }
 
@@ -2802,17 +2795,22 @@ if (room.gameStarted) {
     startGame(room);
 }
 
-        // 重開相關邏輯保持不變
+       // 重開邏輯
         const bothAgreed = room.hostRematch && room.clientRematch;
         if (bothAgreed && !room.gameStarted) {
+            // 移除等待畫面
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (waitingForRematch) waitingForRematch.remove();
 
-            const updates = { gameStarted: true };
-            database.ref('rooms/' + currentRoomId).update(updates, () => {
-                startNewGameSession();
-            });
+            // 重置界面並進入職業選擇與題庫選擇流程
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('classSelection').style.display = 'block';
+            document.getElementById('waitingArea').style.display = 'block';
+            document.getElementById('displayRoomId').textContent = currentRoomId;
             waitingForOpponent = false;
+
+            // 觸發遊戲開始流程（包括題庫選擇）
+            startGame(room);
         } else if (!bothAgreed && waitingForOpponent) {
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (!waitingForRematch) {
@@ -2828,10 +2826,10 @@ if (room.gameStarted) {
                 newWaitingForRematch.style.maxWidth = '600px';
                 newWaitingForRematch.style.margin = '2rem auto';
                 newWaitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-                newWaitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
                 newWaitingForRematch.textContent = '等待對手同意重開遊戲...';
                 document.body.appendChild(newWaitingForRematch);
             }
+        }
         }
 
         // 玩家重新進入提示保持不變
