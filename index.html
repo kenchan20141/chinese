@@ -1,4 +1,4 @@
-選擇題庫後ＯＫ，係差最後重開遊戲
+
 
 <!DOCTYPE html>
 <html>
@@ -1127,6 +1127,8 @@
     
 <script>
 
+    let currentQuestionId = null;
+
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -2161,12 +2163,12 @@ document.body.appendChild(waitingMessage);
 
         setTimeout(() => {
             const playerPath = isHost ? 'player1' : 'player2';
-            const question = room[playerPath].currentQuestion;
-            if (!question) {
-                loadNewQuestion();
-            } else {
-                displayQuestion(question);
-            }
+           const question = room[playerPath].currentQuestion;
+if (question && question.id !== currentQuestionId) {
+    displayQuestion(question);
+} else if (!question) {
+    loadNewQuestion();
+}
         }, 500);
     }
 }
@@ -2234,6 +2236,8 @@ function loadNewQuestion() {
 }
 
 function displayQuestion(question) {
+    if (currentQuestionId === question.id) return; // 防止重複顯示相同問題
+    currentQuestionId = question.id; // 更新當前問題 ID
     this.answered = false; // 重置答題狀態
     window.currentQuestion = question;
     document.getElementById('question').textContent = question.question;
