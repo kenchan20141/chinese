@@ -2773,30 +2773,18 @@ function listenToRoomChanges() {
 }
 
 if (room.gameStarted) {
-  
+    // 確保移除提示
+    const waitingForRematch = document.getElementById('waitingForRematch');
+    if (waitingForRematch) waitingForRematch.remove();
     // 開始遊戲
     startGame(room);
 }
 
-        if (room.gameStarted) {
-    // 移除等待消息（如果存在）
-    const waitingForTopic = document.getElementById('waitingForTopic');
-    if (waitingForTopic) waitingForTopic.remove();
-    // 開始遊戲
-    document.getElementById('topicSelection').style.display = 'none';
-    document.getElementById('gameArea').style.display = 'block';
-    const playerPath = isHost ? 'player1' : 'player2';
-    const question = room[playerPath].currentQuestion;
-    if (!question) {
-        loadNewQuestion();
-    } else {
-        displayQuestion(question);
-    }
-}
-
         // 在 listenToRoomChanges 內替換重開相關邏輯
 if (room.hostRematch && room.clientRematch) {
-    
+    // 移除等待重開提示
+    const waitingForRematch = document.getElementById('waitingForRematch');
+    if (waitingForRematch) waitingForRematch.remove();
 
     // 重置重開標誌並進入職業選擇
     database.ref('rooms/' + currentRoomId).update({
@@ -2809,30 +2797,28 @@ if (room.hostRematch && room.clientRematch) {
     document.getElementById('gameArea').style.display = 'none';
 
     // 雙方都選擇職業後進入題庫選擇
-   if (room.player1?.class && room.player2?.class && !room.topicSelected) {
-    document.getElementById('classSelection').style.display = 'none';
-    const selector = room.topicSelector;
-        if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
-            // 重置 topicSelection 界面到年級選擇
-            document.getElementById('gradeSelection').style.display = 'grid';
-            document.getElementById('topicDetail').style.display = 'none';
-            document.getElementById('topicSelection').style.display = 'block';
-        } else {
-            let waitingMessage = document.createElement('div');
-            waitingMessage.id = 'waitingForTopic';
-            waitingMessage.style.position = 'fixed';
-            waitingMessage.style.top = '50%';
-            waitingMessage.style.left = '50%';
-            waitingMessage.style.transform = 'translate(-50%, -50%)';
-            waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-            waitingMessage.style.color = 'var(--gold)';
-            waitingMessage.style.fontSize = '2rem';
-            waitingMessage.style.padding = '2rem';
-            waitingMessage.style.border = '3px solid var(--gold)';
-            waitingMessage.style.borderRadius = '15px';
-            waitingMessage.style.zIndex = '10000';
-            waitingMessage.textContent = '等待玩家選擇題庫...';
-            document.body.appendChild(waitingMessage);
+    if (room.player1?.class && room.player2?.class) {
+        document.getElementById('classSelection').style.display = 'none';
+        if (!room.topicSelected) {
+            const selector = room.topicSelector;
+            if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
+                document.getElementById('topicSelection').style.display = 'block';
+            } else {
+                let waitingMessage = document.createElement('div');
+                waitingMessage.id = 'waitingForTopic';
+                waitingMessage.style.position = 'fixed';
+                waitingMessage.style.top = '50%';
+                waitingMessage.style.left = '50%';
+                waitingMessage.style.transform = 'translate(-50%, -50%)';
+                waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+                waitingMessage.style.color = 'var(--gold)';
+                waitingMessage.style.fontSize = '2rem';
+                waitingMessage.style.padding = '2rem';
+                waitingMessage.style.border = '3px solid var(--gold)';
+                waitingMessage.style.borderRadius = '15px';
+                waitingMessage.style.zIndex = '10000';
+                waitingMessage.textContent = '等待玩家選擇題庫...';
+                document.body.appendChild(waitingMessage);
             }
         }
     }
@@ -2858,6 +2844,7 @@ if (room.hostRematch && room.clientRematch) {
         }
     });
 }
+
 </script>
 
 <!-- 新增治疗提示 -->
