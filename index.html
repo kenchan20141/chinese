@@ -2793,10 +2793,9 @@ if (room.hostRematch && room.clientRematch) {
     document.getElementById('gameArea').style.display = 'none';
 
     // 雙方都選擇職業後進入題庫選擇
-    if (room.player1?.class && room.player2?.class) {
+   if (room.player1?.class && room.player2?.class && !room.topicSelected) {
     document.getElementById('classSelection').style.display = 'none';
-    if (!room.topicSelected) {
-        const selector = room.topicSelector;
+    const selector = room.topicSelector;
         if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
             // 重置 topicSelection 界面到年級選擇
             document.getElementById('gradeSelection').style.display = 'grid';
