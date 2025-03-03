@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html>
     
@@ -45,41 +44,6 @@
     transition: background 0.3s ease; /* 过渡效果，使渐变更平滑 */
 }
 
-.rematch-buttons {
-    margin-top: 30px;
-    display: flex;
-    gap: 20px;
-    position: absolute; /* 新增定位 */
-    bottom: 30px;      /* 固定在底部 */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;     /* 确保在最上层 */
-}
-
-.rematch-buttons button {
-    width: 150px;
-    height: 150px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2em;
-    background: linear-gradient(45deg, #4CAF50, #45a049);
-    border: 2px solid #2d662f;
-    border-radius: 8px;
-    color: white;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.rematch-buttons button:last-child {
-    background: linear-gradient(45deg, #f44336, #d32f2f);
-    border-color: #b71c1c;
-}
-
-.rematch-buttons button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(0,0,0,0.3);
-}
 
 /* 弹出图片的动画关键帧 */
 @keyframes popImage {
@@ -1256,11 +1220,11 @@ window.onload = function() {
     
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
 let opponentJoinedMessage = null;
-    let isRematching = false;
+
 let answered = false; 
 let opponentDefense = 1.0; 
 // 新增变量
-let waitingForOpponent = false; 
+
     let isAnswered = false; 
     let answeredQuestions = new Set();
     let hasHealedThisTurn = false;
@@ -2604,7 +2568,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
     victoryOverlay.style.display = 'flex';
 
-   const buttonContainer = document.createElement('div');
+    const buttonContainer = document.createElement('div');
 buttonContainer.className = 'rematch-buttons';
 
 const mainMenuBtn = document.createElement('button');
