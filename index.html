@@ -1406,6 +1406,9 @@ function selectTopic(topic) {
             database.ref(`rooms/${currentRoomId}`).update({
                 gameStarted: true
             });
+            // 添加移除提示的邏輯
+            const waitingForRematch = document.getElementById('waitingForRematch');
+            if (waitingForRematch) waitingForRematch.remove();
         }
     }
     updateCountdown();
@@ -2718,19 +2721,19 @@ function handleRematchRequest() {
         // 顯示等待對手同意的提示
         let waitingMessage = document.createElement('div');
         waitingMessage.id = 'waitingForRematch';
-        waitingMessage.style.position = 'fixed';
-        waitingMessage.style.top = '50%';
-        waitingMessage.style.left = '50%';
-        waitingMessage.style.transform = 'translate(-50%, -50%)';
-        waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-        waitingMessage.style.color = 'var(--gold)';
-        waitingMessage.style.fontSize = '2rem';
-        waitingMessage.style.padding = '2rem';
-        waitingMessage.style.border = '3px solid var(--gold)';
-        waitingMessage.style.borderRadius = '15px';
-        waitingMessage.style.zIndex = '10000';
-        waitingMessage.textContent = '等待對手同意重開遊戲...';
-        document.body.appendChild(waitingMessage);
+       waitingMessage.style.position = 'fixed';
+waitingMessage.style.top = '10%';  // 將提示移至畫面頂部
+waitingMessage.style.left = '50%';
+waitingMessage.style.transform = 'translateX(-50%)';  // 僅水平居中，不垂直調整
+waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+waitingMessage.style.color = 'var(--gold)';
+waitingMessage.style.fontSize = '2rem';
+waitingMessage.style.padding = '2rem';
+waitingMessage.style.border = '3px solid var(--gold)';
+waitingMessage.style.borderRadius = '15px';
+waitingMessage.style.zIndex = '10000';
+waitingMessage.textContent = '等待對手同意重開遊戲...';
+document.body.appendChild(waitingMessage);
     });
 }
 
@@ -2787,6 +2790,9 @@ function listenToRoomChanges() {
 }
 
 if (room.gameStarted) {
+    // 確保移除提示
+    const waitingForRematch = document.getElementById('waitingForRematch');
+    if (waitingForRematch) waitingForRematch.remove();
     // 開始遊戲
     startGame(room);
 }
