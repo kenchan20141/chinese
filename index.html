@@ -2688,49 +2688,52 @@ function handleRematchRequest() {
     if (isRematching) return;
     isRematching = true;
 
-    // 移除勝利界面
+    // 强制移除胜利界面元素
     const victoryOverlay = document.querySelector('.victory-overlay');
     victoryOverlay.style.display = 'none';
     const buttons = victoryOverlay.querySelector('.rematch-buttons');
     if (buttons) buttons.remove();
 
-    // 重置相關變數
+    // 获取当前玩家对应的重开字段
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
-    const newSelector = Math.random() < 0.5 ? 'player1' : 'player2';
+
+    // 原子性重置数据库状态，並直接分配新的 topicSelector
+    const newSelector = Math.random() < 0.5 ? 'player1' : 'player2'; // 在這裡生成
     const updates = {
-        'player1/health': 100,          // 重置玩家1血量
-        'player2/health': 100,          // 重置玩家2血量
-        gameEnded: false,               // 重置遊戲結束狀態
-        currentQuestion: null,          // 清除當前問題
-        winner: null,                   // 清除贏家
-        gameStarted: false,             // 重置遊戲開始狀態
-        topicSelected: false,           // 重置題庫選擇狀態
-        selectedGrade: null,            // 清除年級
-        selectedTopic: null,            // 清除題目
-        topicSelector: newSelector,     // 重新分配題庫選擇者
-        [rematchField]: true,           // 標記當前玩家同意重開
-        'player1/reentered': isHost,    // 標記玩家1是否重新進入
-        'player2/reentered': !isHost,   // 標記玩家2是否重新進入
-        clientEntered: isHost ? false : true, // 重置客戶端進入狀態
-        answeredQuestions: null         // 清除已回答問題記錄
+        'player1/health': 100,
+        'player2/health': 100,
+        gameEnded: false,
+        currentQuestion: null,
+        winner: null,
+        gameStarted: false,
+        topicSelected: false, // 重置題庫選擇狀態
+        selectedGrade: null,  // 重置年級
+        selectedTopic: null,  // 重置題目
+        topicSelector: newSelector, // 直接設置新選擇者
+        [rematchField]: true,
+        'player1/reentered': isHost,
+        'player2/reentered': !isHost,
+        clientEntered: isHost ? false : true
     };
 
-    // 更新數據庫
+    waitingForOpponent = false;
+
     database.ref('rooms/' + currentRoomId).update(updates, (error) => {
         isRematching = false;
         if (error) {
-            console.error('更新數據庫時出錯:', error);
+            console.error('更新数据库时出错:', error);
             return;
         }
 
-        // 本地重置
+        // 本地强制重置
         gameOver = false;
         answered = false;
-        answeredQuestions = new Set(); // 重置已回答問題集合
-        document.getElementById('question').textContent = ''; // 清除問題顯示
-        document.getElementById('options').innerHTML = '';    // 清除選項顯示
 
-        // 顯示等待對手界面
+        // 清除旧问题显示
+        document.getElementById('question').textContent = '';
+        document.getElementById('options').innerHTML = '';
+
+        // 显示等待界面
         const waitingForRematch = document.createElement('div');
         waitingForRematch.id = 'waitingForRematch';
         waitingForRematch.style.textAlign = 'center';
@@ -2747,7 +2750,10 @@ function handleRematchRequest() {
         waitingForRematch.textContent = '等待對手同意重開遊戲...';
         document.body.appendChild(waitingForRematch);
 
+        // 添加等待对方同意的标志位
         waitingForOpponent = true;
+
+        // 重新绑定监听器
         listenToRoomChanges();
     });
 }
@@ -2766,11 +2772,11 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        // 超時檢查（保持不變）
+        // 超時檢查
         if (isHost && room.player2 === null && !room.gameStarted) {
             const now = Date.now();
             const createdAt = room.createdAt || 0;
-            if (now - createdAt > 30000) {
+            if (now - createdAt > 30000) { // 30秒超時
                 alert('等待對手超時，請重新嘗試匹配。');
                 database.ref('rooms/' + currentRoomId).remove();
                 database.ref('waitingRooms').remove();
@@ -2795,12 +2801,13 @@ function listenToRoomChanges() {
 
         updateHealthDisplay(room);
 
-        if (room.topicSelected) {
-            const waitingForTopic = document.getElementById('waitingForTopic');
-            if (waitingForTopic) waitingForTopic.remove();
-            document.getElementById('gameArea').style.display = 'block';
-            startGame(room);
-        }
+      if (room.topicSelected) {
+    // 移除等待消息並確保進入遊戲
+    const waitingForTopic = document.getElementById('waitingForTopic');
+    if (waitingForTopic) waitingForTopic.remove();
+    document.getElementById('gameArea').style.display = 'block';
+    startGame(room);
+}
 
         // 重開相關邏輯
         const bothAgreed = room.hostRematch && room.clientRematch;
@@ -2808,12 +2815,17 @@ function listenToRoomChanges() {
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (waitingForRematch) waitingForRematch.remove();
 
-            // 重置本地狀態
+            // 重置遊戲狀態並進入題庫選擇
+            database.ref('rooms/' + currentRoomId).update({
+                gameStarted: false, // 確保遊戲未開始，進入選擇題庫階段
+                topicSelected: false // 確保進入題庫選擇
+            });
+
+            // 本地重置
             gameOver = false;
             answered = false;
-            answeredQuestions = new Set(); // 重置已回答問題
-            document.getElementById('gameArea').style.display = 'none';
-            startGame(room); // 進入題庫選擇流程
+            document.getElementById('gameArea').style.display = 'none'; // 隱藏遊戲畫面
+            startGame(room); // 觸發題庫選擇流程
             waitingForOpponent = false;
         } else if (!bothAgreed && waitingForOpponent) {
             const waitingForRematch = document.getElementById('waitingForRematch');
@@ -2836,7 +2848,7 @@ function listenToRoomChanges() {
             }
         }
 
-        // 玩家重新進入提示（保持不變）
+        // 玩家重新進入提示保持不變
         const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
         if (opponentReentered && !opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
             opponentJoinedMessage = document.createElement('div');
