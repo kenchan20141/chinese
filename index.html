@@ -1,3 +1,4 @@
+\
 
 <!DOCTYPE html>
 <html>
@@ -2743,14 +2744,6 @@ function handleRematchRequest() {
         waitingMessage.style.zIndex = '10000';
         waitingMessage.textContent = '等待對手同意重開遊戲...';
         document.body.appendChild(waitingMessage);
-    });
-}
-
-        // 添加等待对方同意的标志位
-        waitingForOpponent = true;
-
-        // 重新绑定监听器
-        listenToRoomChanges();
     });
 }
 
