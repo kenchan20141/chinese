@@ -1,7 +1,5 @@
 
 
-
-
 <!DOCTYPE html>
 <html>
     
@@ -17,24 +15,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
-
-        #waitingForTopicOverlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(45, 41, 38, 0.95);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-    color: var(--gold);
-    font-size: 2rem;
-    text-align: center;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-}
 
         .difficulty-btn {
     width: 100%;
@@ -1389,17 +1369,15 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
 
 function selectTopic(topic) {
     selectedTopic = topic;
+    // 更新數據庫中的題庫選擇
     database.ref(`rooms/${currentRoomId}`).update({
         selectedGrade: selectedGrade,
         selectedTopic: selectedTopic,
         topicSelected: true
     });
+    // 隱藏題庫選擇界面
     document.getElementById('topicSelection').style.display = 'none';
-    // 移除等待覆蓋層
-    const waitingOverlay = document.getElementById('waitingForTopicOverlay');
-    if (waitingOverlay) {
-        waitingOverlay.style.display = 'none';
-    }
+    // 開始倒數計時
     startCountdown();
 }
 
@@ -1878,12 +1856,16 @@ function createRoom() {
     document.getElementById('waitingArea').style.display = 'block';
     document.getElementById('displayRoomId').textContent = currentRoomId;
 
+    // 隨機決定題庫選擇者
+    const topicSelector = Math.random() < 0.5 ? 'player1' : 'player2';
+
     database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        player1: { health: 100, class: null, currentQuestion: null },
+        player2: { health: 100, class: null, currentQuestion: null },
         gameStarted: false,
         gameEnded: false,
-        winner: null
+        winner: null,
+        topicSelector: topicSelector // 新增字段
     });
     listenToRoomChanges();
 }
@@ -2128,25 +2110,38 @@ function startGame(room) {
     }
 
     if (!room.topicSelected) {
-        // 隨機選擇一位玩家進行題庫選擇
-        const selector = Math.random() < 0.5 ? 'player1' : 'player2';
-        database.ref(`rooms/${currentRoomId}`).update({
-            topicSelector: selector
-        });
+        // 檢查房間數據中的題庫選擇者
+        const selector = room.topicSelector;
+        if (!selector) {
+            // 如果未定義（舊房間兼容性），隨機分配並更新
+            const newSelector = Math.random() < 0.5 ? 'player1' : 'player2';
+            database.ref(`rooms/${currentRoomId}`).update({
+                topicSelector: newSelector
+            });
+            return; // 等待下一次更新
+        }
+
         if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
             isSelectingTopic = true;
             document.getElementById('topicSelection').style.display = 'block';
         } else {
             isSelectingTopic = false;
-            // 創建全屏幕等待覆蓋層
-            let waitingOverlay = document.getElementById('waitingForTopicOverlay');
-            if (!waitingOverlay) {
-                waitingOverlay = document.createElement('div');
-                waitingOverlay.id = 'waitingForTopicOverlay';
-                waitingOverlay.textContent = '等待對方選擇題庫...';
-                document.body.appendChild(waitingOverlay);
-            }
-            waitingOverlay.style.display = 'flex';
+            // 顯示等待玩家選擇題庫
+            const waitingMessage = document.createElement('div');
+            waitingMessage.id = 'waitingForTopic';
+            waitingMessage.style.textAlign = 'center';
+            waitingMessage.style.fontSize = '2rem';
+            waitingMessage.style.color = 'var(--gold)';
+            waitingMessage.style.padding = '2rem';
+            waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+            waitingMessage.style.border = '3px solid var(--gold)';
+            waitingMessage.style.borderRadius = '15px';
+            waitingMessage.style.maxWidth = '600px';
+            waitingMessage.style.margin = '2rem auto';
+            waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+            waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+            waitingMessage.textContent = '等待玩家選擇題庫...';
+            document.body.appendChild(waitingMessage);
         }
     } else {
         // 題庫已選擇，開始遊戲
@@ -2864,5 +2859,3 @@ if (room.gameStarted) {
 
     
 </html>
-
-
