@@ -15,6 +15,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
+
+
+#waitingForTopic {
+    z-index: 10002; /* 高于题库选择界面 */
+    font-size: 2rem;
+    text-align: center;
+    border: 3px solid var(--gold);
+    box-shadow: 0 0 20px rgba(212,175,55,0.5);
+}
+        
 #topicSelection {
     z-index: 10001; /* 確保高於等待頁面 */
 }
@@ -1377,6 +1387,16 @@ function selectTopic(topic) {
         selectedTopic: selectedTopic,
         topicSelected: true
     });
+
+function selectTopic(topic) {
+    // 在更新数据库后添加：
+    database.ref(`rooms/${currentRoomId}`).update({
+        topicSelected: true,
+        gameStarted: true // 确保游戏状态更新
+    });
+}
+
+    
     // 隱藏題庫選擇界面
     document.getElementById('topicSelection').style.display = 'none';
     // 移除等待頁面
@@ -2708,6 +2728,7 @@ function handleRematchRequest() {
         topicSelected: false, // 重置題庫選擇
         selectedGrade: null,
         selectedTopic: null,
+        topicSelector: Math.random() < 0.5 ? 'player1' : 'player2', // 新增随机选择
         topicSelector: null,
         [rematchField]: true,
         'player1/reentered': isHost,
@@ -2763,6 +2784,16 @@ function listenToRoomChanges() {
     roomRef.off('value');
 
     roomRef.on('value', (snapshot) => {
+
+if (room.topicSelector && !room.topicSelected) {
+            if ((isHost && room.topicSelector === 'player1') || (!isHost && room.topicSelector === 'player2')) {
+                document.getElementById('topicSelection').style.display = 'block';
+                document.getElementById('waitingForTopic').style.display = 'none';
+            } else {
+                document.getElementById('topicSelection').style.display = 'none';
+                document.getElementById('waitingForTopic').style.display = 'block';
+            }
+        
         const room = snapshot.val();
         if (!room) return;
 
