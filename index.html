@@ -15,7 +15,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
-
+#topicSelection {
+    z-index: 10001; /* 確保高於等待頁面 */
+}
         .difficulty-btn {
     width: 100%;
     aspect-ratio: 1 / 1;
@@ -1377,6 +1379,11 @@ function selectTopic(topic) {
     });
     // 隱藏題庫選擇界面
     document.getElementById('topicSelection').style.display = 'none';
+    // 移除等待頁面
+    const waitingMessage = document.getElementById('waitingForTopic');
+    if (waitingMessage) {
+        waitingMessage.remove();
+    }
     // 開始倒數計時
     startCountdown();
 }
@@ -2115,46 +2122,51 @@ function startGame(room) {
     }
 
     if (!room.topicSelected) {
-        // 檢查房間數據中的題庫選擇者
         const selector = room.topicSelector;
         if (!selector) {
-            // 如果未定義（舊房間兼容性），隨機分配並更新
             const newSelector = Math.random() < 0.5 ? 'player1' : 'player2';
             database.ref(`rooms/${currentRoomId}`).update({
                 topicSelector: newSelector
             });
-            return; // 等待下一次更新
+            return;
         }
 
         if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
             isSelectingTopic = true;
             document.getElementById('topicSelection').style.display = 'block';
+            // 確保移除可能存在的等待頁面
+            const existingWaitingMessage = document.getElementById('waitingForTopic');
+            if (existingWaitingMessage) {
+                existingWaitingMessage.remove();
+            }
         } else {
             isSelectingTopic = false;
-            // 顯示等待玩家選擇題庫
-            const waitingMessage = document.createElement('div');
-waitingMessage.id = 'waitingForTopic';
-waitingMessage.style.position = 'fixed';
-waitingMessage.style.top = '0';
-waitingMessage.style.left = '0';
-waitingMessage.style.width = '100%';
-waitingMessage.style.height = '100%';
-waitingMessage.style.display = 'flex';
-waitingMessage.style.alignItems = 'center';
-waitingMessage.style.justifyContent = 'center';
-waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-waitingMessage.style.color = 'var(--gold)';
-waitingMessage.style.fontSize = '2rem';
-waitingMessage.style.textAlign = 'center';
-waitingMessage.style.padding = '2rem';
-waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-waitingMessage.style.zIndex = '10000';
-waitingMessage.textContent = '等待玩家選擇題庫...';
-document.body.appendChild(waitingMessage);
+            // 僅在非題庫選擇者時顯示等待頁面，且避免重複創建
+            let waitingMessage = document.getElementById('waitingForTopic');
+            if (!waitingMessage) {
+                waitingMessage = document.createElement('div');
+                waitingMessage.id = 'waitingForTopic';
+                waitingMessage.style.position = 'fixed';
+                waitingMessage.style.top = '0';
+                waitingMessage.style.left = '0';
+                waitingMessage.style.width = '100%';
+                waitingMessage.style.height = '100%';
+                waitingMessage.style.display = 'flex';
+                waitingMessage.style.alignItems = 'center';
+                waitingMessage.style.justifyContent = 'center';
+                waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+                waitingMessage.style.color = 'var(--gold)';
+                waitingMessage.style.fontSize = '2rem';
+                waitingMessage.style.textAlign = 'center';
+                waitingMessage.style.padding = '2rem';
+                waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+                waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+                waitingMessage.style.zIndex = '10000';
+                waitingMessage.textContent = '等待玩家選擇題庫...';
+                document.body.appendChild(waitingMessage);
+            }
         }
     } else {
-        // 題庫已選擇，開始遊戲
         clearInterval(timer);
         timeLeft = 15;
         document.getElementById('gameArea').style.display = 'block';
