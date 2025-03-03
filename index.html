@@ -1068,6 +1068,37 @@
     <div id="timer">🕒15</div>
 </div>
 
+
+<!-- 選擇題庫畫面 -->
+<div id="selectquestions" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(45, 41, 38, 0.95); padding: 20px; border: 3px solid #d4af37; border-radius: 15px;">
+        <h2 style="color: #d4af37;">選擇題庫</h2>
+        <select id="gradeSelect" style="width: 100%; padding: 10px; margin: 10px 0; font-size: 1.2rem; background: rgba(0,0,0,0.7); color: white; border: 2px solid #695434;">
+            <option value="">選擇年級</option>
+            <!-- 年級選項將動態添加 -->
+        </select>
+        <select id="questionsSelect" style="width: 100%; padding: 10px; margin: 10px 0; font-size: 1.2rem; background: rgba(0,0,0,0.7); color: white; border: 2px solid #695434;">
+            <option value="">選擇題庫</option>
+            <!-- 題庫選項將動態添加 -->
+        </select>
+        <button onclick="confirmQuestions()" style="width: 100%; padding: 10px; background: linear-gradient(45deg, #c0392b, #e74c3c); border: none; border-radius: 10px; color: white; font-size: 1.2rem; cursor: pointer;">確認</button>
+    </div>
+</div>
+
+<!-- 等待玩家選擇題庫畫面 -->
+<div id="waitingForQuestions" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(45, 41, 38, 0.95); padding: 20px; border: 3px solid #d4af37; border-radius: 15px;">
+        <h2 style="color: #d4af37;">等待玩家選擇題庫</h2>
+    </div>
+</div>
+
+<!-- 倒計時畫面 -->
+<div id="countdown" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; font-size: 5rem; color: #d4af37;">
+    <span id="countdownNumber"></span>
+</div>
+
+    
+
     <div class="victory-overlay">
         <div class="victory-text"></div>
     </div>
@@ -2007,12 +2038,49 @@ function startGame(room) {
         const playerPath = isHost ? 'player1' : 'player2';
         const question = room[playerPath].currentQuestion;
         if (!question) {
-            loadNewQuestion();
+            loadNewQuestionFromSelectedSet(room.selectedQuestions);
         } else {
             displayQuestion(question);
         }
     }, 500);
 }
+
+function loadNewQuestionFromSelectedSet(selectedQuestions) {
+    const { grade, set } = selectedQuestions;
+    const questionRef = database.ref(`questions/${grade}/${set}/questions`);
+    questionRef.once('value').then(snapshot => {
+        const questions = snapshot.val();
+        const questionIds = Object.keys(questions);
+        const randomId = questionIds[Math.floor(Math.random() * questionIds.length)];
+        const originalQuestion = questions[randomId];
+
+        const optionsCopy = [...originalQuestion.options];
+        const correctAnswer = optionsCopy[originalQuestion.correctIndex];
+        const shuffledOptions = shuffleArray(optionsCopy);
+        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+
+        const processedQuestion = {
+            question: originalQuestion.question,
+            options: shuffledOptions,
+            correctIndex: newCorrectIndex,
+            id: Date.now()
+        };
+
+        currentQuestionId = processedQuestion.id;
+        const playerPath = isHost ? 'player1' : 'player2';
+        database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ 
+            currentQuestion: processedQuestion 
+        });
+
+        isAnswered = false;
+        displayQuestion(processedQuestion);
+    }).catch(error => {
+        console.error('加載題庫問題失敗:', error);
+    });
+}
+
+
+    
 
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -2508,27 +2576,25 @@ function handleRematchRequest() {
     if (isRematching) return;
     isRematching = true;
 
-    // 强制移除胜利界面元素
     const victoryOverlay = document.querySelector('.victory-overlay');
     victoryOverlay.style.display = 'none';
     const buttons = victoryOverlay.querySelector('.rematch-buttons');
     if (buttons) buttons.remove();
 
-    // 获取当前玩家对应的重开字段
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
 
-    // 原子性重置数据库状态
     const updates = {
         'player1/health': 100,
         'player2/health': 100,
         gameEnded: false,
         currentQuestion: null,
         winner: null,
-        gameStarted: false, // 确保游戏在双方都同意重开前不开始
-        [rematchField]: true, // 记录当前玩家同意重开
-        // 新增一个字段用于表示玩家是否已经重新进入游戏
+        gameStarted: false,
+        questionSelector: null, // 重置
+        selectedquestions: null, // 重置
+        [rematchField]: true,
         'player1/reentered': isHost,
-        'player2/reentered':!isHost,
+        'player2/reentered': !isHost,
         clientEntered: isHost ? false : true 
     };
 
@@ -2537,19 +2603,16 @@ function handleRematchRequest() {
     database.ref('rooms/' + currentRoomId).update(updates, (error) => {
         isRematching = false;
         if (error) {
-            console.error('更新数据库时出错:', error);
+            console.error('更新數據庫時出錯:', error);
             return;
         }
 
-        // 本地强制重置
         gameOver = false;
         answered = false;
 
-        // 清除旧问题显示
         document.getElementById('question').textContent = '';
         document.getElementById('options').innerHTML = '';
 
-        // 显示等待界面
         const waitingForRematch = document.createElement('div');
         waitingForRematch.id = 'waitingForRematch';
         waitingForRematch.style.textAlign = 'center';
@@ -2566,14 +2629,11 @@ function handleRematchRequest() {
         waitingForRematch.textContent = '等待對手同意重開遊戲...';
         document.body.appendChild(waitingForRematch);
 
-        // 添加等待对方同意的标志位
         waitingForOpponent = true;
 
-        // 重新绑定监听器
         listenToRoomChanges();
     });
 }
-
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
@@ -2593,7 +2653,7 @@ function listenToRoomChanges() {
         if (isHost && room.player2 === null && !room.gameStarted) {
             const now = Date.now();
             const createdAt = room.createdAt || 0;
-            if (now - createdAt > 30000) { // 30秒超時
+            if (now - createdAt > 30000) {
                 alert('等待對手超時，請重新嘗試匹配。');
                 database.ref('rooms/' + currentRoomId).remove();
                 database.ref('waitingRooms').remove();
@@ -2601,8 +2661,30 @@ function listenToRoomChanges() {
             }
         }
 
-        if (room.player1?.class && room.player2?.class) {
+        // 當兩位玩家都選擇職業，且questionSelector未設置時，隨機決定玩家A
+        if (room.player1?.class && room.player2?.class && !room.questionSelector) {
+            const selector = Math.random() < 0.5 ? 'player1' : 'player2';
+            database.ref('rooms/' + currentRoomId).update({ questionSelector: selector });
+        }
+
+        // 根據questionSelector顯示相應畫面
+        if (room.questionSelector && !room.selectedquestions) {
+            const isSelector = (isHost && room.questionSelector === 'player1') || (!isHost && room.questionSelector === 'player2');
+            document.getElementById('classSelection').style.display = 'none';
             document.getElementById('waitingArea').style.display = 'none';
+            if (isSelector) {
+                document.getElementById('selectquestions').style.display = 'block';
+                loadGrades(); // 加載年級選項
+            } else {
+                document.getElementById('waitingForquestions').style.display = 'block';
+            }
+        }
+
+        // 當題庫選擇完成後，開始倒計時
+        if (room.selectedquestions && !room.gameStarted) {
+            document.getElementById('waitingForquestions').style.display = 'none';
+            document.getElementById('selectquestions').style.display = 'none';
+            startCountdown(room);
         }
 
         if (room.gameEnded) {
@@ -2610,15 +2692,13 @@ function listenToRoomChanges() {
             return;
         }
 
-        if (room.player1?.class && room.player2?.class) {
-            document.getElementById('classSelection').style.display = 'none';
+        if (room.gameStarted) {
             document.getElementById('gameArea').style.display = 'block';
             startGame(room);
         }
 
         updateHealthDisplay(room);
 
-        // 重開相關邏輯保持不變
         const bothAgreed = room.hostRematch && room.clientRematch;
         if (bothAgreed && !room.gameStarted) {
             const waitingForRematch = document.getElementById('waitingForRematch');
@@ -2650,7 +2730,6 @@ function listenToRoomChanges() {
             }
         }
 
-        // 玩家重新進入提示保持不變
         const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
         if (opponentReentered && !opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
             opponentJoinedMessage = document.createElement('div');
@@ -2670,6 +2749,70 @@ function listenToRoomChanges() {
         }
     });
 }
+
+function loadGrades() {
+    database.ref('question').once('value', (snapshot) => {
+        const grades = snapshot.val();
+        const gradeSelect = document.getElementById('gradeSelect');
+        gradeSelect.innerHTML = '<option value="">選擇年級</option>';
+        for (const grade in grades) {
+            const option = document.createElement('option');
+            option.value = grade;
+            option.textContent = grade;
+            gradeSelect.appendChild(option);
+        }
+    });
+}
+
+document.getElementById('gradeSelect').onchange = function() {
+    const grade = this.value;
+    if (grade) {
+        database.ref('questions/' + grade).once('value', (snapshot) => {
+            const questions = snapshot.val();
+            const questionsSelect = document.getElementById('questions');
+            questions.innerHTML = '<option value="">選擇題庫</option>';
+            for (const set in questions) {
+                const option = document.createElement('option');
+                option.value = set;
+                option.textContent = set;
+                questionsSelect.appendChild(option);
+            }
+        });
+    }
+};
+
+    function confirmquestions() {
+    const grade = document.getElementById('gradeSelect').value;
+    const questions = document.getElementById('questionsSelect').value;
+    if (grade && questions) {
+        database.ref('rooms/' + currentRoomId).update({
+            selectedquestions: { grade: grade, set: questions }
+        });
+    } else {
+        alert('請選擇年級和題庫');
+    }
+}
+
+    function startCountdown(room) {
+    document.getElementById('countdown').style.display = 'flex';
+    let count = 3;
+    document.getElementById('countdownNumber').textContent = count;
+
+    const countdownInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            document.getElementById('countdownNumber').textContent = count;
+        } else {
+            clearInterval(countdownInterval);
+            document.getElementById('countdown').style.display = 'none';
+            database.ref('rooms/' + currentRoomId).update({ gameStarted: true });
+            startGame(room);
+        }
+    }, 1000);
+}
+
+
+    
 </script>
 
 <!-- 新增治疗提示 -->
