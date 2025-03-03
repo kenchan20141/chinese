@@ -2717,6 +2717,13 @@ function handleRematchRequest() {
         document.getElementById('gameArea').style.display = 'none';
         document.getElementById('classSelection').style.display = 'block';
 
+// **新增代碼：重置 topicSelection 的顯示狀態**
+        document.getElementById('topicSelection').style.display = 'none'; // 確保整個題庫選擇界面隱藏
+        document.getElementById('gradeSelection').style.display = 'grid'; // 顯示年級選擇
+        document.getElementById('topicDetail').style.display = 'none';    // 隱藏題庫選擇
+        document.getElementById('selectedGrade').textContent = '';       // 清空選中年級文字
+        document.getElementById('topicList').innerHTML = '';             // 清空題庫列表
+        
     });
 }
 
@@ -2799,6 +2806,8 @@ if (room.hostRematch && room.clientRematch) {
             const selector = room.topicSelector;
             if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
                 document.getElementById('topicSelection').style.display = 'block';
+                document.getElementById('gradeSelection').style.display = 'grid'; // 顯示年級選擇
+                        document.getElementById('topicDetail').style.display = 'none';    // 隱藏題庫選擇
             } else {
                 let waitingMessage = document.createElement('div');
                 waitingMessage.id = 'waitingForTopic';
