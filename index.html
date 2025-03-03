@@ -2756,11 +2756,6 @@ function listenToRoomChanges() {
             return;
         }
 
-        if (room.player1?.class && room.player2?.class) {
-            document.getElementById('classSelection').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            startGame(room);
-        }
 
         updateHealthDisplay(room);
 
@@ -2773,11 +2768,19 @@ function listenToRoomChanges() {
 }
 
 if (room.gameStarted) {
-    // 確保移除提示
-    const waitingForRematch = document.getElementById('waitingForRematch');
-    if (waitingForRematch) waitingForRematch.remove();
+    // 移除等待消息（如果存在）
+    const waitingForTopic = document.getElementById('waitingForTopic');
+    if (waitingForTopic) waitingForTopic.remove();
     // 開始遊戲
-    startGame(room);
+    document.getElementById('topicSelection').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+    const playerPath = isHost ? 'player1' : 'player2';
+    const question = room[playerPath].currentQuestion;
+    if (!question) {
+        loadNewQuestion();
+    } else {
+        displayQuestion(question);
+    }
 }
 
         // 在 listenToRoomChanges 內替換重開相關邏輯
@@ -2803,6 +2806,14 @@ if (room.hostRematch && room.clientRematch) {
             const selector = room.topicSelector;
             if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
                 document.getElementById('topicSelection').style.display = 'block';
+                if (room.player1?.class && room.player2?.class && !room.topicSelected) {
+    document.getElementById('classSelection').style.display = 'none';
+    const selector = room.topicSelector;
+    if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
+        // 題庫選擇者顯示年級選擇界面
+        document.getElementById('gradeSelection').style.display = 'grid';
+        document.getElementById('topicDetail').style.display = 'none';
+        document.getElementById('topicSelection').style.display = 'block';
             } else {
                 let waitingMessage = document.createElement('div');
                 waitingMessage.id = 'waitingForTopic';
