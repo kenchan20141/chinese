@@ -1076,6 +1076,10 @@
         </div>
     </div>
 
+        <div id="waitingForTopicSelection" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(45, 41, 38, 0.95); z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 2rem; color: var(--gold); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);">
+    等待玩家選擇題庫...
+</div>
+
         <div id="topicSelection" style="display: none;
     position: fixed;
     top: 0;
@@ -1381,6 +1385,8 @@ function selectTopic(topic) {
     });
     // 隱藏題庫選擇界面
     document.getElementById('topicSelection').style.display = 'none';
+    // 隱藏全屏等待頁面
+    document.getElementById('waitingForTopicSelection').style.display = 'none';
     // 開始倒數計時
     startCountdown();
 }
@@ -2130,41 +2136,29 @@ function startGame(room) {
             document.getElementById('topicSelection').style.display = 'block';
         } else {
             isSelectingTopic = false;
-            // 顯示等待玩家選擇題庫
-            const waitingMessage = document.createElement('div');
-            waitingMessage.id = 'waitingForTopic';
-            waitingMessage.style.textAlign = 'center';
-            waitingMessage.style.fontSize = '2rem';
-            waitingMessage.style.color = 'var(--gold)';
-            waitingMessage.style.padding = '2rem';
-            waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-            waitingMessage.style.border = '3px solid var(--gold)';
-            waitingMessage.style.borderRadius = '15px';
-            waitingMessage.style.maxWidth = '600px';
-            waitingMessage.style.margin = '2rem auto';
-            waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-            waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-            waitingMessage.textContent = '等待玩家選擇題庫...';
-            document.body.appendChild(waitingMessage);
+            // 顯示全屏等待頁面
+            document.getElementById('waitingForTopicSelection').style.display = 'flex';
         }
     } else {
-        // 題庫已選擇，開始遊戲
-        clearInterval(timer);
-        timeLeft = 15;
-        document.getElementById('gameArea').style.display = 'block';
+    // 題庫已選擇，開始遊戲
+    clearInterval(timer);
+    // 隱藏全屏等待頁面
+    document.getElementById('waitingForTopicSelection').style.display = 'none';
+    timeLeft = 15;
+    document.getElementById('gameArea').style.display = 'block';
 
-        setTimeout(() => {
-            const playerPath = isHost ? 'player1' : 'player2';
-            const question = room[playerPath].currentQuestion;
-            if (!question) {
-                loadNewQuestion();
-            } else {
-                displayQuestion(question);
-            }
-        }, 500);
-    }
+    setTimeout(() => {
+        const playerPath = isHost ? 'player1' : 'player2';
+        const question = room[playerPath].currentQuestion;
+        if (!question) {
+            loadNewQuestion();
+        } else {
+            displayQuestion(question);
+        }
+    }, 500);
 }
-
+}
+    
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -2784,9 +2778,7 @@ function listenToRoomChanges() {
         updateHealthDisplay(room);
 
         if (room.topicSelected && !room.gameStarted) {
-    // 移除等待消息
-    const waitingForTopic = document.getElementById('waitingForTopic');
-    if (waitingForTopic) waitingForTopic.remove();
+
     // 開始倒數計時
     startCountdown();
 }
