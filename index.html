@@ -540,6 +540,29 @@
             display: none;
         }
 
+
+        #topicSelection {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(45, 41, 38, 0.95);
+    padding: 2rem;
+    border: none;
+    border-radius: 0;
+    z-index: 9999;
+    overflow-y: auto;
+}
+
+        #gradeSelection, #topicDetail {
+    max-width: 90%;
+    margin: 0 auto;
+}
+
+
+        
         .health-bar {
             width: 100%;
             height: 40px;
@@ -1370,28 +1393,47 @@ function selectTopic(topic) {
     startCountdown();
 }
 
-    function startCountdown() {
-    let countdown = 3;
+   function startCountdown() {
+    const countdownContainer = document.createElement('div');
+    countdownContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    `;
+    document.body.appendChild(countdownContainer);
+
     const countdownElement = document.createElement('div');
-    countdownElement.id = 'countdown';
-    countdownElement.style.position = 'fixed';
-    countdownElement.style.top = '50%';
-    countdownElement.style.left = '50%';
-    countdownElement.style.transform = 'translate(-50%, -50%)';
-    countdownElement.style.fontSize = '5rem';
-    countdownElement.style.color = 'var(--gold)';
-    countdownElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-    countdownElement.textContent = countdown;
-    document.body.appendChild(countdownElement);
+    countdownElement.style.cssText = `
+        font-size: 10rem;
+        color: var(--gold);
+        text-shadow: 0 0 20px var(--gold);
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+    `;
+    countdownContainer.appendChild(countdownElement);
+
+    let countdown = 3;
+    const showNumber = (num) => {
+        countdownElement.textContent = num;
+        countdownElement.style.opacity = '1';
+        setTimeout(() => {
+            countdownElement.style.opacity = '0';
+        }, 500);
+    };
 
     const countdownInterval = setInterval(() => {
+        showNumber(countdown);
         countdown--;
-        if (countdown > 0) {
-            countdownElement.textContent = countdown;
-        } else {
+        if (countdown < 0) {
             clearInterval(countdownInterval);
-            countdownElement.remove();
-            // 開始遊戲
+            countdownContainer.remove();
             database.ref(`rooms/${currentRoomId}`).update({
                 gameStarted: true
             });
@@ -2105,22 +2147,25 @@ function startGame(room) {
             document.getElementById('topicSelection').style.display = 'block';
         } else {
             isSelectingTopic = false;
-            // 顯示等待對方選擇題庫
             const waitingMessage = document.createElement('div');
-            waitingMessage.id = 'waitingForTopic';
-            waitingMessage.style.textAlign = 'center';
-            waitingMessage.style.fontSize = '2rem';
-            waitingMessage.style.color = 'var(--gold)';
-            waitingMessage.style.padding = '2rem';
-            waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-            waitingMessage.style.border = '3px solid var(--gold)';
-            waitingMessage.style.borderRadius = '15px';
-            waitingMessage.style.maxWidth = '600px';
-            waitingMessage.style.margin = '2rem auto';
-            waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-            waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-            waitingMessage.textContent = '等待對方選擇題庫...';
-            document.body.appendChild(waitingMessage);
+waitingMessage.id = 'waitingForTopic';
+waitingMessage.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(45, 41, 38, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    font-size: 2rem;
+    color: var(--gold);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+`;
+waitingMessage.textContent = '等待對方選擇題庫...';
+document.body.appendChild(waitingMessage);
         }
     } else {
         // 題庫已選擇，開始遊戲
@@ -2645,16 +2690,14 @@ function handleRematchRequest() {
     if (isRematching) return;
     isRematching = true;
 
-    // 强制移除胜利界面元素
     const victoryOverlay = document.querySelector('.victory-overlay');
     victoryOverlay.style.display = 'none';
     const buttons = victoryOverlay.querySelector('.rematch-buttons');
     if (buttons) buttons.remove();
 
-    // 获取当前玩家对应的重开字段
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
+    const selector = Math.random() < 0.5 ? 'player1' : 'player2';
 
-    // 原子性重置数据库状态
     const updates = {
         'player1/health': 100,
         'player2/health': 100,
@@ -2662,10 +2705,10 @@ function handleRematchRequest() {
         currentQuestion: null,
         winner: null,
         gameStarted: false,
-        topicSelected: false, // 重置題庫選擇
+        topicSelected: false,
         selectedGrade: null,
         selectedTopic: null,
-        topicSelector: null,
+        topicSelector: selector,
         [rematchField]: true,
         'player1/reentered': isHost,
         'player2/reentered': !isHost,
@@ -2677,40 +2720,36 @@ function handleRematchRequest() {
     database.ref('rooms/' + currentRoomId).update(updates, (error) => {
         isRematching = false;
         if (error) {
-            console.error('更新数据库时出错:', error);
+            console.error('更新數據庫時出錯:', error);
             return;
         }
 
-        // 本地强制重置
         gameOver = false;
         answered = false;
-
-        // 清除旧问题显示
         document.getElementById('question').textContent = '';
         document.getElementById('options').innerHTML = '';
 
-        // 显示等待界面
         const waitingForRematch = document.createElement('div');
         waitingForRematch.id = 'waitingForRematch';
-        waitingForRematch.style.textAlign = 'center';
-        waitingForRematch.style.fontSize = '2rem';
-        waitingForRematch.style.color = 'var(--gold)';
-        waitingForRematch.style.padding = '2rem';
-        waitingForRematch.style.background = 'rgba(45, 41, 38, 0.95)';
-        waitingForRematch.style.border = '3px solid var(--gold)';
-        waitingForRematch.style.borderRadius = '15px';
-        waitingForRematch.style.maxWidth = '600px';
-        waitingForRematch.style.margin = '2rem auto';
-        waitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-        waitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+        waitingForRematch.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(45, 41, 38, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 2rem;
+            color: var(--gold);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        `;
         waitingForRematch.textContent = '等待對手同意重開遊戲...';
         document.body.appendChild(waitingForRematch);
 
-        // 添加等待对方同意的标志位
         waitingForOpponent = true;
-
-        // 重新绑定监听器
-        listenToRoomChanges();
     });
 }
 
@@ -2759,6 +2798,30 @@ function listenToRoomChanges() {
         updateHealthDisplay(room);
 
         if (room.topicSelected && !room.gameStarted) {
+            if ((isHost && room.topicSelector === 'player1') || (!isHost && room.topicSelector === 'player2')) {
+        isSelectingTopic = true;
+        document.getElementById('topicSelection').style.display = 'block';
+    } else {
+        isSelectingTopic = false;
+        const waitingMessage = document.createElement('div');
+        waitingMessage.id = 'waitingForTopic';
+        waitingMessage.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(45, 41, 38, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 2rem;
+            color: var(--gold);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        `;
+        waitingMessage.textContent = '等待對方選擇題庫...';
+        document.body.appendChild(waitingMessage);
     // 移除等待消息
     const waitingForTopic = document.getElementById('waitingForTopic');
     if (waitingForTopic) waitingForTopic.remove();
