@@ -1369,16 +1369,24 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
 
 function selectTopic(topic) {
     selectedTopic = topic;
-    // 更新數據庫中的題庫選擇
+    // 更新數據庫中的題庫選擇並直接開始遊戲
     database.ref(`rooms/${currentRoomId}`).update({
         selectedGrade: selectedGrade,
         selectedTopic: selectedTopic,
-        topicSelected: true
+        topicSelected: true,
+        gameStarted: true // 直接設置為遊戲開始
     });
     // 隱藏題庫選擇界面
     document.getElementById('topicSelection').style.display = 'none';
-    // 開始倒數計時
-    startCountdown();
+    // 移除任何可能的等待或結束畫面
+    const waitingForTopic = document.getElementById('waitingForTopic');
+    if (waitingForTopic) waitingForTopic.remove();
+    const victoryOverlay = document.querySelector('.victory-overlay');
+    if (victoryOverlay) victoryOverlay.style.display = 'none';
+    // 顯示遊戲區域
+    document.getElementById('gameArea').style.display = 'block';
+    // 加載新問題
+    loadNewQuestion();
 }
 
     function startCountdown() {
@@ -2794,16 +2802,11 @@ function listenToRoomChanges() {
 
         updateHealthDisplay(room);
 
-        if (room.topicSelected && !room.gameStarted) {
-    // 移除等待消息
+      if (room.topicSelected) {
+    // 移除等待消息並確保進入遊戲
     const waitingForTopic = document.getElementById('waitingForTopic');
     if (waitingForTopic) waitingForTopic.remove();
-    // 開始倒數計時
-    startCountdown();
-}
-
-if (room.gameStarted) {
-    // 開始遊戲
+    document.getElementById('gameArea').style.display = 'block';
     startGame(room);
 }
 
