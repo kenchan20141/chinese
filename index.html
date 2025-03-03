@@ -1385,14 +1385,16 @@ function selectTopic(topic) {
     const countdownElement = document.createElement('div');
     countdownElement.id = 'countdown';
     countdownElement.style.position = 'fixed';
-    countdownElement.style.top = '50%';
-    countdownElement.style.left = '50%';
-    countdownElement.style.transform = 'translate(-50%, -50%)';
+    countdownElement.style.top = '0';
+    countdownElement.style.left = '0';
+    countdownElement.style.width = '100%';
+    countdownElement.style.height = '100%';
+    countdownElement.style.display = 'flex';
+    countdownElement.style.alignItems = 'center';
+    countdownElement.style.justifyContent = 'center';
     countdownElement.style.background = 'rgba(45, 41, 38, 0.95)';
     countdownElement.style.color = 'var(--gold)';
-    countdownElement.style.fontSize = '5rem';
-    countdownElement.style.padding = '2rem';
-    countdownElement.style.borderRadius = '15px';
+    countdownElement.style.fontSize = '10rem';
     countdownElement.style.zIndex = '10001';
     document.body.appendChild(countdownElement);
 
@@ -2796,6 +2798,8 @@ if (room.hostRematch && room.clientRematch) {
         if (!room.topicSelected) {
             const selector = room.topicSelector;
             if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
+                document.getElementById('gradeSelection').style.display = 'grid';
+            document.getElementById('topicDetail').style.display = 'none';
                 document.getElementById('topicSelection').style.display = 'block';
             } else {
                 let waitingMessage = document.createElement('div');
