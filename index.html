@@ -1386,30 +1386,35 @@ function selectTopic(topic) {
     const countdownElement = document.createElement('div');
     countdownElement.id = 'countdown';
     countdownElement.style.position = 'fixed';
-    countdownElement.style.top = '50%';
-    countdownElement.style.left = '50%';
-    countdownElement.style.transform = 'translate(-50%, -50%)';
-    countdownElement.style.fontSize = '5rem';
+    countdownElement.style.top = '0';
+    countdownElement.style.left = '0';
+    countdownElement.style.width = '100%';
+    countdownElement.style.height = '100%';
+    countdownElement.style.display = 'flex';
+    countdownElement.style.alignItems = 'center';
+    countdownElement.style.justifyContent = 'center';
+    countdownElement.style.background = 'rgba(0, 0, 0, 0.8)';
     countdownElement.style.color = 'var(--gold)';
+    countdownElement.style.fontSize = '5rem';
     countdownElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-    countdownElement.textContent = countdown;
+    countdownElement.style.zIndex = '10000';
     document.body.appendChild(countdownElement);
 
-    const countdownInterval = setInterval(() => {
-        countdown--;
+    function updateCountdown() {
         if (countdown > 0) {
             countdownElement.textContent = countdown;
+            countdown--;
+            setTimeout(updateCountdown, 1000);
         } else {
-            clearInterval(countdownInterval);
             countdownElement.remove();
-            // 開始遊戲
             database.ref(`rooms/${currentRoomId}`).update({
                 gameStarted: true
             });
         }
-    }, 1000);
-}
+    }
 
+    updateCountdown();
+}
 
 function displayQuestion(question) {
     
