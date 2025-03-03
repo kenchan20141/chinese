@@ -1381,13 +1381,9 @@ function selectTopic(topic) {
     startCountdown();
 }
 
-   function startCountdown() {
+    function startCountdown() {
     let countdown = 3;
-    let countdownElement = document.getElementById('countdown'); // 檢查是否已有倒數計時元素
-    if (countdownElement) {
-        countdownElement.remove(); // 如果有，移除它
-    }
-    countdownElement = document.createElement('div');
+    const countdownElement = document.createElement('div');
     countdownElement.id = 'countdown';
     countdownElement.style.position = 'fixed';
     countdownElement.style.top = '0';
@@ -1405,17 +1401,15 @@ function selectTopic(topic) {
     document.body.appendChild(countdownElement);
 
     function updateCountdown() {
-        countdownElement.textContent = countdown; // 每次都顯示當前數字
         if (countdown > 0) {
+            countdownElement.textContent = countdown;
             countdown--;
-            setTimeout(updateCountdown, 1000); // 繼續倒數
+            setTimeout(updateCountdown, 1000);
         } else {
-            setTimeout(() => { // 當 countdown 為 0 時，等待 1 秒再移除
-                countdownElement.remove();
-                database.ref(`rooms/${currentRoomId}`).update({
-                    gameStarted: true
-                });
-            }, 1000);
+            countdownElement.remove();
+            database.ref(`rooms/${currentRoomId}`).update({
+                gameStarted: true
+            });
         }
     }
 
@@ -1423,25 +1417,29 @@ function selectTopic(topic) {
 }
 
 function displayQuestion(question) {
-    isAnswered = false; // 重置當前問題的答題狀態
-    window.currentQuestion = question; // 儲存當前問題到全局變數
+    
+     // 重置答题状态
+    isAnswered = false; 
     document.getElementById('question').textContent = question.question;
+
     const optionsDiv = document.getElementById('options');
     optionsDiv.innerHTML = '';
 
     question.options.forEach((option, index) => {
         const button = document.createElement('button');
         button.textContent = option;
-        button.setAttribute('data-question-id', question.id); // 設置問題ID
+
+        // 点击处理逻辑
         button.onclick = () => {
-            if (!isAnswered && !answeredQuestions.has(question.id)) { // 檢查是否已回答
-                isAnswered = true; // 設置為已選擇狀態
-                answeredQuestions.add(question.id); // 記錄已回答的問題ID
-                checkAnswer(index === question.correctIndex, question.id); // 傳遞問題ID
+            if (!isAnswered) {
+                isAnswered = true; // 设置为已选择状态
+                checkAnswer(index === question.correctIndex);
             }
         };
+
         optionsDiv.appendChild(button);
     });
+
     startTimer();
 }
 
@@ -2235,6 +2233,26 @@ function loadNewQuestion() {
     });
 }
 
+function displayQuestion(question) {
+    this.answered = false; // 重置答題狀態
+    window.currentQuestion = question;
+    document.getElementById('question').textContent = question.question;
+    const optionsDiv = document.getElementById('options');
+    optionsDiv.innerHTML = '';
+    
+    question.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.textContent = option;
+        button.setAttribute('data-question-id', question.id); // 設置問題ID
+        button.onclick = () => {
+            if (!answeredQuestions.has(question.id)) { // 檢查是否已回答
+                checkAnswer(index === question.correctIndex, question.id);
+            }
+        };
+        optionsDiv.appendChild(button);
+    });
+    startTimer();
+}
 
 
 function startTimer() {
