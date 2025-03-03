@@ -1380,23 +1380,20 @@ function selectTopic(topic) {
     startCountdown();
 }
     
-    function startCountdown() {
+   function startCountdown() {
     let countdown = 3;
     const countdownElement = document.createElement('div');
     countdownElement.id = 'countdown';
     countdownElement.style.position = 'fixed';
-    countdownElement.style.top = '0';
-    countdownElement.style.left = '0';
-    countdownElement.style.width = '100%';
-    countdownElement.style.height = '100%';
-    countdownElement.style.display = 'flex';
-    countdownElement.style.alignItems = 'center';
-    countdownElement.style.justifyContent = 'center';
-    countdownElement.style.background = 'rgba(0, 0, 0, 0.8)';
+    countdownElement.style.top = '50%';
+    countdownElement.style.left = '50%';
+    countdownElement.style.transform = 'translate(-50%, -50%)';
+    countdownElement.style.background = 'rgba(45, 41, 38, 0.95)';
     countdownElement.style.color = 'var(--gold)';
     countdownElement.style.fontSize = '5rem';
-    countdownElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-    countdownElement.style.zIndex = '10000';
+    countdownElement.style.padding = '2rem';
+    countdownElement.style.borderRadius = '15px';
+    countdownElement.style.zIndex = '10001';
     document.body.appendChild(countdownElement);
 
     function updateCountdown() {
@@ -1411,7 +1408,6 @@ function selectTopic(topic) {
             });
         }
     }
-
     updateCountdown();
 }
 
