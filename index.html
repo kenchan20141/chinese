@@ -18,6 +18,52 @@
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
 
+
+/* 調整題庫選擇界面元素 */
+#topicSelection h2, #topicSelection h3 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+}
+
+#gradeSelection, #topicList {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    width: 80%;
+    max-width: 800px;
+}
+
+.grade-btn, .topic-btn {
+    padding: 1.5rem;
+    font-size: 1.8rem;
+    background: linear-gradient(45deg, #c0392b, #e74c3c);
+    border: 2px solid #695434;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.grade-btn:hover, .topic-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+}
+
+/* 等待頁面樣式 */
+#waitingForTopicSelection {
+    font-size: 3rem;
+    color: #d4af37;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+/* 倒數頁面樣式 */
+#countdownOverlay {
+    font-size: 10rem;
+    color: #d4af37;
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+}
+
+        
         .difficulty-btn {
     width: 100%;
     aspect-ratio: 1 / 1;
@@ -1074,7 +1120,20 @@
         </div>
     </div>
 
-        <div id="topicSelection" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid #d4af37; border-radius: 15px; z-index: 9999;">
+        <div id="topicSelection" style="display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(45, 41, 38, 0.95);
+    padding: 2rem;
+    border: none; /* 移除邊框以適應全屏 */
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;">
     <h2 style="color: #d4af37; text-align: center;">選擇題庫</h2>
     <div id="gradeSelection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; width: 300px;">
         <button onclick="selectGrade('中一')" class="grade-btn">中一</button>
@@ -1098,6 +1157,15 @@
     </div>
     
     <div id="timer">🕒15</div>
+</div>
+
+    <div id="waitingForTopicSelection" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.8); z-index: 10000; display: flex; justify-content: center; align-items: center; color: white; font-size: 2rem; text-align: center;">
+    等待對方選擇題庫...
+</div>
+
+
+    <div id="countdownOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.9); z-index: 10001; display: flex; justify-content: center; align-items: center; color: white; font-size: 10rem; text-align: center;">
+    <div id="countdownNumber"></div>
 </div>
 
     <div class="victory-overlay">
@@ -1366,33 +1434,27 @@ function selectTopic(topic) {
         selectedTopic: selectedTopic,
         topicSelected: true
     });
-    // 隱藏題庫選擇界面
+    // 隱藏題庫選擇界面和等待遮罩
     document.getElementById('topicSelection').style.display = 'none';
+    document.getElementById('waitingForTopicSelection').style.display = 'none';
     // 開始倒數計時
     startCountdown();
 }
 
-    function startCountdown() {
+   function startCountdown() {
     let countdown = 3;
-    const countdownElement = document.createElement('div');
-    countdownElement.id = 'countdown';
-    countdownElement.style.position = 'fixed';
-    countdownElement.style.top = '50%';
-    countdownElement.style.left = '50%';
-    countdownElement.style.transform = 'translate(-50%, -50%)';
-    countdownElement.style.fontSize = '5rem';
-    countdownElement.style.color = 'var(--gold)';
-    countdownElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-    countdownElement.textContent = countdown;
-    document.body.appendChild(countdownElement);
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const countdownNumber = document.getElementById('countdownNumber');
+    countdownOverlay.style.display = 'flex';
+    countdownNumber.textContent = countdown;
 
     const countdownInterval = setInterval(() => {
         countdown--;
         if (countdown > 0) {
-            countdownElement.textContent = countdown;
+            countdownNumber.textContent = countdown;
         } else {
             clearInterval(countdownInterval);
-            countdownElement.remove();
+            countdownOverlay.style.display = 'none';
             // 開始遊戲
             database.ref(`rooms/${currentRoomId}`).update({
                 gameStarted: true
@@ -1659,6 +1721,8 @@ function updateHealthDisplay(room) {
     document.getElementById('myHealthBar').style.width = Math.max(myHealth, 0) + '%';
     document.getElementById('opponentHealthBar').style.width = Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0) + '%';
 }
+
+
     
 
 function stopDangerAlert() {
@@ -2104,28 +2168,14 @@ function startGame(room) {
         });
         if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
             isSelectingTopic = true;
-            document.getElementById('topicSelection').style.display = 'block';
+            document.getElementById('topicSelection').style.display = 'flex'; // 修改為 flex 以適應全屏
         } else {
             isSelectingTopic = false;
-            // 顯示等待對方選擇題庫
-            const waitingMessage = document.createElement('div');
-            waitingMessage.id = 'waitingForTopic';
-            waitingMessage.style.textAlign = 'center';
-            waitingMessage.style.fontSize = '2rem';
-            waitingMessage.style.color = 'var(--gold)';
-            waitingMessage.style.padding = '2rem';
-            waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-            waitingMessage.style.border = '3px solid var(--gold)';
-            waitingMessage.style.borderRadius = '15px';
-            waitingMessage.style.maxWidth = '600px';
-            waitingMessage.style.margin = '2rem auto';
-            waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-            waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-            waitingMessage.textContent = '等待對方選擇題庫...';
-            document.body.appendChild(waitingMessage);
+            document.getElementById('waitingForTopicSelection').style.display = 'flex'; // 顯示全屏等待遮罩
         }
     } else {
         // 題庫已選擇，開始遊戲
+        document.getElementById('waitingForTopicSelection').style.display = 'none'; // 隱藏等待遮罩
         clearInterval(timer);
         timeLeft = 15;
         document.getElementById('gameArea').style.display = 'block';
@@ -2760,11 +2810,8 @@ function listenToRoomChanges() {
 
         updateHealthDisplay(room);
 
-        if (room.topicSelected && !room.gameStarted) {
-    // 移除等待消息
-    const waitingForTopic = document.getElementById('waitingForTopic');
-    if (waitingForTopic) waitingForTopic.remove();
-    // 開始倒數計時
+       if (room.topicSelected && !room.gameStarted) {
+    // 移除等待消息（已由 selectTopic 處理，此處可留空或移除）
     startCountdown();
 }
 
