@@ -2778,6 +2778,22 @@ if (room.gameStarted) {
     startGame(room);
 }
 
+        if (room.gameStarted) {
+    // 移除等待消息（如果存在）
+    const waitingForTopic = document.getElementById('waitingForTopic');
+    if (waitingForTopic) waitingForTopic.remove();
+    // 開始遊戲
+    document.getElementById('topicSelection').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+    const playerPath = isHost ? 'player1' : 'player2';
+    const question = room[playerPath].currentQuestion;
+    if (!question) {
+        loadNewQuestion();
+    } else {
+        displayQuestion(question);
+    }
+}
+
         // 在 listenToRoomChanges 內替換重開相關邏輯
 if (room.hostRematch && room.clientRematch) {
     
