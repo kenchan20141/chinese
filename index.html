@@ -1399,6 +1399,7 @@ function selectTopic(topic) {
     countdownElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
     countdownElement.style.zIndex = '10000';
     document.body.appendChild(countdownElement);
+        }
 
     function updateCountdown() {
         if (countdown > 0) {
@@ -1409,12 +1410,12 @@ function selectTopic(topic) {
             countdownElement.remove();
             database.ref(`rooms/${currentRoomId}`).update({
                 gameStarted: true
+                
             });
         }
     }
 
-    updateCountdown();
-}
+
 
 function displayQuestion(question) {
     
