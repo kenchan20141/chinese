@@ -2759,7 +2759,53 @@ function listenToRoomChanges() {
         const room = snapshot.val();
         if (!room) return;
 
-        // ... (保持原有代碼不變，直到重開相關邏輯部分) ...
+        if (isHost) {
+            opponentDefense = room.player2?.defense || 1.0;
+        } else {
+            opponentDefense = room.player1?.defense || 1.0;
+        }
+
+        // 超時檢查
+        if (isHost && room.player2 === null && !room.gameStarted) {
+            const now = Date.now();
+            const createdAt = room.createdAt || 0;
+            if (now - createdAt > 30000) { // 30秒超時
+                alert('等待對手超時，請重新嘗試匹配。');
+                database.ref('rooms/' + currentRoomId).remove();
+                database.ref('waitingRooms').remove();
+                window.location.reload();
+            }
+        }
+
+        if (room.player1?.class && room.player2?.class) {
+            document.getElementById('waitingArea').style.display = 'none';
+        }
+
+        if (room.gameEnded) {
+            handleGameEnd(room.winner);
+            return;
+        }
+
+        if (room.player1?.class && room.player2?.class) {
+            document.getElementById('classSelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            startGame(room);
+        }
+
+        updateHealthDisplay(room);
+
+        if (room.topicSelected && !room.gameStarted) {
+    // 移除等待消息
+    const waitingForTopic = document.getElementById('waitingForTopic');
+    if (waitingForTopic) waitingForTopic.remove();
+    // 開始倒數計時
+    startCountdown();
+}
+
+if (room.gameStarted) {
+    // 開始遊戲
+    startGame(room);
+}
 
         // 重開相關邏輯
         const bothAgreed = room.hostRematch && room.clientRematch;
@@ -2800,9 +2846,27 @@ function listenToRoomChanges() {
             }
         }
 
-        // ... (保持後續代碼不變) ...
+        // 玩家重新進入提示保持不變
+        const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
+        if (opponentReentered && !opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
+            opponentJoinedMessage = document.createElement('div');
+            opponentJoinedMessage.style.cssText = `
+                position: fixed; top: 10%; left: 50%; transform: translate(-50%, 0);
+                background: rgba(0, 0, 0, 0.9); color: #fff; padding: 20px; 
+                border-radius: 10px; z-index: 9999; font-size: 2rem; text-align: center;
+                width: 80%; max-width: 300px; box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            `;
+            opponentJoinedMessage.textContent = '🎮玩家已進場';
+            document.body.appendChild(opponentJoinedMessage);
+
+            setTimeout(() => {
+                opponentJoinedMessage.remove();
+                opponentJoinedMessage = null;
+            }, 3000);
+        }
     });
 }
+
 </script>
 
 <!-- 新增治疗提示 -->
