@@ -1828,18 +1828,27 @@ function createRoom() {
     document.getElementById('waitingArea').style.display = 'block';
     document.getElementById('displayRoomId').textContent = currentRoomId;
 
-    database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
-        gameStarted: false,
-        gameEnded: false,
-        winner: null
+    const roomRef = database.ref('rooms/' + currentRoomId);
+    roomRef.transaction((currentData) => {
+        if (!currentData) {
+            return {
+                player1: { health: 100, class: null, currentQuestion: null },
+                player2: { health: 100, class: null, currentQuestion: null },
+                gameStarted: false,
+                gameEnded: false,
+                winner: null,
+                topicSelector: 'player1' // 預設房主為題庫選擇者
+            };
+        }
+        return currentData; // 如果房間已存在，不覆蓋
+    }).then(() => {
+        listenToRoomChanges();
     });
-    listenToRoomChanges();
 }
 
 function joinRoom() {
     currentRoomId = document.getElementById('roomId').value;
+    isHost = false; // 明確設置為非房主
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('classSelection').style.display = 'block';
     listenToRoomChanges();
@@ -1859,6 +1868,7 @@ function joinRoom() {
         gameStarted: false,
         gameEnded: false,
         winner: null
+        topicSelector: 'player1' // 預設房主為題庫選擇者
     });
     listenToRoomChanges();
 }
@@ -2763,17 +2773,15 @@ function listenToRoomChanges() {
             startGame(room);
             if (room.player1?.class && room.player2?.class && !room.topicSelected) {
     // 隨機選擇一位玩家選擇題庫
-    const selector = Math.random() < 0.5 ? 'player1' : 'player2';
-    database.ref('rooms/' + currentRoomId).update({ topicSelector: selector });
-
-    if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
-        isTopicSelector = true;
-        showTopicSelection();
-    } else {
-        isTopicSelector = false;
-        showWaitingForTopic();
-    }
-}
+   const selector = room.topicSelector; // 直接使用預設的 topicSelector
+            if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
+                isTopicSelector = true;
+                showTopicSelection();
+            } else {
+                isTopicSelector = false;
+                showWaitingForTopic();
+            }
+        }
         }
 
         updateHealthDisplay(room);
