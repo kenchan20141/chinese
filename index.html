@@ -2160,14 +2160,16 @@ document.body.appendChild(waitingMessage);
         document.getElementById('gameArea').style.display = 'block';
 
         setTimeout(() => {
-            const playerPath = isHost ? 'player1' : 'player2';
-            const question = room[playerPath].currentQuestion;
-            if (!question) {
-                loadNewQuestion();
-            } else {
-                displayQuestion(question);
-            }
-        }, 500);
+    const playerPath = isHost ? 'player1' : 'player2';
+    const question = room[playerPath].currentQuestion;
+    if (!question) {
+        loadNewQuestion();
+    } else {
+        document.getElementById('question').textContent = ''; // 清空舊問題
+        document.getElementById('options').innerHTML = '';    // 清空舊選項
+        displayQuestion(question);
+    }
+}, 1000); // 增加延遲到1秒，確保數據穩定
     }
 }
 
@@ -2234,24 +2236,27 @@ function loadNewQuestion() {
 }
 
 function displayQuestion(question) {
-    this.answered = false; // 重置答題狀態
+    answered = false;
     window.currentQuestion = question;
-    document.getElementById('question').textContent = question.question;
+    const questionDiv = document.getElementById('question');
     const optionsDiv = document.getElementById('options');
-    optionsDiv.innerHTML = '';
-    
-    question.options.forEach((option, index) => {
-        const button = document.createElement('button');
-        button.textContent = option;
-        button.setAttribute('data-question-id', question.id); // 設置問題ID
-        button.onclick = () => {
-            if (!answeredQuestions.has(question.id)) { // 檢查是否已回答
-                checkAnswer(index === question.correctIndex, question.id);
-            }
-        };
-        optionsDiv.appendChild(button);
-    });
-    startTimer();
+    questionDiv.textContent = ''; // 先清空
+    optionsDiv.innerHTML = '';    // 先清空
+    setTimeout(() => {
+        questionDiv.textContent = question.question; // 延遲顯示
+        question.options.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.textContent = option;
+            button.setAttribute('data-question-id', question.id);
+            button.onclick = () => {
+                if (!answeredQuestions.has(question.id)) {
+                    checkAnswer(index === question.correctIndex, question.id);
+                }
+            };
+            optionsDiv.appendChild(button);
+        });
+        startTimer();
+    }, 100); // 添加微小延遲避免跳動
 }
 
 
