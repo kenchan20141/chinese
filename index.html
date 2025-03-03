@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html>
     
@@ -2113,11 +2112,6 @@ function startGame(room) {
         console.log('等待對手加入...');
         return;
     }
-    if (room.player1?.class && room.player2?.class) {
-            document.getElementById('classSelection').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            startGame(room);
-        }
 
     if (!room.topicSelected) {
         // 檢查房間數據中的題庫選擇者
@@ -2809,31 +2803,15 @@ if (room.gameStarted) {
 
         // 重開相關邏輯保持不變
         const bothAgreed = room.hostRematch && room.clientRematch;
-if (bothAgreed && !room.gameStarted) {
-    const waitingForRematch = document.getElementById('waitingForRematch');
-    if (waitingForRematch) waitingForRematch.remove();
+        if (bothAgreed && !room.gameStarted) {
+            const waitingForRematch = document.getElementById('waitingForRematch');
+            if (waitingForRematch) waitingForRematch.remove();
 
-    // 重置遊戲狀態並回到角色選擇畫面
-    const updates = {
-        'player1/health': 100,
-        'player1/class': null,
-        'player2/health': 100,
-        'player2/class': null,
-        gameEnded: false,
-        gameStarted: false,
-        winner: null,
-        hostRematch: false,
-        clientRematch: false
-    };
-    database.ref('rooms/' + currentRoomId).update(updates, () => {
-        document.getElementById('gameArea').style.display = 'none';
-        document.getElementById('classSelection').style.display = 'block';
-        playerClass = null;
-        gameOver = false;
-        answered = false;
-    });
-    waitingForOpponent = false;
-}
+            const updates = { gameStarted: true };
+            database.ref('rooms/' + currentRoomId).update(updates, () => {
+                startNewGameSession();
+            });
+            waitingForOpponent = false;
         } else if (!bothAgreed && waitingForOpponent) {
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (!waitingForRematch) {
@@ -2890,4 +2868,6 @@ if (bothAgreed && !room.gameStarted) {
 
     
 </html>
+
+
 
