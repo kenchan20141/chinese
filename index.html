@@ -2686,22 +2686,24 @@ function handleRematchRequest() {
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
 
     // 原子性重置数据库状态
-    const updates = {
-        'player1/health': 100,
-        'player2/health': 100,
-        gameEnded: false,
-        currentQuestion: null,
-        winner: null,
-        gameStarted: false,
-        topicSelected: false, // 重置題庫選擇
-        selectedGrade: null,
-        selectedTopic: null,
-        topicSelector: null,
-        [rematchField]: true,
-        'player1/reentered': isHost,
-        'player2/reentered': !isHost,
-        clientEntered: isHost ? false : true
-    };
+   const updates = {
+    'player1/health': 100,
+    'player2/health': 100,
+    'player1/class': null,  // 添加：重置 player1 的職業
+    'player2/class': null,  // 添加：重置 player2 的職業
+    gameEnded: false,
+    currentQuestion: null,
+    winner: null,
+    gameStarted: false,
+    topicSelected: false,
+    selectedGrade: null,
+    selectedTopic: null,
+    topicSelector: null,
+    [rematchField]: true,
+    'player1/reentered': isHost,
+    'player2/reentered': !isHost,
+    clientEntered: isHost ? false : true
+};
 
     waitingForOpponent = false;
 
@@ -2804,15 +2806,24 @@ if (room.gameStarted) {
 
         // 重開相關邏輯保持不變
         const bothAgreed = room.hostRematch && room.clientRematch;
-        if (bothAgreed && !room.gameStarted) {
-            const waitingForRematch = document.getElementById('waitingForRematch');
-            if (waitingForRematch) waitingForRematch.remove();
+if (bothAgreed && !room.gameStarted) {
+    const waitingForRematch = document.getElementById('waitingForRematch');
+    if (waitingForRematch) waitingForRematch.remove();
 
-            const updates = { gameStarted: true };
-            database.ref('rooms/' + currentRoomId).update(updates, () => {
-                startNewGameSession();
-            });
-            waitingForOpponent = false;
+    // 隨機選擇新的題庫選擇者
+    const newSelector = Math.random() < 0.5 ? 'player1' : 'player2';
+    const updates = {
+        gameStarted: false,  // 保持 false，讓遊戲從職業選擇開始
+        topicSelector: newSelector,  // 重新分配題庫選擇者
+        hostRematch: false,  // 清空重開標誌
+        clientRematch: false  // 清空重開標誌
+    };
+    database.ref('rooms/' + currentRoomId).update(updates, () => {
+        document.getElementById('classSelection').style.display = 'block';  // 顯示職業選擇界面
+        document.getElementById('gameArea').style.display = 'none';  // 隱藏遊戲區
+    });
+    waitingForOpponent = false;
+}
         } else if (!bothAgreed && waitingForOpponent) {
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (!waitingForRematch) {
