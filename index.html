@@ -1371,23 +1371,15 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
 
 function selectTopic(topic) {
     selectedTopic = topic;
-    // 更新數據庫中的題庫選擇
     database.ref(`rooms/${currentRoomId}`).update({
         selectedGrade: selectedGrade,
         selectedTopic: selectedTopic,
         topicSelected: true
     });
-    // 隱藏題庫選擇界面
     document.getElementById('topicSelection').style.display = 'none';
-    // 移除等待頁面
-    const waitingMessage = document.getElementById('waitingForTopic');
-    if (waitingMessage) {
-        waitingMessage.remove();
-    }
-    // 開始倒數計時
     startCountdown();
 }
-
+    
     function startCountdown() {
     let countdown = 3;
     const countdownElement = document.createElement('div');
