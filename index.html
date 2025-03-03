@@ -2128,20 +2128,25 @@ function startGame(room) {
             isSelectingTopic = false;
             // 顯示等待玩家選擇題庫
             const waitingMessage = document.createElement('div');
-            waitingMessage.id = 'waitingForTopic';
-            waitingMessage.style.textAlign = 'center';
-            waitingMessage.style.fontSize = '2rem';
-            waitingMessage.style.color = 'var(--gold)';
-            waitingMessage.style.padding = '2rem';
-            waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-            waitingMessage.style.border = '3px solid var(--gold)';
-            waitingMessage.style.borderRadius = '15px';
-            waitingMessage.style.maxWidth = '600px';
-            waitingMessage.style.margin = '2rem auto';
-            waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-            waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-            waitingMessage.textContent = '等待玩家選擇題庫...';
-            document.body.appendChild(waitingMessage);
+waitingMessage.id = 'waitingForTopic';
+waitingMessage.style.position = 'fixed';
+waitingMessage.style.top = '0';
+waitingMessage.style.left = '0';
+waitingMessage.style.width = '100%';
+waitingMessage.style.height = '100%';
+waitingMessage.style.display = 'flex';
+waitingMessage.style.alignItems = 'center';
+waitingMessage.style.justifyContent = 'center';
+waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+waitingMessage.style.color = 'var(--gold)';
+waitingMessage.style.fontSize = '2rem';
+waitingMessage.style.textAlign = 'center';
+waitingMessage.style.padding = '2rem';
+waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+waitingMessage.style.zIndex = '10000';
+waitingMessage.textContent = '等待玩家選擇題庫...';
+document.body.appendChild(waitingMessage);
         }
     } else {
         // 題庫已選擇，開始遊戲
