@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html>
     
@@ -14,7 +13,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
-    <style>      
+    <style>  
+
+        .difficulty-btn {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
 
 .single-player-btn {
     /* 啡色渐变，这里使用了 #A52A2A 和 #D2691E 两种常见的啡色 */
@@ -48,7 +56,11 @@
 }
 
 .rematch-buttons button {
-    padding: 15px 30px;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.2em;
     background: linear-gradient(45deg, #4CAF50, #45a049);
     border: 2px solid #2d662f;
@@ -526,8 +538,6 @@
             position: relative;
             display: none;
         }
-
-        
 
         .health-bar {
             width: 100%;
@@ -1012,19 +1022,6 @@
     </div>
     <div id="selectedClassInfo" style="margin-top: 2rem;"></div>
 </div>
-
-<div id="questionBankSelection" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid #d4af37; border-radius: 15px; z-index: 9999;">
-    <h2 style="color: #d4af37; text-align: center;">選擇題庫</h2>
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem;">
-        <button onclick="selectGrade('中一')" class="grade-btn">中一</button>
-        <button onclick="selectGrade('中五')" class="grade-btn">中五</button>
-    </div>
-    <div id="subQuestionBankSelection" style="display: none; margin-top: 1rem;"></div>
-</div>
-<div id="waitingForQuestionBank" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid #d4af37; border-radius: 15px; z-index: 9999; color: #d4af37; text-align: center; font-size: 2rem;">等待對方選擇題庫</div>
-<div id="countdownTimer" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid #d4af37; border-radius: 15px; z-index: 9999; color: #d4af37; text-align: center; font-size: 3rem;"></div>
-
-
     
    <div id="waitingArea" style="
     text-align: center;
@@ -1040,7 +1037,12 @@
     box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 ">
-    
+    🏯 戰閣 <span id="displayRoomId" style="
+        color: var(--main-red);
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(195, 39, 43, 0.8);
+        padding: 0 0.5rem;
+    ">0000</span> 已開啟，靜候來者...
 </div>
 
     <div id="gameArea">
@@ -1072,7 +1074,7 @@
     
 <div id="difficultySelection" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid #d4af37; border-radius: 15px; z-index: 9999;">
     <h2 style="color: #d4af37; text-align: center;">選擇難度</h2>
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem;">
+   <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; width: 300px;">
         <button onclick="selectDifficulty('easy')" class="difficulty-btn">容易</button>
         <button onclick="selectDifficulty('normal')" class="difficulty-btn">普通</button>
         <button onclick="selectDifficulty('hard')" class="difficulty-btn">困難</button>
@@ -1865,36 +1867,6 @@ function startGameSession() {
     listenToRoomChanges();
 }
 
-function listenToRoomChanges() {
-    const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.off('value'); // 移除舊的監聽器
-
-    roomRef.on('value', (snapshot) => {
-        const room = snapshot.val();
-        if (!room) return;
-
-        if (isHost) {
-            opponentDefense = room.player2?.defense || 1.0;
-        } else {
-            opponentDefense = room.player1?.defense || 1.0;
-        }
-
-        // 當雙方選擇角色後開始遊戲
-        if (room.player1?.class && room.player2?.class && !room.gameStarted) {
-            document.getElementById('waitingArea').style.display = 'none';
-            document.getElementById('classSelection').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            roomRef.update({ gameStarted: true });
-            startGame(room);
-        }
-
-        updateHealthDisplay(room);
-
-        if (room.gameEnded) {
-            handleGameEnd(room.winner);
-        }
-    });
-}
 
   function randomMatch() {
     console.log("randomMatch called");
@@ -1961,80 +1933,6 @@ function listenToRoomChanges() {
         }
     });
 }
-
-let selectedGrade = null;
-let selectedQuestionBank = null;
-let isSelectingQuestionBank = false;
-
-function selectGrade(grade) {
-    if (isSelectingQuestionBank) {
-        selectedGrade = grade;
-        const subQuestionBankDiv = document.getElementById('subQuestionBankSelection');
-        subQuestionBankDiv.innerHTML = '';
-        if (grade === '中一') {
-            const button = document.createElement('button');
-            button.textContent = '御人之妻';
-            button.onclick = () => selectSubQuestionBank('御人之妻');
-            subQuestionBankDiv.appendChild(button);
-        } else if (grade === '中五') {
-            const button = document.createElement('button');
-            button.textContent = '廉頗藺相如列傳';
-            button.onclick = () => selectSubQuestionBank('廉頗藺相如列傳');
-            subQuestionBankDiv.appendChild(button);
-        }
-        document.getElementById('subQuestionBankSelection').style.display = 'block';
-    }
-}
-
-function selectSubQuestionBank(subQuestionBank) {
-    if (isSelectingQuestionBank) {
-        selectedQuestionBank = subQuestionBank;
-        const roomRef = database.ref('rooms/' + currentRoomId);
-        roomRef.update({ selectedQuestionBank: selectedQuestionBank });
-        document.getElementById('questionBankSelection').style.display = 'none';
-        startCountdown();
-    }
-}
-
-function startCountdown() {
-    document.getElementById('countdownTimer').style.display = 'block';
-    let countdown = 3;
-    const countdownElement = document.getElementById('countdownTimer');
-    const interval = setInterval(() => {
-        countdownElement.textContent = countdown;
-        countdown--;
-        if (countdown < 0) {
-            clearInterval(interval);
-            document.getElementById('countdownTimer').style.display = 'none';
-            startGameWithQuestionBank();
-        }
-    }, 1000);
-}
-
-function startGameWithQuestionBank() {
-    // 在这里可以根据 selectedQuestionBank 加载对应的题目数据
-    // 假设题目数据存储在 Firebase 的 questions 节点下，可以根据 selectedQuestionBank 筛选题目
-    // 这里先简单模拟开始游戏
-    document.getElementById('gameArea').style.display = 'block';
-    startGame({}); // 传递一个空对象，后续根据实际情况修改
-}
-
-function handleQuestionBankSelection() {
-    const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.on('value', (snapshot) => {
-        const room = snapshot.val();
-        if (!room) return;
-        if (room.selectedQuestionBank &&!isSelectingQuestionBank) {
-            // 对方已经选择了题目库，直接开始游戏
-            selectedQuestionBank = room.selectedQuestionBank;
-            document.getElementById('waitingForQuestionBank').style.display = 'none';
-            startCountdown();
-        } else if (!isHost &&!isSelectingQuestionBank) {
-            document.getElementById('waitingForQuestionBank').style.display = 'block';
-        }
-    });
-}
-
     
 
 function startNewGameSession() {
@@ -2597,7 +2495,8 @@ document.getElementById('showLeaderboardBtn').onclick = function() {
         leaderboardDiv.style.cssText = `
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
-            border-radius: 15px; max-width: 400px; z-index: 10000; color: white;
+            border-radius: 15px; width: 80%; max-width: 600px; /* 使用百分比和最大宽度结合 */
+            z-index: 10000; color: white;
         `;
         leaderboardDiv.innerHTML = leaderboardHTML + '<button onclick="this.parentElement.remove()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #e74c3c; border: none; border-radius: 5px; color: white;">關閉</button>';
         document.body.appendChild(leaderboardDiv);
@@ -2640,20 +2539,7 @@ function handleRematchRequest() {
         if (error) {
             console.error('更新数据库时出错:', error);
             return;
-            selectedGrade = null;
-selectedQuestionBank = null;
-isSelectingQuestionBank = false;
-document.getElementById('waitingForQuestionBank').style.display = 'none';
-document.getElementById('countdownTimer').style.display = 'none';
-document.getElementById('questionBankSelection').style.display = 'none';
         }
-
-        selectedGrade = null;
-selectedQuestionBank = null;
-isSelectingQuestionBank = false;
-document.getElementById('waitingForQuestionBank').style.display = 'none';
-document.getElementById('countdownTimer').style.display = 'none';
-document.getElementById('questionBankSelection').style.display = 'none';
 
         // 本地强制重置
         gameOver = false;
@@ -2730,19 +2616,6 @@ function listenToRoomChanges() {
             startGame(room);
         }
 
-        if (room.player1?.class && room.player2?.class &&!room.gameStarted) {
-    document.getElementById('waitingArea').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'none';
-    if (isHost) {
-        isSelectingQuestionBank = true;
-        document.getElementById('questionBankSelection').style.display = 'block';
-    } else {
-        handleQuestionBankSelection();
-    }
-    roomRef.update({ gameStarted: true });
-    // startGame(room); 这里先注释掉，等题目选择完成后再开始游戏
-}
-
         updateHealthDisplay(room);
 
         // 重開相關邏輯保持不變
@@ -2812,3 +2685,4 @@ function listenToRoomChanges() {
 
     
 </html>
+
