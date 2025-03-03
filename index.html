@@ -2684,22 +2684,24 @@ function handleRematchRequest() {
     // 获取当前玩家对应的重开字段
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
 
-    // 原子性重置数据库状态
+    // 重置所有數據並隨機指定題庫選擇者
     const updates = {
         'player1/health': 100,
         'player2/health': 100,
         gameEnded: false,
-        currentQuestion: null,
-        winner: null,
         gameStarted: false,
-        topicSelected: false, // 重置題庫選擇
+        topicSelected: false,
         selectedGrade: null,
         selectedTopic: null,
-        topicSelector: null,
+        topicSelector: Math.random() < 0.5 ? 'player1' : 'player2', // 隨機決定誰選題庫
+        winner: null,
+        currentQuestion: null,
         [rematchField]: true,
         'player1/reentered': isHost,
         'player2/reentered': !isHost,
-        clientEntered: isHost ? false : true
+        clientEntered: isHost ? false : true,
+        hostRematch: false,  // 確保重置雙方同意狀態
+        clientRematch: false
     };
 
     waitingForOpponent = false;
@@ -2711,15 +2713,13 @@ function handleRematchRequest() {
             return;
         }
 
-        // 本地强制重置
+        // 本地重置
         gameOver = false;
         answered = false;
-
-        // 清除旧问题显示
         document.getElementById('question').textContent = '';
         document.getElementById('options').innerHTML = '';
 
-        // 显示等待界面
+        // 顯示等待對手界面
         const waitingForRematch = document.createElement('div');
         waitingForRematch.id = 'waitingForRematch';
         waitingForRematch.style.textAlign = 'center';
@@ -2736,11 +2736,7 @@ function handleRematchRequest() {
         waitingForRematch.textContent = '等待對手同意重開遊戲...';
         document.body.appendChild(waitingForRematch);
 
-        // 添加等待对方同意的标志位
         waitingForOpponent = true;
-
-        // 重新绑定监听器
-        listenToRoomChanges();
     });
 }
 
@@ -2759,22 +2755,6 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        // 超時檢查
-        if (isHost && room.player2 === null && !room.gameStarted) {
-            const now = Date.now();
-            const createdAt = room.createdAt || 0;
-            if (now - createdAt > 30000) { // 30秒超時
-                alert('等待對手超時，請重新嘗試匹配。');
-                database.ref('rooms/' + currentRoomId).remove();
-                database.ref('waitingRooms').remove();
-                window.location.reload();
-            }
-        }
-
-        if (room.player1?.class && room.player2?.class) {
-            document.getElementById('waitingArea').style.display = 'none';
-        }
-
         if (room.gameEnded) {
             handleGameEnd(room.winner);
             return;
@@ -2788,30 +2768,25 @@ function listenToRoomChanges() {
 
         updateHealthDisplay(room);
 
+        // 當題庫已選擇但遊戲未開始時，啟動倒計時
         if (room.topicSelected && !room.gameStarted) {
-    // 移除等待消息
-    const waitingForTopic = document.getElementById('waitingForTopic');
-    if (waitingForTopic) waitingForTopic.remove();
-    // 開始倒數計時
-    startCountdown();
-}
+            const waitingForTopic = document.getElementById('waitingForTopic');
+            if (waitingForTopic) waitingForTopic.remove();
+            startCountdown();
+        }
 
-if (room.gameStarted) {
-    // 開始遊戲
-    startGame(room);
-}
+        // 當遊戲開始時，執行遊戲邏輯
+        if (room.gameStarted) {
+            startGame(room);
+        }
 
-        // 重開相關邏輯保持不變
+        // 處理雙方同意重開
         const bothAgreed = room.hostRematch && room.clientRematch;
         if (bothAgreed && !room.gameStarted) {
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (waitingForRematch) waitingForRematch.remove();
-
-            const updates = { gameStarted: true };
-            database.ref('rooms/' + currentRoomId).update(updates, () => {
-                startNewGameSession();
-            });
             waitingForOpponent = false;
+            // 不需要額外調用 startNewGameSession，直接依賴 startGame
         } else if (!bothAgreed && waitingForOpponent) {
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (!waitingForRematch) {
@@ -2833,7 +2808,7 @@ if (room.gameStarted) {
             }
         }
 
-        // 玩家重新進入提示保持不變
+        // 玩家重新進入提示
         const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
         if (opponentReentered && !opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
             opponentJoinedMessage = document.createElement('div');
