@@ -2735,11 +2735,11 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        // 超時檢查
+        // 超時檢查（保留原有邏輯）
         if (isHost && room.player2 === null && !room.gameStarted) {
             const now = Date.now();
             const createdAt = room.createdAt || 0;
-            if (now - createdAt > 30000) { // 30秒超時
+            if (now - createdAt > 30000) {
                 alert('等待對手超時，請重新嘗試匹配。');
                 database.ref('rooms/' + currentRoomId).remove();
                 database.ref('waitingRooms').remove();
@@ -2756,75 +2756,104 @@ function listenToRoomChanges() {
             return;
         }
 
-        if (room.player1?.class && room.player2?.class) {
+        // 職業選擇完成，但題庫未選且遊戲未開始
+        if (room.player1?.class && room.player2?.class && !room.topicSelected && !room.gameStarted) {
             document.getElementById('classSelection').style.display = 'none';
+            const selector = room.topicSelector;
+            if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
+                document.getElementById('gradeSelection').style.display = 'grid';
+                document.getElementById('topicDetail').style.display = 'none';
+                document.getElementById('topicSelection').style.display = 'block';
+            } else {
+                let waitingMessage = document.getElementById('waitingForTopic');
+                if (!waitingMessage) {
+                    waitingMessage = document.createElement('div');
+                    waitingMessage.id = 'waitingForTopic';
+                    waitingMessage.style.position = 'fixed';
+                    waitingMessage.style.top = '0';
+                    waitingMessage.style.left = '0';
+                    waitingMessage.style.width = '100%';
+                    waitingMessage.style.height = '100%';
+                    waitingMessage.style.display = 'flex';
+                    waitingMessage.style.alignItems = 'center';
+                    waitingMessage.style.justifyContent = 'center';
+                    waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+                    waitingMessage.style.color = 'var(--gold)';
+                    waitingMessage.style.fontSize = '2rem';
+                    waitingMessage.style.textAlign = 'center';
+                    waitingMessage.style.padding = '2rem';
+                    waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+                    waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+                    waitingMessage.style.zIndex = '10000';
+                    waitingMessage.textContent = '等待玩家選擇題庫...';
+                    document.body.appendChild(waitingMessage);
+                }
+            }
+        }
+
+        // 題庫選擇完成後開始倒計時
+        if (room.topicSelected && !room.gameStarted) {
+            const waitingForTopic = document.getElementById('waitingForTopic');
+            if (waitingForTopic) waitingForTopic.remove();
+            startCountdown();
+        }
+
+        // 遊戲開始
+        if (room.gameStarted) {
+            const waitingForTopic = document.getElementById('waitingForTopic');
+            if (waitingForTopic) waitingForTopic.remove();
+            document.getElementById('topicSelection').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
-            startGame(room);
+            const playerPath = isHost ? 'player1' : 'player2';
+            const question = room[playerPath].currentQuestion;
+            if (!question) {
+                loadNewQuestion();
+            } else {
+                displayQuestion(question);
+            }
         }
 
         updateHealthDisplay(room);
 
-        if (room.topicSelected && !room.gameStarted) {
-    // 移除等待消息
-    const waitingForTopic = document.getElementById('waitingForTopic');
-    if (waitingForTopic) waitingForTopic.remove();
-    // 開始倒數計時
-    startCountdown();
-}
+        // 重開相關邏輯（保留原有邏輯）
+        if (room.hostRematch && room.clientRematch) {
+            database.ref('rooms/' + currentRoomId).update({
+                hostRematch: false,
+                clientRematch: false
+            });
+            document.getElementById('classSelection').style.display = 'block';
+            document.getElementById('gameArea').style.display = 'none';
 
-if (room.gameStarted) {
-    // 確保移除提示
-    const waitingForRematch = document.getElementById('waitingForRematch');
-    if (waitingForRematch) waitingForRematch.remove();
-    // 開始遊戲
-    startGame(room);
-}
-
-        // 在 listenToRoomChanges 內替換重開相關邏輯
-if (room.hostRematch && room.clientRematch) {
-    // 移除等待重開提示
-    const waitingForRematch = document.getElementById('waitingForRematch');
-    if (waitingForRematch) waitingForRematch.remove();
-
-    // 重置重開標誌並進入職業選擇
-    database.ref('rooms/' + currentRoomId).update({
-        hostRematch: false,
-        clientRematch: false
-    });
-
-    // 顯示職業選擇界面
-    document.getElementById('classSelection').style.display = 'block';
-    document.getElementById('gameArea').style.display = 'none';
-
-    // 雙方都選擇職業後進入題庫選擇
-    if (room.player1?.class && room.player2?.class) {
-        document.getElementById('classSelection').style.display = 'none';
-        if (!room.topicSelected) {
-            const selector = room.topicSelector;
-            if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
-                document.getElementById('topicSelection').style.display = 'block';
-            } else {
-                let waitingMessage = document.createElement('div');
-                waitingMessage.id = 'waitingForTopic';
-                waitingMessage.style.position = 'fixed';
-                waitingMessage.style.top = '50%';
-                waitingMessage.style.left = '50%';
-                waitingMessage.style.transform = 'translate(-50%, -50%)';
-                waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-                waitingMessage.style.color = 'var(--gold)';
-                waitingMessage.style.fontSize = '2rem';
-                waitingMessage.style.padding = '2rem';
-                waitingMessage.style.border = '3px solid var(--gold)';
-                waitingMessage.style.borderRadius = '15px';
-                waitingMessage.style.zIndex = '10000';
-                waitingMessage.textContent = '等待玩家選擇題庫...';
-                document.body.appendChild(waitingMessage);
+            if (room.player1?.class && room.player2?.class) {
+                document.getElementById('classSelection').style.display = 'none';
+                if (!room.topicSelected) {
+                    const selector = room.topicSelector;
+                    if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
+                        document.getElementById('gradeSelection').style.display = 'grid';
+                        document.getElementById('topicDetail').style.display = 'none';
+                        document.getElementById('topicSelection').style.display = 'block';
+                    } else {
+                        let waitingMessage = document.createElement('div');
+                        waitingMessage.id = 'waitingForTopic';
+                        waitingMessage.style.position = 'fixed';
+                        waitingMessage.style.top = '50%';
+                        waitingMessage.style.left = '50%';
+                        waitingMessage.style.transform = 'translate(-50%, -50%)';
+                        waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+                        waitingMessage.style.color = 'var(--gold)';
+                        waitingMessage.style.fontSize = '2rem';
+                        waitingMessage.style.padding = '2rem';
+                        waitingMessage.style.border = '3px solid var(--gold)';
+                        waitingMessage.style.borderRadius = '15px';
+                        waitingMessage.style.zIndex = '10000';
+                        waitingMessage.textContent = '等待玩家選擇題庫...';
+                        document.body.appendChild(waitingMessage);
+                    }
+                }
             }
         }
-    }
-}
 
-        // 玩家重新進入提示保持不變
+        // 玩家重新進入提示（保留原有邏輯）
         const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
         if (opponentReentered && !opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
             opponentJoinedMessage = document.createElement('div');
