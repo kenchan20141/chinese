@@ -14,16 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
-    <style>  
-
-        .difficulty-btn {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-}
+    <style>      
 
 .single-player-btn {
     /* 啡色渐变，这里使用了 #A52A2A 和 #D2691E 两种常见的啡色 */
@@ -57,11 +48,7 @@
 }
 
 .rematch-buttons button {
-    width: 150px;
-    height: 150px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 15px 30px;
     font-size: 1.2em;
     background: linear-gradient(45deg, #4CAF50, #45a049);
     border: 2px solid #2d662f;
@@ -664,23 +651,6 @@
             z-index: 999;
         }
 
-        .grade-btn, .topic-btn {
-    width: 100%;
-    padding: 1rem;
-    font-size: 1.5rem;
-    background: linear-gradient(45deg, #c0392b, #e74c3c);
-    border: 2px solid #695434;
-    border-radius: 8px;
-    color: white;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.grade-btn:hover, .topic-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
-}
-
         .victory-text {
             font-size: 5rem;
             color: #d4af37;
@@ -1072,29 +1042,6 @@
         </div>
     </div>
 
-        <div id="topicSelection" style="display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(45, 41, 38, 0.95);
-    padding: 2rem;
-    border: none; /* 移除邊框 */
-    border-radius: 0; /* 移除圓角 */
-    z-index: 9999;
-    overflow-y: auto; /* 內容過多時可滾動 */">
-    <h2 style="color: #d4af37; text-align: center;">選擇題庫</h2>
-    <div id="gradeSelection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; width: 300px;">
-        <button onclick="selectGrade('中一')" class="grade-btn">中一</button>
-        <button onclick="selectGrade('中五')" class="grade-btn">中五</button>
-    </div>
-    <div id="topicDetail" style="display: none; margin-top: 1rem;">
-        <h3 id="selectedGrade" style="color: #d4af37; text-align: center;"></h3>
-        <div id="topicList" style="display: grid; grid-template-columns: repeat(1, 1fr); gap: 1rem; margin-top: 1rem;"></div>
-    </div>
-</div>
-
     <!-- 問題與選項區 -->
     <div id="question"></div>
     <div id="options"></div>
@@ -1115,7 +1062,7 @@
     
 <div id="difficultySelection" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid #d4af37; border-radius: 15px; z-index: 9999;">
     <h2 style="color: #d4af37; text-align: center;">選擇難度</h2>
-   <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; width: 300px;">
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem;">
         <button onclick="selectDifficulty('easy')" class="difficulty-btn">容易</button>
         <button onclick="selectDifficulty('normal')" class="difficulty-btn">普通</button>
         <button onclick="selectDifficulty('hard')" class="difficulty-btn">困難</button>
@@ -1264,9 +1211,6 @@ let waitingForOpponent = false;
     let isAnswered = false; 
     let answeredQuestions = new Set();
     let hasHealedThisTurn = false;
-    let selectedGrade = null;
-let selectedTopic = null;
-let isSelectingTopic = false;
 
 // 在代码开头部分，获取按钮和输入框元素
 const createRoomBtn = document.querySelector('button[onclick="createRoom()"]');
@@ -1348,73 +1292,6 @@ selectedCard.querySelector('.selected-tick').style.display = 'flex';
     
 }
 
-    function selectGrade(grade) {
-    selectedGrade = grade;
-    document.getElementById('selectedGrade').textContent = `選擇 ${grade} 題庫`;
-    document.getElementById('gradeSelection').style.display = 'none';
-    document.getElementById('topicDetail').style.display = 'block';
-    
-    // 根據年級加載相應的題庫
-    const topics = grade === '中一' ? ['御人之妻'] : ['廉頗藺相如列傳'];
-    const topicList = document.getElementById('topicList');
-    topicList.innerHTML = '';
-    topics.forEach(topic => {
-        const button = document.createElement('button');
-        button.textContent = topic;
-        button.className = 'topic-btn';
-        button.onclick = () => selectTopic(topic);
-        topicList.appendChild(button);
-    });
-}
-
-function selectTopic(topic) {
-    selectedTopic = topic;
-    // 更新數據庫中的題庫選擇
-    database.ref(`rooms/${currentRoomId}`).update({
-        selectedGrade: selectedGrade,
-        selectedTopic: selectedTopic,
-        topicSelected: true
-    });
-    // 隱藏題庫選擇界面
-    document.getElementById('topicSelection').style.display = 'none';
-    // 開始倒數計時
-    startCountdown();
-}
-
-    function startCountdown() {
-    let countdown = 3;
-    const countdownElement = document.createElement('div');
-    countdownElement.id = 'countdown';
-    countdownElement.style.position = 'fixed';
-    countdownElement.style.top = '0';
-    countdownElement.style.left = '0';
-    countdownElement.style.width = '100%';
-    countdownElement.style.height = '100%';
-    countdownElement.style.display = 'flex';
-    countdownElement.style.alignItems = 'center';
-    countdownElement.style.justifyContent = 'center';
-    countdownElement.style.background = 'rgba(0, 0, 0, 0.8)';
-    countdownElement.style.color = 'var(--gold)';
-    countdownElement.style.fontSize = '5rem';
-    countdownElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-    countdownElement.style.zIndex = '10000';
-    document.body.appendChild(countdownElement);
-
-    function updateCountdown() {
-        if (countdown > 0) {
-            countdownElement.textContent = countdown;
-            countdown--;
-            setTimeout(updateCountdown, 1000);
-        } else {
-            countdownElement.remove();
-            database.ref(`rooms/${currentRoomId}`).update({
-                gameStarted: true
-            });
-        }
-    }
-
-    updateCountdown();
-}
 
 function displayQuestion(question) {
     
@@ -1861,19 +1738,12 @@ function createRoom() {
     document.getElementById('waitingArea').style.display = 'block';
     document.getElementById('displayRoomId').textContent = currentRoomId;
 
-    // 隨機決定題庫選擇者
-    const topicSelector = Math.random() < 0.5 ? 'player1' : 'player2';
-
     database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null },
-        player2: { health: 100, class: null, currentQuestion: null },
+        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
         gameStarted: false,
         gameEnded: false,
-        winner: null,
-        topicSelected: false,   // 明確初始化
-        selectedGrade: null,
-        selectedTopic: null,
-        topicSelector: topicSelector // 確保初始化
+        winner: null
     });
     listenToRoomChanges();
 }
@@ -1985,6 +1855,36 @@ function startGameSession() {
     listenToRoomChanges();
 }
 
+function listenToRoomChanges() {
+    const roomRef = database.ref('rooms/' + currentRoomId);
+    roomRef.off('value'); // 移除舊的監聽器
+
+    roomRef.on('value', (snapshot) => {
+        const room = snapshot.val();
+        if (!room) return;
+
+        if (isHost) {
+            opponentDefense = room.player2?.defense || 1.0;
+        } else {
+            opponentDefense = room.player1?.defense || 1.0;
+        }
+
+        // 當雙方選擇角色後開始遊戲
+        if (room.player1?.class && room.player2?.class && !room.gameStarted) {
+            document.getElementById('waitingArea').style.display = 'none';
+            document.getElementById('classSelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            roomRef.update({ gameStarted: true });
+            startGame(room);
+        }
+
+        updateHealthDisplay(room);
+
+        if (room.gameEnded) {
+            handleGameEnd(room.winner);
+        }
+    });
+}
 
   function randomMatch() {
     console.log("randomMatch called");
@@ -2117,37 +2017,11 @@ function startGame(room) {
         return;
     }
 
-    if (!room.topicSelected) {
-        const selector = room.topicSelector;
-        if (!selector) {
-            console.error('topicSelector 未正確設置');
-            return;
-        }
-        if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
-            document.getElementById('topicSelection').style.display = 'block';
-        } else {
-            const existingWaitingMessage = document.getElementById('waitingForTopic');
-            if (!existingWaitingMessage) {
-                const waitingMessage = document.createElement('div');
-                waitingMessage.id = 'waitingForTopic';
-                waitingMessage.textContent = '等待玩家選擇題庫...';
-                waitingMessage.style.position = 'fixed';
-                waitingMessage.style.top = '0';
-                waitingMessage.style.left = '0';
-                waitingMessage.style.width = '100%';
-                waitingMessage.style.height = '100%';
-                waitingMessage.style.display = 'flex';
-                waitingMessage.style.alignItems = 'center';
-                waitingMessage.style.justifyContent = 'center';
-                waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-                waitingMessage.style.color = 'var(--gold)';
-                waitingMessage.style.fontSize = '2rem';
-                waitingMessage.style.zIndex = '10000';
-                document.body.appendChild(waitingMessage);
-            }
-        }
-    } else if (room.gameStarted) {
-        document.getElementById('gameArea').style.display = 'block';
+    clearInterval(timer);
+    timeLeft = 15;
+    document.getElementById('gameArea').style.display = 'block';
+
+    setTimeout(() => {
         const playerPath = isHost ? 'player1' : 'player2';
         const question = room[playerPath].currentQuestion;
         if (!question) {
@@ -2155,8 +2029,9 @@ function startGame(room) {
         } else {
             displayQuestion(question);
         }
-    }
+    }, 500);
 }
+
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -2167,55 +2042,44 @@ function shuffleArray(array) {
 
 function loadNewQuestion() {
     hasHealedThisTurn = false; // 重置恢復狀態
-    
-    // 從數據庫獲取選擇的題庫
-    database.ref(`rooms/${currentRoomId}`).once('value').then(snapshot => {
-        const room = snapshot.val();
-        const grade = room.selectedGrade;
-        const topic = room.selectedTopic;
-        
-        // 獲取該題庫的問題數量
-        database.ref(`questions/${grade}/${topic}`).once('value').then(snapshot => {
-            const questions = snapshot.val();
-            const totalQuestions = Object.keys(questions).length;
-            const randomId = Math.floor(Math.random() * totalQuestions);
-            
-            // 加載特定問題
-            const questionRef = database.ref(`questions/${grade}/${topic}/${randomId}`);
-            questionRef.once('value').then(snapshot => {
-                const originalQuestion = snapshot.val();
-                if (!originalQuestion) {
-                    console.error('無法找到該問題數據');
-                    return;
-                }
-                
-                // 在客戶端處理問題數據（打亂選項等）
-                const optionsCopy = [...originalQuestion.options];
-                const correctAnswer = optionsCopy[originalQuestion.correctIndex];
-                const shuffledOptions = shuffleArray(optionsCopy);
-                const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
-                
-                const processedQuestion = {
-                    question: originalQuestion.question,
-                    options: shuffledOptions,
-                    correctIndex: newCorrectIndex,
-                    id: Date.now() // 生成唯一 ID 用於客戶端識別
-                };
-                
-                // 更新當前問題 ID 和房間數據
-                currentQuestionId = processedQuestion.id;
-                const playerPath = isHost ? 'player1' : 'player2';
-                database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ 
-                    currentQuestion: processedQuestion 
-                });
-                
-                // 重置答題狀態並顯示問題
-                isAnswered = false;
-                displayQuestion(processedQuestion);
-            }).catch(error => {
-                console.error('下載問題數據時出錯:', error);
-            });
+    // 假設問題總數為 100，可以從 Firebase 或本地配置中動態獲取
+    const totalQuestions = 622; 
+    const randomId = Math.floor(Math.random() * totalQuestions); // 隨機生成問題 ID
+
+    // 只下載特定問題的數據
+    const questionRef = database.ref(`questions/${randomId}`);
+    questionRef.once('value').then(snapshot => {
+        const originalQuestion = snapshot.val();
+        if (!originalQuestion) {
+            console.error('無法找到該問題數據');
+            return;
+        }
+
+        // 在客戶端處理問題數據（打亂選項等）
+        const optionsCopy = [...originalQuestion.options];
+        const correctAnswer = optionsCopy[originalQuestion.correctIndex];
+        const shuffledOptions = shuffleArray(optionsCopy);
+        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+
+        const processedQuestion = {
+            question: originalQuestion.question,
+            options: shuffledOptions,
+            correctIndex: newCorrectIndex,
+            id: Date.now() // 生成唯一 ID 用於客戶端識別
+        };
+
+        // 更新當前問題 ID 和房間數據
+        currentQuestionId = processedQuestion.id;
+        const playerPath = isHost ? 'player1' : 'player2';
+        database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ 
+            currentQuestion: processedQuestion 
         });
+
+        // 重置答題狀態並顯示問題
+        isAnswered = false;
+        displayQuestion(processedQuestion);
+    }).catch(error => {
+        console.error('下載問題數據時出錯:', error);
     });
 }
 
@@ -2649,8 +2513,7 @@ document.getElementById('showLeaderboardBtn').onclick = function() {
         leaderboardDiv.style.cssText = `
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
-            border-radius: 15px; width: 80%; max-width: 600px; /* 使用百分比和最大宽度结合 */
-            z-index: 10000; color: white;
+            border-radius: 15px; max-width: 400px; z-index: 10000; color: white;
         `;
         leaderboardDiv.innerHTML = leaderboardHTML + '<button onclick="this.parentElement.remove()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #e74c3c; border: none; border-radius: 5px; color: white;">關閉</button>';
         document.body.appendChild(leaderboardDiv);
@@ -2662,32 +2525,28 @@ function handleRematchRequest() {
     if (isRematching) return;
     isRematching = true;
 
-    // 移除勝利界面
+    // 强制移除胜利界面元素
     const victoryOverlay = document.querySelector('.victory-overlay');
     victoryOverlay.style.display = 'none';
     const buttons = victoryOverlay.querySelector('.rematch-buttons');
     if (buttons) buttons.remove();
 
-    // 定義當前玩家的重開字段
+    // 获取当前玩家对应的重开字段
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
 
-    // 重置房間狀態
+    // 原子性重置数据库状态
     const updates = {
         'player1/health': 100,
         'player2/health': 100,
-        'player1/class': null,
-        'player2/class': null,
         gameEnded: false,
         currentQuestion: null,
         winner: null,
-        gameStarted: false,
-        topicSelected: false,
-        selectedGrade: null,
-        selectedTopic: null,
-        topicSelector: null,    // 重置為 null，等待重新分配
-        [rematchField]: true,
+        gameStarted: false, // 确保游戏在双方都同意重开前不开始
+        [rematchField]: true, // 记录当前玩家同意重开
+        // 新增一个字段用于表示玩家是否已经重新进入游戏
         'player1/reentered': isHost,
-        'player2/reentered': !isHost
+        'player2/reentered':!isHost,
+        clientEntered: isHost ? false : true 
     };
 
     waitingForOpponent = false;
@@ -2695,20 +2554,19 @@ function handleRematchRequest() {
     database.ref('rooms/' + currentRoomId).update(updates, (error) => {
         isRematching = false;
         if (error) {
-            console.error('更新數據庫時出錯:', error);
+            console.error('更新数据库时出错:', error);
             return;
         }
 
-        // 本地重置狀態
+        // 本地强制重置
         gameOver = false;
         answered = false;
-        playerClass = null;
 
-        // 清除舊問題顯示
+        // 清除旧问题显示
         document.getElementById('question').textContent = '';
         document.getElementById('options').innerHTML = '';
 
-        // 顯示等待對手同意的界面
+        // 显示等待界面
         const waitingForRematch = document.createElement('div');
         waitingForRematch.id = 'waitingForRematch';
         waitingForRematch.style.textAlign = 'center';
@@ -2725,7 +2583,10 @@ function handleRematchRequest() {
         waitingForRematch.textContent = '等待對手同意重開遊戲...';
         document.body.appendChild(waitingForRematch);
 
+        // 添加等待对方同意的标志位
         waitingForOpponent = true;
+
+        // 重新绑定监听器
         listenToRoomChanges();
     });
 }
@@ -2733,35 +2594,59 @@ function handleRematchRequest() {
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.off('value');  // 移除舊監聽器，避免重複綁定
+    roomRef.off('value');
 
     roomRef.on('value', (snapshot) => {
         const room = snapshot.val();
         if (!room) return;
 
-        // 更新血量顯示
+        if (isHost) {
+            opponentDefense = room.player2?.defense || 1.0;
+        } else {
+            opponentDefense = room.player1?.defense || 1.0;
+        }
+
+        // 超時檢查
+        if (isHost && room.player2 === null && !room.gameStarted) {
+            const now = Date.now();
+            const createdAt = room.createdAt || 0;
+            if (now - createdAt > 30000) { // 30秒超時
+                alert('等待對手超時，請重新嘗試匹配。');
+                database.ref('rooms/' + currentRoomId).remove();
+                database.ref('waitingRooms').remove();
+                window.location.reload();
+            }
+        }
+
+        if (room.player1?.class && room.player2?.class) {
+            document.getElementById('waitingArea').style.display = 'none';
+        }
+
+        if (room.gameEnded) {
+            handleGameEnd(room.winner);
+            return;
+        }
+
+        if (room.player1?.class && room.player2?.class) {
+            document.getElementById('classSelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            startGame(room);
+        }
+
         updateHealthDisplay(room);
 
-        // 檢查是否雙方同意重開
+        // 重開相關邏輯保持不變
         const bothAgreed = room.hostRematch && room.clientRematch;
         if (bothAgreed && !room.gameStarted) {
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (waitingForRematch) waitingForRematch.remove();
 
-            // 重新分配 topicSelector
-            if (!room.topicSelector) {
-                const newSelector = Math.random() < 0.5 ? 'player1' : 'player2';
-                database.ref('rooms/' + currentRoomId).update({
-                    topicSelector: newSelector
-                });
-            }
-
-            // 重置遊戲區域並顯示職業選擇界面
-            document.getElementById('gameArea').style.display = 'none';
-            document.getElementById('classSelection').style.display = 'block';
+            const updates = { gameStarted: true };
+            database.ref('rooms/' + currentRoomId).update(updates, () => {
+                startNewGameSession();
+            });
             waitingForOpponent = false;
         } else if (!bothAgreed && waitingForOpponent) {
-            // 保持等待對手同意的提示
             const waitingForRematch = document.getElementById('waitingForRematch');
             if (!waitingForRematch) {
                 const newWaitingForRematch = document.createElement('div');
@@ -2782,16 +2667,23 @@ function listenToRoomChanges() {
             }
         }
 
-        // 當雙方選擇職業後，進入題庫選擇階段
-        if (room.player1?.class && room.player2?.class && !room.gameStarted) {
-            document.getElementById('classSelection').style.display = 'none';
-            startGame(room);  // 進入題庫選擇或遊戲開始流程
-        }
+        // 玩家重新進入提示保持不變
+        const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
+        if (opponentReentered && !opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
+            opponentJoinedMessage = document.createElement('div');
+            opponentJoinedMessage.style.cssText = `
+                position: fixed; top: 10%; left: 50%; transform: translate(-50%, 0);
+                background: rgba(0, 0, 0, 0.9); color: #fff; padding: 20px; 
+                border-radius: 10px; z-index: 9999; font-size: 2rem; text-align: center;
+                width: 80%; max-width: 300px; box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            `;
+            opponentJoinedMessage.textContent = '🎮玩家已進場';
+            document.body.appendChild(opponentJoinedMessage);
 
-        // 遊戲結束處理
-        if (room.gameEnded) {
-            handleGameEnd(room.winner);
-            return;
+            setTimeout(() => {
+                opponentJoinedMessage.remove();
+                opponentJoinedMessage = null;
+            }, 3000);
         }
     });
 }
