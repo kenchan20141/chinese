@@ -1383,12 +1383,13 @@ function selectTopic(topic) {
     database.ref(`rooms/${currentRoomId}`).update({
         selectedGrade: selectedGrade,
         selectedTopic: selectedTopic,
-        topicSelected: true
+        topicSelected: true,
+        gameStarted: true // 確保設置 gameStarted 為 true
     });
     // 隱藏題庫選擇界面
     document.getElementById('topicSelection').style.display = 'none';
-    // 開始新一輪遊戲
-    startNewGameSession();
+    // 開始倒數計時
+    startCountdown();
 }
 
     function startCountdown() {
@@ -1417,11 +1418,13 @@ function selectTopic(topic) {
             setTimeout(updateCountdown, 1000);
         } else {
             countdownElement.remove();
-            database.ref(`rooms/${currentRoomId}`).update({
-                gameStarted: true
-            });
+            // 開始遊戲
+            loadNewQuestion();
         }
     }
+
+    updateCountdown();
+}
 
     updateCountdown();
 }
@@ -2168,7 +2171,7 @@ function startGame(room) {
                 document.body.appendChild(waitingMessage);
             }
         }
-    } else {
+    } else if (room.gameStarted) {
         clearInterval(timer);
         timeLeft = 15;
         document.getElementById('gameArea').style.display = 'block';
@@ -2776,7 +2779,6 @@ function handleRematchRequest() {
         waitingForOpponent = true;
     });
 }
-
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
