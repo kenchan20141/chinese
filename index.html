@@ -2756,41 +2756,11 @@ function listenToRoomChanges() {
             return;
         }
 
-        if (room.player1?.class && room.player2?.class && !room.topicSelected) {
-    document.getElementById('classSelection').style.display = 'none';
-    const selector = room.topicSelector;
-    if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
-        // 題庫選擇者顯示年級選擇界面
-        document.getElementById('gradeSelection').style.display = 'grid';
-        document.getElementById('topicDetail').style.display = 'none';
-        document.getElementById('topicSelection').style.display = 'block';
-    } else {
-        // 非選擇者顯示等待提示
-        let waitingMessage = document.getElementById('waitingForTopic');
-        if (!waitingMessage) {
-            waitingMessage = document.createElement('div');
-            waitingMessage.id = 'waitingForTopic';
-            waitingMessage.style.position = 'fixed';
-            waitingMessage.style.top = '0';
-            waitingMessage.style.left = '0';
-            waitingMessage.style.width = '100%';
-            waitingMessage.style.height = '100%';
-            waitingMessage.style.display = 'flex';
-            waitingMessage.style.alignItems = 'center';
-            waitingMessage.style.justifyContent = 'center';
-            waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-            waitingMessage.style.color = 'var(--gold)';
-            waitingMessage.style.fontSize = '2rem';
-            waitingMessage.style.textAlign = 'center';
-            waitingMessage.style.padding = '2rem';
-            waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-            waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-            waitingMessage.style.zIndex = '10000';
-            waitingMessage.textContent = '等待玩家選擇題庫...';
-            document.body.appendChild(waitingMessage);
+        if (room.player1?.class && room.player2?.class) {
+            document.getElementById('classSelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            startGame(room);
         }
-    }
-}
 
         updateHealthDisplay(room);
 
@@ -2874,6 +2844,7 @@ if (room.hostRematch && room.clientRematch) {
         }
     });
 }
+
 
 </script>
 
