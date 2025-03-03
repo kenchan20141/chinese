@@ -1406,9 +1406,6 @@ function selectTopic(topic) {
             database.ref(`rooms/${currentRoomId}`).update({
                 gameStarted: true
             });
-            // 添加移除提示的邏輯
-            const waitingForRematch = document.getElementById('waitingForRematch');
-            if (waitingForRematch) waitingForRematch.remove();
         }
     }
     updateCountdown();
