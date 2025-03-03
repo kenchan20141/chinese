@@ -1,4 +1,4 @@
-\
+
 
 <!DOCTYPE html>
 <html>
@@ -2166,20 +2166,19 @@ function startGame(room) {
                 document.body.appendChild(waitingMessage);
             }
         }
-    } else {
-        clearInterval(timer);
-        timeLeft = 15;
-        document.getElementById('gameArea').style.display = 'block';
+   } else {
+        // 移除等待頁面
+        const waitingMessage = document.getElementById('waitingForTopic');
+        if (waitingMessage) waitingMessage.remove();
 
-        setTimeout(() => {
-            const playerPath = isHost ? 'player1' : 'player2';
-            const question = room[playerPath].currentQuestion;
-            if (!question) {
-                loadNewQuestion();
-            } else {
-                displayQuestion(question);
-            }
-        }, 500);
+        document.getElementById('gameArea').style.display = 'block';
+        const playerPath = isHost ? 'player1' : 'player2';
+        const question = room[playerPath].currentQuestion;
+        if (!question) {
+            loadNewQuestion();
+        } else {
+            displayQuestion(question);
+        }
     }
 }
 
