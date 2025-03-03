@@ -2123,49 +2123,53 @@ function startGame(room) {
     }
 
     if (!room.topicSelected) {
-        // 檢查房間數據中的題庫選擇者
         const selector = room.topicSelector;
         if (!selector) {
-            // 如果未定義（舊房間兼容性），隨機分配並更新
             const newSelector = Math.random() < 0.5 ? 'player1' : 'player2';
             database.ref(`rooms/${currentRoomId}`).update({
                 topicSelector: newSelector
             });
-            return; // 等待下一次更新
+            return;
         }
+
+        // 移除舊的等待界面，避免重複
+        const existingWaiting = document.getElementById('waitingForTopic');
+        if (existingWaiting) existingWaiting.remove();
 
         if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
             isSelectingTopic = true;
             document.getElementById('topicSelection').style.display = 'block';
         } else {
             isSelectingTopic = false;
-            // 顯示等待玩家選擇題庫
             const waitingMessage = document.createElement('div');
-waitingMessage.id = 'waitingForTopic';
-waitingMessage.style.position = 'fixed';
-waitingMessage.style.top = '0';
-waitingMessage.style.left = '0';
-waitingMessage.style.width = '100%';
-waitingMessage.style.height = '100%';
-waitingMessage.style.display = 'flex';
-waitingMessage.style.alignItems = 'center';
-waitingMessage.style.justifyContent = 'center';
-waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
-waitingMessage.style.color = 'var(--gold)';
-waitingMessage.style.fontSize = '2rem';
-waitingMessage.style.textAlign = 'center';
-waitingMessage.style.padding = '2rem';
-waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-waitingMessage.style.zIndex = '10000';
-waitingMessage.textContent = '等待玩家選擇題庫...';
-document.body.appendChild(waitingMessage);
+            waitingMessage.id = 'waitingForTopic';
+            waitingMessage.style.position = 'fixed';
+            waitingMessage.style.top = '0';
+            waitingMessage.style.left = '0';
+            waitingMessage.style.width = '100%';
+            waitingMessage.style.height = '100%';
+            waitingMessage.style.display = 'flex';
+            waitingMessage.style.alignItems = 'center';
+            waitingMessage.style.justifyContent = 'center';
+            waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+            waitingMessage.style.color = 'var(--gold)';
+            waitingMessage.style.fontSize = '2rem';
+            waitingMessage.style.textAlign = 'center';
+            waitingMessage.style.padding = '2rem';
+            waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+            waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+            waitingMessage.style.zIndex = '10000';
+            waitingMessage.textContent = '等待玩家選擇題庫...';
+            document.body.appendChild(waitingMessage);
         }
     } else {
-        // 題庫已選擇，開始遊戲
         clearInterval(timer);
         timeLeft = 15;
         document.getElementById('gameArea').style.display = 'block';
+
+        // 移除等待界面
+        const waitingForTopic = document.getElementById('waitingForTopic');
+        if (waitingForTopic) waitingForTopic.remove();
 
         setTimeout(() => {
             const playerPath = isHost ? 'player1' : 'player2';
@@ -2693,7 +2697,8 @@ function handleRematchRequest() {
     // 获取当前玩家对应的重开字段
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
 
-    // 原子性重置数据库状态
+    // 原子性重置数据库状态，並直接分配新的 topicSelector
+    const newSelector = Math.random() < 0.5 ? 'player1' : 'player2'; // 在這裡生成
     const updates = {
         'player1/health': 100,
         'player2/health': 100,
@@ -2704,7 +2709,7 @@ function handleRematchRequest() {
         topicSelected: false, // 重置題庫選擇狀態
         selectedGrade: null,  // 重置年級
         selectedTopic: null,  // 重置題目
-        topicSelector: null,  // 重置選擇者
+        topicSelector: newSelector, // 直接設置新選擇者
         [rematchField]: true,
         'player1/reentered': isHost,
         'player2/reentered': !isHost,
@@ -2719,12 +2724,6 @@ function handleRematchRequest() {
             console.error('更新数据库时出错:', error);
             return;
         }
-
-        // 隨機決定新的題庫選擇者
-        const newSelector = Math.random() < 0.5 ? 'player1' : 'player2';
-        database.ref('rooms/' + currentRoomId).update({
-            topicSelector: newSelector
-        });
 
         // 本地强制重置
         gameOver = false;
