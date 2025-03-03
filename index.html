@@ -1109,10 +1109,6 @@
     <div id="timer">🕒15</div>
 </div>
 
-    <div id="countdownOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; font-size: 5rem; color: white;">
-    <div id="countdownNumber"></div>
-</div>
-
     <div class="victory-overlay">
         <div class="victory-text"></div>
     </div>
@@ -1385,18 +1381,27 @@ function selectTopic(topic) {
     startCountdown();
 }
 
-   function startCountdown() {
+    function startCountdown() {
     let countdown = 3;
-    const countdownOverlay = document.getElementById('countdownOverlay');
-    const countdownNumber = document.getElementById('countdownNumber');
-    countdownOverlay.style.display = 'flex'; // 顯示全屏遮罩
+    const countdownElement = document.createElement('div');
+    countdownElement.id = 'countdown';
+    countdownElement.style.position = 'fixed';
+    countdownElement.style.top = '50%';
+    countdownElement.style.left = '50%';
+    countdownElement.style.transform = 'translate(-50%, -50%)';
+    countdownElement.style.fontSize = '5rem';
+    countdownElement.style.color = 'var(--gold)';
+    countdownElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+    countdownElement.textContent = countdown;
+    document.body.appendChild(countdownElement);
 
     const countdownInterval = setInterval(() => {
-        countdownNumber.textContent = countdown; // 更新數字
         countdown--;
-        if (countdown < 0) {
+        if (countdown > 0) {
+            countdownElement.textContent = countdown;
+        } else {
             clearInterval(countdownInterval);
-            countdownOverlay.style.display = 'none'; // 倒數結束後隱藏遮罩
+            countdownElement.remove();
             // 開始遊戲
             database.ref(`rooms/${currentRoomId}`).update({
                 gameStarted: true
