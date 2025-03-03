@@ -1068,32 +1068,6 @@
     <div id="timer">🕒15</div>
 </div>
 
-    <!-- 題庫選擇界面 -->
-<div id="topicSelection" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-        <h2 style="color: var(--gold);">選擇題庫</h2>
-        <div id="gradeSelection">
-            <button onclick="selectGrade('中一')">中一</button>
-            <button onclick="selectGrade('中五')">中五</button>
-        </div>
-        <div id="topicList" style="display: none;"></div>
-    </div>
-</div>
-
-<!-- 等待對方選擇題庫界面 -->
-<div id="waitingForTopic" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--gold); font-size: 2rem;">
-        等待對方選擇題庫...
-    </div>
-</div>
-
-<!-- 倒數計時界面 -->
-<div id="countdown" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--gold); font-size: 5rem;">
-        3
-    </div>
-</div>
-
     <div class="victory-overlay">
         <div class="victory-text"></div>
     </div>
@@ -1112,9 +1086,6 @@
     
 <script>
 
-let selectedTopic = null; // 存儲選擇的題庫路徑
-let isTopicSelector = false; // 標記當前玩家是否為題庫選擇者
-    
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1771,55 +1742,6 @@ function toggleMusic() {
     document.querySelector('.music-control').textContent = isMusicPlaying ? '🎵' : '🔇';
 }
 
-
-    function showTopicSelection() {
-    document.getElementById('topicSelection').style.display = 'block';
-    document.getElementById('gradeSelection').style.display = 'block';
-    document.getElementById('topicList').style.display = 'none';
-}
-
-    function showWaitingForTopic() {
-    document.getElementById('waitingForTopic').style.display = 'block';
-}
-
-    function selectGrade(grade) {
-    document.getElementById('gradeSelection').style.display = 'none';
-    document.getElementById('topicList').style.display = 'block';
-    document.getElementById('topicList').innerHTML = '';
-
-    const topics = grade === '中一' ? ['御人之妻'] : ['廉頗藺相如列傳'];
-    topics.forEach(topic => {
-        const button = document.createElement('button');
-        button.textContent = topic;
-        button.onclick = () => selectTopic(grade, topic);
-        document.getElementById('topicList').appendChild(button);
-    });
-}
-
-    function selectTopic(grade, topic) {
-    selectedTopic = `${grade}/${topic}`;
-    database.ref('rooms/' + currentRoomId).update({
-        selectedTopic: selectedTopic,
-        topicSelected: true
-    });
-    document.getElementById('topicSelection').style.display = 'none';
-    startCountdown();
-}
-
-    function startCountdown() {
-    document.getElementById('countdown').style.display = 'block';
-    let count = 3;
-    const countdownInterval = setInterval(() => {
-        count--;
-        document.getElementById('countdown').querySelector('div').textContent = count;
-        if (count === 0) {
-            clearInterval(countdownInterval);
-            document.getElementById('countdown').style.display = 'none';
-            database.ref('rooms/' + currentRoomId).update({ gameStarted: true });
-        }
-    }, 1000);
-}
-
 function createRoom() {
     currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
     isHost = true;
@@ -1828,27 +1750,18 @@ function createRoom() {
     document.getElementById('waitingArea').style.display = 'block';
     document.getElementById('displayRoomId').textContent = currentRoomId;
 
-    const roomRef = database.ref('rooms/' + currentRoomId);
-    roomRef.transaction((currentData) => {
-        if (!currentData) {
-            return {
-                player1: { health: 100, class: null, currentQuestion: null },
-                player2: { health: 100, class: null, currentQuestion: null },
-                gameStarted: false,
-                gameEnded: false,
-                winner: null,
-                topicSelector: 'player1' // 預設房主為題庫選擇者
-            };
-        }
-        return currentData; // 如果房間已存在，不覆蓋
-    }).then(() => {
-        listenToRoomChanges();
+    database.ref('rooms/' + currentRoomId).set({
+        player1: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        player2: { health: 100, class: null, currentQuestion: null }, // 添加 currentQuestion 字段
+        gameStarted: false,
+        gameEnded: false,
+        winner: null
     });
+    listenToRoomChanges();
 }
 
 function joinRoom() {
     currentRoomId = document.getElementById('roomId').value;
-    isHost = false; // 明確設置為非房主
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('classSelection').style.display = 'block';
     listenToRoomChanges();
@@ -1868,7 +1781,6 @@ function joinRoom() {
         gameStarted: false,
         gameEnded: false,
         winner: null
-        topicSelector: 'player1' // 預設房主為題庫選擇者
     });
     listenToRoomChanges();
 }
@@ -2100,64 +2012,6 @@ function startGame(room) {
             displayQuestion(question);
         }
     }, 500);
-}
-
-    function startGame(room) {
-    if (!room.player1 || !room.player2 || !room.selectedTopic || !room.gameStarted) {
-        console.log('等待條件滿足以開始遊戲...');
-        return;
-    }
-
-    clearInterval(timer);
-    timeLeft = 15;
-    document.getElementById('gameArea').style.display = 'block';
-
-    setTimeout(() => {
-        const playerPath = isHost ? 'player1' : 'player2';
-        const question = room[playerPath].currentQuestion;
-        if (!question) {
-            loadNewQuestionMultiplayer();
-        } else {
-            displayQuestion(question);
-        }
-    }, 500);
-}
-
-    function loadNewQuestionMultiplayer() {
-    const questionsRef = database.ref(`questions/${selectedTopic}`);
-    questionsRef.once('value').then(snapshot => {
-        const questions = snapshot.val();
-        if (!questions) {
-            console.error('無法找到該題庫的問題');
-            return;
-        }
-
-        const questionKeys = Object.keys(questions);
-        const randomKey = questionKeys[Math.floor(Math.random() * questionKeys.length)];
-        const originalQuestion = questions[randomKey];
-
-        const optionsCopy = [...originalQuestion.options];
-        const correctAnswer = optionsCopy[originalQuestion.correctIndex];
-        const shuffledOptions = shuffleArray(optionsCopy);
-        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
-
-        const processedQuestion = {
-            question: originalQuestion.question,
-            options: shuffledOptions,
-            correctIndex: newCorrectIndex,
-            id: Date.now()
-        };
-
-        const playerPath = isHost ? 'player1' : 'player2';
-        database.ref('rooms/' + currentRoomId + '/' + playerPath).update({
-            currentQuestion: processedQuestion
-        });
-
-        isAnswered = false;
-        displayQuestion(processedQuestion);
-    }).catch(error => {
-        console.error('下載問題數據時出錯:', error);
-    });
 }
 
 function shuffleArray(array) {
@@ -2664,21 +2518,19 @@ function handleRematchRequest() {
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
 
     // 原子性重置数据库状态
-   const updates = {
-    'player1/health': 100,
-    'player2/health': 100,
-    gameEnded: false,
-    currentQuestion: null,
-    winner: null,
-    gameStarted: false,
-    hostRematch: true,
-    clientRematch: true,
-    topicSelected: false, // 重置題庫選擇狀態
-    selectedTopic: null,  // 清空所選題庫
-    'player1/reentered': isHost,
-    'player2/reentered': !isHost,
-    clientEntered: isHost ? false : true
-};
+    const updates = {
+        'player1/health': 100,
+        'player2/health': 100,
+        gameEnded: false,
+        currentQuestion: null,
+        winner: null,
+        gameStarted: false, // 确保游戏在双方都同意重开前不开始
+        [rematchField]: true, // 记录当前玩家同意重开
+        // 新增一个字段用于表示玩家是否已经重新进入游戏
+        'player1/reentered': isHost,
+        'player2/reentered':!isHost,
+        clientEntered: isHost ? false : true 
+    };
 
     waitingForOpponent = false;
 
@@ -2737,15 +2589,6 @@ function listenToRoomChanges() {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        if (room.topicSelected && !room.gameStarted) {
-    document.getElementById('waitingForTopic').style.display = 'none';
-    if (!isTopicSelector) {
-        startCountdown();
-    }
-}
-
-
-        
         // 超時檢查
         if (isHost && room.player2 === null && !room.gameStarted) {
             const now = Date.now();
@@ -2771,17 +2614,6 @@ function listenToRoomChanges() {
             document.getElementById('classSelection').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
             startGame(room);
-            if (room.player1?.class && room.player2?.class && !room.topicSelected) {
-    // 隨機選擇一位玩家選擇題庫
-   const selector = room.topicSelector; // 直接使用預設的 topicSelector
-            if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
-                isTopicSelector = true;
-                showTopicSelection();
-            } else {
-                isTopicSelector = false;
-                showWaitingForTopic();
-            }
-        }
         }
 
         updateHealthDisplay(room);
