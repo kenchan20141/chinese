@@ -1974,14 +1974,61 @@ function checkForMatch() {
     });
 }
 
-function startGameSession() {
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    document.getElementById('waitingArea').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = currentRoomId;
-    listenToRoomChanges();
-}
+function startGame(room) {
+    if (!room.player1 || !room.player2) {
+        console.log('等待對手加入...');
+        return;
+    }
 
+    if (!room.topicSelected) {
+        const selector = room.topicSelector;
+        if (!selector) {
+            console.log('等待題庫選擇者分配...');
+            return;
+        }
+
+        if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
+            isSelectingTopic = true;
+            document.getElementById('topicSelection').style.display = 'block';
+        } else {
+            isSelectingTopic = false;
+            const waitingForTopic = document.getElementById('waiting-for-topic');
+            if (!waitingForTopic) {
+                const waitingMessage = document.createElement('div');
+                waitingMessage.id = 'waiting-for-topic'; // 統一 ID
+                waitingMessage.style.position = 'fixed';
+                waitingMessage.style.top = '0';
+                waitingMessage.style.left = '0';
+                waitingMessage.style.width = '100%';
+                waitingMessage.style.height = '100%';
+                waitingMessage.style.display = 'flex';
+                waitingMessage.style.alignItems = 'center';
+                waitingMessage.style.justifyContent = 'center';
+                waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+                waitingMessage.style.color = 'var(--gold)';
+                waitingMessage.style.fontSize = '2rem';
+                waitingMessage.style.textAlign = 'center';
+                waitingMessage.style.padding = '2rem';
+                waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+                waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+                waitingMessage.style.zIndex = '10000';
+                waitingMessage.textContent = '等待玩家選擇題庫...';
+                document.body.appendChild(waitingMessage);
+            }
+        }
+    } else if (room.gameStarted) {
+        clearInterval(timer);
+        timeLeft = 15;
+        document.getElementById('gameArea').style.display = 'block';
+        const playerPath = isHost ? 'player1' : 'player2';
+        const question = room[playerPath].currentQuestion;
+        if (!question) {
+            loadNewQuestion();
+        } else {
+            displayQuestion(question);
+        }
+    }
+}
 
   function randomMatch() {
     console.log("randomMatch called");
@@ -2676,16 +2723,16 @@ function handleRematchRequest() {
     if (isRematching) return;
     isRematching = true;
 
-    // 强制移除胜利界面元素
+    // 移除勝利界面
     const victoryOverlay = document.querySelector('.victory-overlay');
     victoryOverlay.style.display = 'none';
     const buttons = victoryOverlay.querySelector('.rematch-buttons');
     if (buttons) buttons.remove();
 
-    // 获取当前玩家对应的重开字段
+    // 設置重開字段
     const rematchField = isHost ? 'hostRematch' : 'clientRematch';
 
-    // 原子性重置数据库状态
+    // 重置數據庫狀態
     const updates = {
         'player1/health': 100,
         'player2/health': 100,
@@ -2693,36 +2740,29 @@ function handleRematchRequest() {
         currentQuestion: null,
         winner: null,
         gameStarted: false,
-        topicSelected: false, // 重置題庫選擇
+        topicSelected: false,
         selectedGrade: null,
         selectedTopic: null,
-        topicSelector: null,
-        [rematchField]: true,
-        'player1/reentered': isHost,
-        'player2/reentered': !isHost,
-        clientEntered: isHost ? false : true
+        topicSelector: null, // 隨機分派將在後續處理
+        [rematchField]: true
     };
-
-    waitingForOpponent = false;
 
     database.ref('rooms/' + currentRoomId).update(updates, (error) => {
         isRematching = false;
         if (error) {
-            console.error('更新数据库时出错:', error);
+            console.error('更新數據庫時出錯:', error);
             return;
         }
 
-        // 本地强制重置
+        // 本地重置
         gameOver = false;
         answered = false;
-
-        // 清除旧问题显示
         document.getElementById('question').textContent = '';
         document.getElementById('options').innerHTML = '';
 
-        // 显示等待界面
+        // 顯示等待界面
         const waitingForRematch = document.createElement('div');
-        waitingForRematch.id = 'waitingForRematch';
+        waitingForRematch.id = 'waiting-for-rematch'; // 使用一致的 ID
         waitingForRematch.style.textAlign = 'center';
         waitingForRematch.style.fontSize = '2rem';
         waitingForRematch.style.color = 'var(--gold)';
@@ -2737,14 +2777,13 @@ function handleRematchRequest() {
         waitingForRematch.textContent = '等待對手同意重開遊戲...';
         document.body.appendChild(waitingForRematch);
 
-        // 添加等待对方同意的标志位
+        // 設置等待標誌
         waitingForOpponent = true;
 
-        // 重新绑定监听器
+        // 重新綁定監聽器
         listenToRoomChanges();
     });
 }
-
 
 function listenToRoomChanges() {
     const roomRef = database.ref('rooms/' + currentRoomId);
@@ -2754,103 +2793,65 @@ function listenToRoomChanges() {
         const room = snapshot.val();
         if (!room) return;
 
+        // 更新防禦值
         if (isHost) {
             opponentDefense = room.player2?.defense || 1.0;
         } else {
             opponentDefense = room.player1?.defense || 1.0;
         }
 
-        // 超時檢查
-        if (isHost && room.player2 === null && !room.gameStarted) {
-            const now = Date.now();
-            const createdAt = room.createdAt || 0;
-            if (now - createdAt > 30000) { // 30秒超時
-                alert('等待對手超時，請重新嘗試匹配。');
-                database.ref('rooms/' + currentRoomId).remove();
-                database.ref('waitingRooms').remove();
-                window.location.reload();
-            }
-        }
-
-        if (room.player1?.class && room.player2?.class) {
-            document.getElementById('waitingArea').style.display = 'none';
-        }
-
+        // 處理遊戲結束
         if (room.gameEnded) {
             handleGameEnd(room.winner);
             return;
         }
 
-        if (room.player1?.class && room.player2?.class) {
-            document.getElementById('classSelection').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
+        // 更新血量顯示
+        updateHealthDisplay(room);
+
+        // 檢查雙方是否同意重開
+        const bothAgreed = room.hostRematch && room.clientRematch;
+        if (bothAgreed && !room.gameStarted) {
+            const waitingForRematch = document.getElementById('waiting-for-rematch');
+            if (waitingForRematch) waitingForRematch.remove();
+
+            // 隨機分派題庫選擇者
+            const topicSelector = Math.random() < 0.5 ? 'player1' : 'player2';
+            const updates = {
+                gameStarted: false, // 先不開始遊戲，等待題庫選擇
+                topicSelector: topicSelector
+            };
+            database.ref('rooms/' + currentRoomId).update(updates, () => {
+                startGame(room); // 進入題庫選擇階段
+            });
+            waitingForOpponent = false;
+        }
+
+        // 處理遊戲開始
+        if (room.gameStarted) {
             startGame(room);
         }
 
-        updateHealthDisplay(room);
-
-        if (room.topicSelected && !room.gameStarted) {
-    // 移除等待消息
-    const waitingForTopic = document.getElementById('waitingForTopic');
-    if (waitingForTopic) waitingForTopic.remove();
-    // 開始倒數計時
-    startCountdown();
-}
-
-if (room.gameStarted) {
-    // 開始遊戲
-    startGame(room);
-}
-
-        // 重開相關邏輯保持不變
-        const bothAgreed = room.hostRematch && room.clientRematch;
-        if (bothAgreed && !room.gameStarted) {
-            const waitingForRematch = document.getElementById('waitingForRematch');
-            if (waitingForRematch) waitingForRematch.remove();
-
-            const updates = { gameStarted: true };
-            database.ref('rooms/' + currentRoomId).update(updates, () => {
-                startNewGameSession();
-            });
-            waitingForOpponent = false;
-        } else if (!bothAgreed && waitingForOpponent) {
-            const waitingForRematch = document.getElementById('waitingForRematch');
+        // 顯示等待對方同意頁面
+        if (!bothAgreed && waitingForOpponent) {
+            const waitingForRematch = document.getElementById('waiting-for-rematch');
             if (!waitingForRematch) {
-                const newWaitingForRematch = document.createElement('div');
-                newWaitingForRematch.id = 'waitingForRematch';
-                newWaitingForRematch.style.textAlign = 'center';
-                newWaitingForRematch.style.fontSize = '2rem';
-                newWaitingForRematch.style.color = 'var(--gold)';
-                newWaitingForRematch.style.padding = '2rem';
-                newWaitingForRematch.style.background = 'rgba(45, 41, 38, 0.95)';
-                newWaitingForRematch.style.border = '3px solid var(--gold)';
-                newWaitingForRematch.style.borderRadius = '15px';
-                newWaitingForRematch.style.maxWidth = '600px';
-                newWaitingForRematch.style.margin = '2rem auto';
-                newWaitingForRematch.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
-                newWaitingForRematch.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-                newWaitingForRematch.textContent = '等待對手同意重開遊戲...';
-                document.body.appendChild(newWaitingForRematch);
+                const newWaiting = document.createElement('div');
+                newWaiting.id = 'waiting-for-rematch';
+                newWaiting.style.textAlign = 'center';
+                newWaiting.style.fontSize = '2rem';
+                newWaiting.style.color = 'var(--gold)';
+                newWaiting.style.padding = '2rem';
+                newWaiting.style.background = 'rgba(45, 41, 38, 0.95)';
+                newWaiting.style.border = '3px solid var(--gold)';
+                newWaiting.style.borderRadius = '15px';
+                newWaiting.style.maxWidth = '600px';
+                newWaiting.style.margin = '2rem auto';
+                newWaiting.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+                newWaiting.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+                newWaiting.textContent = '等待對手同意重開遊戲...';
+                document.body.appendChild(newWaiting);
             }
-        }
-
-        // 玩家重新進入提示保持不變
-        const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
-        if (opponentReentered && !opponentJoinedMessage && (!room.gameStarted || room.gameEnded)) {
-            opponentJoinedMessage = document.createElement('div');
-            opponentJoinedMessage.style.cssText = `
-                position: fixed; top: 10%; left: 50%; transform: translate(-50%, 0);
-                background: rgba(0, 0, 0, 0.9); color: #fff; padding: 20px; 
-                border-radius: 10px; z-index: 9999; font-size: 2rem; text-align: center;
-                width: 80%; max-width: 300px; box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
-            `;
-            opponentJoinedMessage.textContent = '🎮玩家已進場';
-            document.body.appendChild(opponentJoinedMessage);
-
-            setTimeout(() => {
-                opponentJoinedMessage.remove();
-                opponentJoinedMessage = null;
-            }, 3000);
         }
     });
 }
