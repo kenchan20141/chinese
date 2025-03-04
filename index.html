@@ -1669,29 +1669,51 @@ if (isCorrect) {
 // 修改 updateHealthDisplay 函數
 function updateHealthDisplay(room) {
     const user = auth.currentUser;
-    if (user) {
-        const playerPath = isHost ? 'player1' : 'player2';
-        const opponentPath = isHost ? 'player2' : 'player1';
+    if (!user) return;
 
-        // 獲取各自的 maxHealth 和 health
-        const myMaxHealth = room[playerPath]?.maxHealth || 1000;  // 預設1000，若無數據
-        const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
-        const myHealth = Math.max(room[playerPath]?.health || 0, 0);
-        const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
+    const playerPath = isHost ? 'player1' : 'player2';
+    const opponentPath = isHost ? 'player2' : 'player1';
 
-        // 計算氣血百分比
-        const myHealthPercentage = (myHealth / myMaxHealth) * 100;
-        const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
+    const myMaxHealth = room[playerPath]?.maxHealth || 1000;
+    const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
+    const myHealth = Math.max(room[playerPath]?.health || 0, 0);
+    const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
 
-        // 更新己方氣血條顯示
-        document.getElementById('myHealthContainer').innerHTML = `
-            <div>${user.displayName} 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
-            <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
-        `;
+    const myHealthPercentage = (myHealth / myMaxHealth) * 100;
+    const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
 
-        // 更新敵方氣血條顯示
+    // 更新己方顯示（保持不變）
+    document.getElementById('myHealthContainer').innerHTML = `
+        <div>${user.displayName} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
+        <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
+    `;
+
+    // 獲取敵方 UID
+    const opponentUid = room[opponentPath]?.userId;
+    if (opponentUid) {
+        // 從 Firebase 獲取敵方 USERINFO
+        database.ref('users/' + opponentUid).once('value', (snapshot) => {
+            const opponentData = snapshot.val() || { displayName: '未知玩家', level: 1 };
+            const opponentName = opponentData.displayName || '未知玩家';
+            const opponentLevel = opponentData.level || 1;
+
+            // 更新敵方顯示
+            document.getElementById('enemyHealthContainer').innerHTML = `
+                <div>${opponentName} (等級 ${opponentLevel}) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+                <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+            `;
+        }).catch((error) => {
+            console.error('獲取敵方資訊失敗:', error);
+            // 錯誤處理：顯示預設值
+            document.getElementById('enemyHealthContainer').innerHTML = `
+                <div>未知玩家 (等級 1) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+                <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+            `;
+        });
+    } else {
+        // 如果沒有敵方 UID，顯示等待訊息
         document.getElementById('enemyHealthContainer').innerHTML = `
-            <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div>等待玩家加入... 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
     }
