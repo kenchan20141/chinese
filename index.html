@@ -1,4 +1,4 @@
-
+氣血條OＫ 經驗值OＫ 積分OＫ
 
 <!DOCTYPE html>
 <html>
@@ -1333,8 +1333,6 @@ database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
     attack: playerClass.attack,
     defense: playerClass.defense,
     dodge: playerClass.dodge
-    name: user.displayName, // 添加名稱
-    level: playerLevel     // 添加等級
 });
         });
     }
@@ -1681,25 +1679,20 @@ function updateHealthDisplay(room) {
         const myHealth = Math.max(room[playerPath]?.health || 0, 0);
         const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
 
-        // 獲取敵方數據
-        const opponentData = room[opponentPath] || {};
-        const opponentName = opponentData.name || '未知敵人';
-        const opponentLevel = opponentData.level || 1;
-
         // 計算氣血百分比
         const myHealthPercentage = (myHealth / myMaxHealth) * 100;
         const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
 
         // 更新己方氣血條顯示
         document.getElementById('myHealthContainer').innerHTML = `
-            <div>${user.displayName} (等級: ${playerLevel}) 氣血: <span id="myHealth">${Math.max(room[playerPath]?.health || 100, 0)}</span></div>
-            <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${Math.max(room[playerPath]?.health || 100, 0)}%"></div></div>
+            <div>${user.displayName} 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
+            <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
         `;
 
-       // 更新敵方氣血條顯示
+        // 更新敵方氣血條顯示
         document.getElementById('enemyHealthContainer').innerHTML = `
-            <div>${opponentName} (等級: ${opponentLevel}) 氣血: <span id="opponentHealth">${Math.max(opponentData.health || 100, 0)}</span></div>
-            <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${Math.max(opponentData.health || 100, 0)}%"></div></div>
+            <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
     }
 }
