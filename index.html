@@ -2389,16 +2389,29 @@ function handleGameEnd(winnerType) {
     // 添加經驗值和升級邏輯
     const user = auth.currentUser;
     let statsOverlay; // 定義 statsOverlay
-    if (user) {
+   if (user) {
         const userRef = database.ref('users/' + user.uid);
         userRef.transaction((userData) => {
-            if (!userData) userData = { level: 1, exp: 0, score: 0 };
-            if (isWinner) userData.exp += 50; // 獲勝增加 50 經驗值
+            if (!userData) userData = { level: 1, exp: 0 };
+            if (isWinner) {
+                userData.exp += 50; // 獲勝增加 50 經驗值
+            } else {
+                userData.exp += 20; // 輸掉增加 20 經驗值
+            }
             const expRequired = 100 * userData.level;
             if (userData.exp >= expRequired) {
                 userData.level += 1;
                 userData.exp -= expRequired;
             }
+            return userData;
+        }).then(() => {
+            userRef.once('value', (snapshot) => {
+                const userData = snapshot.val();
+                playerLevel = userData.level;
+                playerExp = userData.exp;
+            });
+        });
+    }
             return userData;
         }).then(() => {
             // 創建彈出視窗顯示經驗值 BAR
