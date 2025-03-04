@@ -2343,6 +2343,29 @@ function handleGameEnd(winnerType) {
     const resultSound = isWinner ? soundEffects.victory : soundEffects.defeat;
     resultSound.play();
 
+    // 添加經驗值和升級邏輯
+    const user = auth.currentUser;
+    if (user && isWinner) {
+        const userRef = database.ref('users/' + user.uid);
+        userRef.transaction((userData) => {
+            if (!userData) userData = { level: 1, exp: 0 };
+            userData.exp += 50;  // 獲勝增加 50 經驗值
+            const expRequired = 100 * userData.level;
+            if (userData.exp >= expRequired) {
+                userData.level += 1;
+                userData.exp -= expRequired;
+            }
+            return userData;
+        }).then(() => {
+            // 更新本地變數
+            userRef.once('value', (snapshot) => {
+                const userData = snapshot.val();
+                playerLevel = userData.level;
+                playerExp = userData.exp;
+            });
+        });
+    }
+
     victoryText.style.animation = 'none';
     setTimeout(() => victoryText.style.animation = 'victoryPulse 1s ease-out', 10);
 // 新增重赛按钮容器
