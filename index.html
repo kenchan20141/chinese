@@ -1682,7 +1682,7 @@ function updateHealthDisplay(room) {
     const myHealthPercentage = (myHealth / myMaxHealth) * 100;
     const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
 
-    // 更新己方顯示（保持不變）
+    // 更新己方顯示
     document.getElementById('myHealthContainer').innerHTML = `
         <div>${user.displayName} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
@@ -2143,11 +2143,7 @@ function updateHealthDisplay(room) {
         <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
     `;
     
-    document.getElementById('enemyHealthContainer').innerHTML = `
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="https://example.com/${opponentClass}.png" style="width:50px; height:50px; border-radius:50%;">
-            <div>🗡 敵方氣血: <span id="opponentHealth">100</span></div>
-        </div>
+   
         <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
     `;
     
