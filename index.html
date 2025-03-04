@@ -1329,7 +1329,8 @@ function selectClass(className) {
             const playerPath = isHost ? 'player1' : 'player2';
             database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
                 class: className,
-                health: maxHealth,  // 根據等級設置初始氣血
+                health: maxHealth,
+                maxHealth: maxHealth,  // 新增儲存最大氣血值
                 attack: playerClass.attack,
                 defense: playerClass.defense,
                 dodge: playerClass.dodge
@@ -1671,18 +1672,27 @@ function updateHealthDisplay(room) {
     const user = auth.currentUser;
     if (user) {
         const playerPath = isHost ? 'player1' : 'player2';
-        const maxHealth = 1000 + (playerLevel - 1) * 100; // 根據等級計算最大氣血
-        const myHealth = Math.max(room[playerPath].health, 0);
-        const opponentHealth = Math.max(isHost ? (room.player2?.health || 1000) : room.player1.health, 0);
-        const myHealthPercentage = (myHealth / maxHealth) * 100;
-        const opponentHealthPercentage = (opponentHealth / maxHealth) * 100;
+        const opponentPath = isHost ? 'player2' : 'player1';
 
+        // 獲取各自的 maxHealth 和 health
+        const myMaxHealth = room[playerPath]?.maxHealth || 1000;  // 預設1000，若無數據
+        const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
+        const myHealth = Math.max(room[playerPath]?.health || 0, 0);
+        const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
+
+        // 計算氣血百分比
+        const myHealthPercentage = (myHealth / myMaxHealth) * 100;
+        const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
+
+        // 更新己方氣血條顯示
         document.getElementById('myHealthContainer').innerHTML = `
-            <div>${user.displayName} 氣血: <span id="myHealth">${myHealth}</span></div>
+            <div>${user.displayName} 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
         `;
+
+        // 更新敵方氣血條顯示
         document.getElementById('enemyHealthContainer').innerHTML = `
-            <div>敵方氣血: <span id="opponentHealth">${opponentHealth}</span></div>
+            <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
     }
