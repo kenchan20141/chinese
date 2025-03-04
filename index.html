@@ -15,6 +15,28 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
+
+#userInfo {
+    font-size: 1.2rem;
+    color: var(--gold);
+    text-align: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(45, 41, 38, 0.95);
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+}
+#expBar {
+    width: 200px;  /* 增加寬度以更明顯 */
+    height: 15px;
+    margin-top: 5px;
+}
+#expFill {
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);  /* 添加漸變效果 */
+}
+
+        
 #topicSelection {
     z-index: 10001; /* 確保高於等待頁面 */
 }
@@ -907,7 +929,7 @@
     
     <!-- 用戶信息區域 -->
    <div id="userInfo" class="info-box" style="display: none;">
-    <span id="userName"></span> | 積分: <span id="userScore">0</span> | 等級: <span id="userLevel">1</span>
+   <span id="userName"></span> | 積分: <span id="userScore">0</span> | 等級: <span id="userLevel">1</span>
     <div>經驗值: 
         <div id="expBar" style="width: 100px; height: 10px; background: #333; border-radius: 5px; display: inline-block;">
             <div id="expFill" style="height: 100%; background: #4CAF50; width: 0%; transition: width 0.5s ease;"></div>
@@ -1513,7 +1535,8 @@ function checkAnswer(isCorrect, questionId) {
     }, 50);
 
     // 傷害計算與動畫
-    let baseDamage = Math.floor((timeLeft / 15) * 13);
+    let baseDamage = Math.floor(Math.random() * 31) + 50;  // 隨機生成 50 至 80 點
+baseDamage = Math.floor(baseDamage * (timeLeft / 15));  // 根據剩餘時間微調
 
     // 霸刀門雙倍攻擊判定（30%概率）
     if (playerClass.type === 'warrior' && isCorrect && Math.random() < 0.3) {
