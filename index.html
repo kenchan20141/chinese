@@ -1325,16 +1325,15 @@ function selectClass(className) {
             playerClass.attack += (playerLevel - 1) * 0.1;  // 每級增加 0.1 攻擊力
             playerClass.defense += (playerLevel - 1) * 0.1;  // 每級增加 0.1 防禦力
             const maxHealth = 1000 + (playerLevel - 1) * 100;  // 每級增加 100 氣血
-
-            const playerPath = isHost ? 'player1' : 'player2';
-            database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-                class: className,
-                health: maxHealth,
-                maxHealth: maxHealth,  // 新增儲存最大氣血值
-                attack: playerClass.attack,
-                defense: playerClass.defense,
-                dodge: playerClass.dodge
-            });
+const playerPath = isHost ? 'player1' : 'player2';
+database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+    class: className,
+    health: maxHealth,  // 根據等級設置初始氣血
+    maxHealth: maxHealth,  // 儲存最大氣血值
+    attack: playerClass.attack,
+    defense: playerClass.defense,
+    dodge: playerClass.dodge
+});
         });
     }
 
@@ -2130,13 +2129,33 @@ function updateHealthDisplay(room) {
         <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
     `;
     
-    const myHealth = isHost ? room.player1.health : (room.player2?.health || 100);
-    const opponentHealth = isHost ? (room.player2?.health || 100) : room.player1.health;
-    
-document.getElementById('myHealth').textContent = Math.max(myHealth, 0);
-document.getElementById('opponentHealth').textContent = Math.max(opponentHealth, 0);
-    document.getElementById('myHealthBar').style.width = myHealth + '%';
-    document.getElementById('opponentHealthBar').style.width = opponentHealth + '%';
+
+    if (user) {
+        const playerPath = isHost ? 'player1' : 'player2';
+        const opponentPath = isHost ? 'player2' : 'player1';
+
+        // 從房間數據中獲取各自的 maxHealth 和 health
+        const myMaxHealth = room[playerPath]?.maxHealth || 1000;
+        const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
+        const myHealth = Math.max(room[playerPath]?.health || 0, 0);
+        const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
+
+        // 計算氣血百分比
+        const myHealthPercentage = (myHealth / myMaxHealth) * 100;
+        const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
+
+        // 更新己方氣血條顯示
+        document.getElementById('myHealthContainer').innerHTML = `
+            <div>${user.displayName} 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
+            <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
+        `;
+
+        // 更新敵方氣血條顯示
+        document.getElementById('enemyHealthContainer').innerHTML = `
+            <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+        `;
+    }
 }
 
 function startGame(room) {
