@@ -1694,8 +1694,8 @@ function updateHealthDisplay(room) {
     if (opponentUid) {
         // 從 Firebase 獲取敵方 USERINFO
         database.ref('users/' + opponentUid).once('value', (snapshot) => {
-            const opponentData = snapshot.val() || { displayName: '未知玩家', level: 1 };
-            const opponentName = opponentData.displayName || '未知玩家';
+            const opponentData = snapshot.val() || { displayNames: '未知玩家', level: 1 };
+            const opponentName = opponentData.displayNames || '未知玩家';
             const opponentLevel = opponentData.level || 1;
 
             // 更新敵方顯示
@@ -1749,11 +1749,11 @@ document.getElementById('loginBtn').onclick = function() {
             const user = userCredential.user;
             if (!user.displayName) {
                 const displayName = prompt("請輸入您的顯示名稱");
-                if (displayName) {
+                if (displayNames) {
                     user.updateProfile({
-                        displayName: displayName
+                        displayName: displayNames
                     }).then(() => {
-                        alert("登入成功：" + displayName);
+                        alert("登入成功：" + displayNames);
                     }).catch((error) => {
                         alert("設置顯示名稱失敗：" + error.message);
                     });
@@ -1762,7 +1762,7 @@ document.getElementById('loginBtn').onclick = function() {
                     return;
                 }
             } else {
-                alert("登入成功：" + user.displayName);
+                alert("登入成功：" + user.displayNames);
             }
             document.getElementById('loginBtn').style.display = 'none';
         })
@@ -1775,14 +1775,14 @@ document.getElementById('loginBtn').onclick = function() {
 document.getElementById('registerBtn').onclick = function() {
     const email = prompt("請輸入郵箱");
     const password = prompt("請輸入密碼");
-    const displayName = prompt("請輸入您的顯示名稱");
-    if (!email || !password || !displayName) {
+    const displayNames = prompt("請輸入您的顯示名稱");
+    if (!email || !password || !displayNames) {
         alert("郵箱、密碼和顯示名稱不能為空");
         return;
     }
 
     const displayNamesRef = database.ref('displayNames');
-    displayNamesRef.child(displayName).once('value')
+    displayNamesRef.child(displayNames).once('value')
         .then((snapshot) => {
             if (snapshot.exists()) {
                 alert("該顯示名稱已被使用，請選擇其他名稱");
@@ -1794,10 +1794,10 @@ document.getElementById('registerBtn').onclick = function() {
         .then((userCredential) => {
             const user = userCredential.user;
             return Promise.all([
-                user.updateProfile({ displayName: displayName }),
-                displayNamesRef.child(displayName).set(true),
+                user.updateProfile({ displayName: displayNames }),
+                displayNamesRef.child(displayNames).set(true),
                 database.ref('users/' + user.uid).set({
-                    displayName: displayName,  // 添加到 users 節點
+                    displayNames: displayNames,  // 添加到 users 節點
                     level: 1,
                     exp: 0,
                     score: 0
@@ -1805,7 +1805,7 @@ document.getElementById('registerBtn').onclick = function() {
             ]);
         })
         .then(() => {
-            alert("註冊成功：" + displayName);
+            alert("註冊成功：" + displayNames);
             document.getElementById('loginBtn').style.display = 'none';
             document.getElementById('registerBtn').style.display = 'none';
             document.getElementById('logoutContainer').style.display = 'block';
@@ -1849,7 +1849,7 @@ document.getElementById('logoutBtn').onclick = function() {
         document.getElementById('registerBtn').style.display = 'none';
         document.getElementById('logoutContainer').style.display = 'block';
         userInfo.style.display = 'block';
-        userName.textContent = user.displayName || '未命名玩家';
+        userName.textContent = user.displayNames || '未命名玩家';
 
         // 從資料庫獲取資料
         database.ref('users/' + user.uid).once('value', (snapshot) => {
@@ -2178,7 +2178,7 @@ function updateHealthDisplay(room) {
 
     // 更新己方顯示
     document.getElementById('myHealthContainer').innerHTML = `
-        <div>${user.displayName} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
+        <div>${user.displayNames} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
     `;
 
@@ -2480,7 +2480,7 @@ userRef.once('value', (snapshot) => {
                 // 更新排行榜
                 const leaderboardRef = database.ref('leaderboard/' + user.uid);
                 leaderboardRef.set({
-                    name: user.displayName,
+                    name: user.displayNames,
                     score: userData.score
                 });
             });
