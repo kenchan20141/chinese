@@ -1389,37 +1389,48 @@ function selectTopic(topic) {
     startCountdown();
 }
     
-   function startCountdown() {
-    let countdown = 3;
-    const countdownElement = document.createElement('div');
-    countdownElement.id = 'countdown';
-    countdownElement.style.position = 'fixed';
-    countdownElement.style.top = '0';
-    countdownElement.style.left = '0';
-    countdownElement.style.width = '100%';
-    countdownElement.style.height = '100%';
-    countdownElement.style.display = 'flex';
-    countdownElement.style.alignItems = 'center';
-    countdownElement.style.justifyContent = 'center';
-    countdownElement.style.background = 'rgba(45, 41, 38, 0.95)';
-    countdownElement.style.color = 'var(--gold)';
-    countdownElement.style.fontSize = '10rem';
-    countdownElement.style.zIndex = '10001';
-    document.body.appendChild(countdownElement);
+  function startCountdown() {
+    // 檢查房間狀態，避免重複觸發
+    database.ref(`rooms/${currentRoomId}`).once('value').then(snapshot => {
+        const room = snapshot.val();
+        if (room.countdownStarted || room.gameStarted) return; // 已開始倒數或遊戲已開始則退出
 
-    function updateCountdown() {
-        if (countdown > 0) {
-            countdownElement.textContent = countdown;
-            countdown--;
-            setTimeout(updateCountdown, 1000);
-        } else {
-            countdownElement.remove();
-            database.ref(`rooms/${currentRoomId}`).update({
-                gameStarted: true
-            });
+        // 設置倒數計時開始標誌
+        database.ref(`rooms/${currentRoomId}`).update({ countdownStarted: true });
+
+        let countdown = 3;
+        const countdownElement = document.createElement('div');
+        countdownElement.id = 'countdown';
+        countdownElement.style.position = 'fixed';
+        countdownElement.style.top = '0';
+        countdownElement.style.left = '0';
+        countdownElement.style.width = '100%';
+        countdownElement.style.height = '100%';
+        countdownElement.style.display = 'flex';
+        countdownElement.style.alignItems = 'center';
+        countdownElement.style.justifyContent = 'center';
+        countdownElement.style.background = 'rgba(45, 41, 38, 0.95)';
+        countdownElement.style.color = 'var(--gold)';
+        countdownElement.style.fontSize = '10rem';
+        countdownElement.style.zIndex = '10001';
+        document.body.appendChild(countdownElement);
+
+        function updateCountdown() {
+            if (countdown > 0) {
+                countdownElement.textContent = countdown;
+                countdown--;
+                setTimeout(updateCountdown, 1000);
+            } else {
+                countdownElement.remove();
+                // 結束後設置遊戲開始並重置倒數標誌
+                database.ref(`rooms/${currentRoomId}`).update({
+                    gameStarted: true,
+                    countdownStarted: false
+                });
+            }
         }
-    }
-    updateCountdown();
+        updateCountdown();
+    });
 }
 
 function displayQuestion(question) {
