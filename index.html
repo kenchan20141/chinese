@@ -16,6 +16,18 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
+
+#enemyHealthContainer > div {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* 元素間距 */
+}
+#enemyName, #enemyLevel {
+    color: #d4af37; /* 金色顯示，與主題一致 */
+    font-weight: bold;
+}
+
+        
 #topicSelection {
     z-index: 10001; /* 確保高於等待頁面 */
 }
@@ -1075,10 +1087,10 @@
         <div class="decorative-border"></div>
         <!-- 敵方血條移至頂部 -->
     <div id="enemyHealthContainer">
-        <div>🗡 敵方氣血: <span id="opponentHealth">100</span>
-            <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
-        </div>
+    <div>🗡 敵方 (<span id="enemyName">等待加入</span>, 等級 <span id="enemyLevel">-</span>) 氣血: <span id="opponentHealth">100</span>
+        <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
     </div>
+</div>
 
         <div id="topicSelection" style="display: none;
     position: fixed;
@@ -1793,11 +1805,14 @@ document.getElementById('registerBtn').onclick = function() {
         })
         .then((userCredential) => {
             const user = userCredential.user;
-            return user.updateProfile({
-                displayName: displayName
-            }).then(() => {
-                return displayNamesRef.child(displayName).set(true);
-            });
+            return Promise.all([
+                user.updateProfile({ displayName: displayName }),
+                database.ref('users/' + user.uid).set({
+                    displayName: displayName,
+                    level: 1  // 初始等級設為 1
+                }),
+                displayNamesRef.child(displayName).set(true)
+            ]);
         })
         .then(() => {
             alert("註冊成功：" + displayName);
@@ -2125,57 +2140,49 @@ function startNewGameSession() {
     
 function updateHealthDisplay(room) {
     const user = auth.currentUser;
-    if (user) {
-        document.getElementById('myHealthContainer').innerHTML = `
-            <div>${user.displayName} 氣血: <span id="myHealth">${Math.max(isHost ? room.player1.health : (room.player2?.health || 100), 0)}</span></div>
-            <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
-        `;
-    }
-     // 在原有代码前添加职业头像显示
-    const myClass = isHost ? room.player1.class : (room.player2?.class || '');
-    const opponentClass = isHost ? (room.player2?.class || '') : room.player1.class;
+    if (!user) return;
 
- // 添加职业头像
+    const playerPath = isHost ? 'player1' : 'player2';
+    const opponentPath = isHost ? 'player2' : 'player1';
+
+    const myMaxHealth = room[playerPath]?.maxHealth || 1000;
+    const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
+    const myHealth = Math.max(room[playerPath]?.health || 0, 0);
+    const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
+
+    const myHealthPercentage = (myHealth / myMaxHealth) * 100;
+    const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
+
+    // 更新己方顯示
     document.getElementById('myHealthContainer').innerHTML = `
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="https://example.com/${myClass}.png" style="width:50px; height:50px; border-radius:50%;">
-            <div>🏹 你的氣血: <span id="myHealth">100</span></div>
-        </div>
-        <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
+        <div>${user.displayName} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
+        <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
     `;
-    
-    document.getElementById('enemyHealthContainer').innerHTML = `
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="https://example.com/${opponentClass}.png" style="width:50px; height:50px; border-radius:50%;">
-            <div>🗡 敵方氣血: <span id="opponentHealth">100</span></div>
-        </div>
-        <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
-    `;
-    
 
-    if (user) {
-        const playerPath = isHost ? 'player1' : 'player2';
-        const opponentPath = isHost ? 'player2' : 'player1';
+    // 獲取敵方 UID
+    const opponentUid = room[opponentPath]?.userId;
+    if (opponentUid) {
+        database.ref('users/' + opponentUid).once('value', (snapshot) => {
+            const opponentData = snapshot.val() || { displayName: '未知玩家', level: 1 };
+            const opponentName = opponentData.displayName || '未知玩家';
+            const opponentLevel = opponentData.level || 1;
 
-        // 從房間數據中獲取各自的 maxHealth 和 health
-        const myMaxHealth = room[playerPath]?.maxHealth || 1000;
-        const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
-        const myHealth = Math.max(room[playerPath]?.health || 0, 0);
-        const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
-
-        // 計算氣血百分比
-        const myHealthPercentage = (myHealth / myMaxHealth) * 100;
-        const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
-
-        // 更新己方氣血條顯示
-        document.getElementById('myHealthContainer').innerHTML = `
-            <div>${user.displayName} 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
-            <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
-        `;
-
-        // 更新敵方氣血條顯示
+            // 更新敵方顯示
+            document.getElementById('enemyHealthContainer').innerHTML = `
+                <div>🗡 敵方 (<span id="enemyName">${opponentName}</span>, 等級 <span id="enemyLevel">${opponentLevel}</span>) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+                <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+            `;
+        }).catch((error) => {
+            console.error('獲取敵方資訊失敗:', error);
+            document.getElementById('enemyHealthContainer').innerHTML = `
+                <div>🗡 敵方 (<span id="enemyName">未知玩家</span>, 等級 <span id="enemyLevel">1</span>) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+                <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+            `;
+        });
+    } else {
+        // 顯示等待敵方加入
         document.getElementById('enemyHealthContainer').innerHTML = `
-            <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div>🗡 敵方 (<span id="enemyName">等待加入</span>, 等級 <span id="enemyLevel">-</span>) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
     }
