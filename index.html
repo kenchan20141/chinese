@@ -1,7 +1,5 @@
 
 
-
-
 <!DOCTYPE html>
 <html>
     
@@ -17,28 +15,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
-
-#userInfo {
-    font-size: 1.2rem;
-    color: var(--gold);
-    text-align: center;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background: rgba(45, 41, 38, 0.95);
-    border: 2px solid var(--gold);
-    border-radius: 10px;
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
-}
-#expBar {
-    width: 200px;  /* 增加寬度以更明顯 */
-    height: 15px;
-    margin-top: 5px;
-}
-#expFill {
-    background: linear-gradient(90deg, #4CAF50, #8BC34A);  /* 添加漸變效果 */
-}
-
-        
 #topicSelection {
     z-index: 10001; /* 確保高於等待頁面 */
 }
@@ -107,12 +83,6 @@
     box-shadow: 0 0 15px rgba(0,0,0,0.3);
 }
 
-@keyframes levelUp {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
-}
-        
 /* 弹出图片的动画关键帧 */
 @keyframes popImage {
     0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
@@ -937,7 +907,7 @@
     
     <!-- 用戶信息區域 -->
    <div id="userInfo" class="info-box" style="display: none;">
-   <span id="userName"></span> | 積分: <span id="userScore">0</span> | 等級: <span id="userLevel">1</span>
+    <span id="userName"></span> | 積分: <span id="userScore">0</span> | 等級: <span id="userLevel">1</span>
     <div>經驗值: 
         <div id="expBar" style="width: 100px; height: 10px; background: #333; border-radius: 5px; display: inline-block;">
             <div id="expFill" style="height: 100%; background: #4CAF50; width: 0%; transition: width 0.5s ease;"></div>
@@ -1543,8 +1513,7 @@ function checkAnswer(isCorrect, questionId) {
     }, 50);
 
     // 傷害計算與動畫
-    let baseDamage = Math.floor(Math.random() * 31) + 50;  // 隨機生成 50 至 80 點
-baseDamage = Math.floor(baseDamage * (timeLeft / 15));  // 根據剩餘時間微調
+    let baseDamage = Math.floor((timeLeft / 15) * 13);
 
     // 霸刀門雙倍攻擊判定（30%概率）
     if (playerClass.type === 'warrior' && isCorrect && Math.random() < 0.3) {
@@ -2358,7 +2327,7 @@ function handleGameEnd(winnerType) {
 
     clearInterval(timer);
     timeLeft = 0;
-    document.getElementById('timer').textContent = '🕒0';
+    document.getElementById('timer').textContent = '🕒0秒';
 
     document.querySelectorAll('#options button').forEach(btn => {
         btn.style.pointerEvents = 'none';
@@ -2381,12 +2350,11 @@ function handleGameEnd(winnerType) {
 
     // 添加經驗值和升級邏輯
     const user = auth.currentUser;
-    let statsOverlay; // 定義 statsOverlay
-    if (user) {
+    if (user && isWinner) {
         const userRef = database.ref('users/' + user.uid);
         userRef.transaction((userData) => {
-            if (!userData) userData = { level: 1, exp: 0, score: 0 };
-            if (isWinner) userData.exp += 50; // 獲勝增加 50 經驗值
+            if (!userData) userData = { level: 1, exp: 0 };
+            userData.exp += 50;  // 獲勝增加 50 經驗值
             const expRequired = 100 * userData.level;
             if (userData.exp >= expRequired) {
                 userData.level += 1;
@@ -2394,64 +2362,14 @@ function handleGameEnd(winnerType) {
             }
             return userData;
         }).then(() => {
-            // 創建彈出視窗顯示經驗值 BAR
-            statsOverlay = document.createElement('div');
-            statsOverlay.style.cssText = `
-                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
-                border-radius: 15px; z-index: 10000; color: white; text-align: center;
-                width: 80%; max-width: 400px;
-            `;
-
+            // 更新本地變數
             userRef.once('value', (snapshot) => {
                 const userData = snapshot.val();
-                const expRequired = 100 * userData.level;
-                const expPercentage = (userData.exp / expRequired) * 100;
-
-                statsOverlay.innerHTML = `
-                    <h2>遊戲結束</h2>
-                    <p>等級: ${userData.level}</p>
-                    <p>經驗值: ${userData.exp} / ${expRequired}</p>
-                    <div style="width: 100%; height: 20px; background: #333; border-radius: 5px; margin: 1rem 0;">
-                        <div style="height: 100%; background: #4CAF50; width: ${expPercentage}%; transition: width 1s ease;"></div>
-                    </div>
-                    <p>積分: ${userData.score || 0}</p>
-                `;
-
-                if (userData.exp >= expRequired) {
-                    statsOverlay.innerHTML += `<p style="color: #FFD700; font-size: 1.5rem; animation: levelUp 1s infinite;">恭喜升級！</p>`;
-                }
-                document.body.appendChild(statsOverlay);
+                playerLevel = userData.level;
+                playerExp = userData.exp;
             });
         });
     }
-
-    // 重賽按鈕邏輯
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'rematch-buttons';
-    const rematchBtn = document.createElement('button');
-    rematchBtn.textContent = '再戰江湖';
-    const mainMenuBtn = document.createElement('button');
-    mainMenuBtn.textContent = '歸隱山林';
-    rematchBtn.onclick = () => handleRematchRequest();
-    mainMenuBtn.onclick = () => {
-        database.ref('rooms/' + currentRoomId).remove();
-        window.location.reload();
-    };
-    buttonContainer.appendChild(rematchBtn);
-    buttonContainer.appendChild(mainMenuBtn);
-    victoryOverlay.appendChild(buttonContainer);
-
-    // 5 秒後移除彈出視窗
-    setTimeout(() => {
-        if (statsOverlay) statsOverlay.remove();
-    }, 5000);
-}
-
-document.body.appendChild(statsOverlay);
-
-// 5 秒後自動移除
-setTimeout(() => statsOverlay.remove(), 5000);
 
     // 重賽按鈕邏輯（保持不變）
     const buttonContainer = document.createElement('div');
