@@ -2393,7 +2393,11 @@ function handleGameEnd(winnerType) {
         const userRef = database.ref('users/' + user.uid);
         userRef.transaction((userData) => {
             if (!userData) userData = { level: 1, exp: 0, score: 0 };
-            if (isWinner) userData.exp += 50; // 獲勝增加 50 經驗值
+            if (isWinner) {
+                userData.exp += 50; // 獲勝增加 50 經驗值
+            } else {
+                userData.exp += 20; // 輸掉增加 20 經驗值
+            }
             const expRequired = 100 * userData.level;
             if (userData.exp >= expRequired) {
                 userData.level += 1;
