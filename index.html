@@ -244,10 +244,6 @@
     left: 1rem;
     right: 1rem;
     z-index: 2;
-    padding: 10px; /* 增加內邊距，避免文字擠在一起 */
-    line-height: 1.5; /* 增加行高，使文字分隔更清晰 */
-    font-size: 1.2rem; /* 統一字體大小 */
-    font-family: 'WangHanZhongWeiBei', cursive; /* 統一字體家族 */
 }
 
 /* 己方血條定位 */
@@ -909,6 +905,15 @@
     <!-- 新增裝飾性邊框 -->
     <div class="main-border"></div>
     
+    <!-- 用戶信息區域 -->
+   <div id="userInfo" class="info-box" style="display: none;">
+    <span id="userName"></span> | 積分: <span id="userScore">0</span> | 等級: <span id="userLevel">1</span>
+    <div>經驗值: 
+        <div id="expBar" style="width: 100px; height: 10px; background: #333; border-radius: 5px; display: inline-block;">
+            <div id="expFill" style="height: 100%; background: #4CAF50; width: 0%; transition: width 0.5s ease;"></div>
+        </div>
+    </div>
+</div>
     
     <!-- 強化標題 -->
     <div class="title-container">
@@ -1067,16 +1072,12 @@
 
     <div id="gameArea">
         <div class="decorative-border"></div>
-    <!-- 新增用戶資訊顯示區域 -->
-    <div id="userInfoInGame" style="position: absolute; top: 10px; left: 10px; color: white; font-size: 1.2rem;">
-        <span id="userNameInGame"></span> | 積分: <span id="userScoreInGame">0</span> | 等級: <span id="userLevelInGame">1</span>
-    </div>
-        <div class="decorative-border"></div>
         <!-- 敵方血條移至頂部 -->
     <div id="enemyHealthContainer">
-    <div>🗡 氣血: <span id="opponentHealth">100</span> / <span id="opponentMaxHealth">100</span></div>
-    <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
-</div>
+        <div>🗡 敵方氣血: <span id="opponentHealth">100</span>
+            <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
+        </div>
+    </div>
 
         <div id="topicSelection" style="display: none;
     position: fixed;
@@ -1673,7 +1674,7 @@ function updateHealthDisplay(room) {
         const opponentPath = isHost ? 'player2' : 'player1';
 
         // 獲取各自的 maxHealth 和 health
-        const myMaxHealth = room[playerPath]?.maxHealth || 1000;
+        const myMaxHealth = room[playerPath]?.maxHealth || 1000;  // 預設1000，若無數據
         const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
         const myHealth = Math.max(room[playerPath]?.health || 0, 0);
         const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
@@ -1690,35 +1691,9 @@ function updateHealthDisplay(room) {
 
         // 更新敵方氣血條顯示
         document.getElementById('enemyHealthContainer').innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span id="opponentName">敵方</span>
-                <span>等級: <span id="opponentLevel">1</span></span>
-                <span>積分: <span id="opponentScore">0</span></span>
-            </div>
-            <div>🗡 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
-
-        // 獲取對方用戶名稱
-        const opponentUserId = room[opponentPath]?.userId;
-        if (opponentUserId) {
-            database.ref('users/' + opponentUserId).once('value', (snapshot) => {
-                const opponentData = snapshot.val();
-                if (opponentData) {
-                    document.getElementById('opponentName').textContent = opponentData.displayName || '未知敵人';
-                    document.getElementById('opponentLevel').textContent = opponentData.level || 1;
-                    document.getElementById('opponentScore').textContent = opponentData.score || 0;
-                }
-            });
-        }
-
-        // 更新用戶資訊
-        database.ref('users/' + user.uid).once('value', (snapshot) => {
-            const userData = snapshot.val() || { level: 1, exp: 0, score: 0 };
-            document.getElementById('userNameInGame').textContent = user.displayName || '未命名玩家';
-            document.getElementById('userScoreInGame').textContent = userData.score || 0;
-            document.getElementById('userLevelInGame').textContent = userData.level || 1;
-        });
     }
 }
     
