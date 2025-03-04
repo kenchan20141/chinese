@@ -2388,7 +2388,6 @@ function handleGameEnd(winnerType) {
 
     // 添加經驗值和升級邏輯
     const user = auth.currentUser;
-    let statsOverlay; // 定義 statsOverlay
     if (user) {
         const userRef = database.ref('users/' + user.uid);
         userRef.transaction((userData) => {
