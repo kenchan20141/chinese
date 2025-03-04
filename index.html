@@ -1129,6 +1129,9 @@
     
 <script>
 
+let playerLevel = 1;  // 預設等級為 1
+let playerExp = 0;    // 預設經驗值為 0
+    
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1307,6 +1310,29 @@ function selectClass(className) {
     
     playerClass = classData[className];
     playerClass.type = className;
+
+    // 根據等級調整屬性
+    const user = auth.currentUser;
+    if (user) {
+        database.ref('users/' + user.uid).once('value', (snapshot) => {
+            const userData = snapshot.val() || { level: 1, exp: 0 };
+            playerLevel = userData.level;
+            playerExp = userData.exp;
+            playerClass.attack += (playerLevel - 1) * 0.1;  // 每級增加 0.1 攻擊力
+            playerClass.defense += (playerLevel - 1) * 0.1;  // 每級增加 0.1 防禦力
+            const maxHealth = 1000 + (playerLevel - 1) * 100;  // 每級增加 100 氣血
+
+            const playerPath = isHost ? 'player1' : 'player2';
+            database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+                class: className,
+                health: maxHealth,  // 根據等級設置初始氣血
+                attack: playerClass.attack,
+                defense: playerClass.defense,
+                dodge: playerClass.dodge
+            });
+        });
+    }
+    
     
     // 显示选择反馈
     document.getElementById('selectedClassInfo').innerHTML = `
@@ -2340,6 +2366,29 @@ function handleGameEnd(winnerType) {
 
     const resultSound = isWinner ? soundEffects.victory : soundEffects.defeat;
     resultSound.play();
+
+    // 添加經驗值和升級邏輯
+    const user = auth.currentUser;
+    if (user && isWinner) {
+        const userRef = database.ref('users/' + user.uid);
+        userRef.transaction((userData) => {
+            if (!userData) userData = { level: 1, exp: 0 };
+            userData.exp += 50;  // 獲勝增加 50 經驗值
+            const expRequired = 100 * userData.level;
+            if (userData.exp >= expRequired) {
+                userData.level += 1;
+                userData.exp -= expRequired;
+            }
+            return userData;
+        }).then(() => {
+            // 更新本地變數
+            userRef.once('value', (snapshot) => {
+                const userData = snapshot.val();
+                playerLevel = userData.level;
+                playerExp = userData.exp;
+            });
+        });
+    }
 
     victoryText.style.animation = 'none';
     setTimeout(() => victoryText.style.animation = 'victoryPulse 1s ease-out', 10);
