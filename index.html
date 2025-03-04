@@ -1668,20 +1668,24 @@ if (isCorrect) {
     
 // 修改 updateHealthDisplay 函數
 function updateHealthDisplay(room) {
-    const myHealth = isHost ? room.player1.health : (room.player2?.health || 100);
-    const myName = isHost ? (room.player1?.name || '玩家1') : (room.player2?.name || '玩家2');
-    const opponentName = isHost ? (room.player2?.name || '玩家2') : (room.player1?.name || '玩家1');
+    const user = auth.currentUser;
+    if (user) {
+        const playerPath = isHost ? 'player1' : 'player2';
+        const maxHealth = 1000 + (playerLevel - 1) * 100; // 根據等級計算最大氣血
+        const myHealth = Math.max(room[playerPath].health, 0);
+        const opponentHealth = Math.max(isHost ? (room.player2?.health || 1000) : room.player1.health, 0);
+        const myHealthPercentage = (myHealth / maxHealth) * 100;
+        const opponentHealthPercentage = (opponentHealth / maxHealth) * 100;
 
-    document.getElementById('myHealthContainer').innerHTML = `
-        <div>${myName} 氣血: <span id="myHealth">${Math.max(myHealth, 0)}</span></div>
-        <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
-    `;
-    document.getElementById('enemyHealthContainer').innerHTML = `
-        <div>${opponentName} 氣血: <span id="opponentHealth">${Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0)}</span></div>
-        <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
-    `;
-    document.getElementById('myHealthBar').style.width = Math.max(myHealth, 0) + '%';
-    document.getElementById('opponentHealthBar').style.width = Math.max(isHost ? (room.player2?.health || 100) : room.player1.health, 0) + '%';
+        document.getElementById('myHealthContainer').innerHTML = `
+            <div>${user.displayName} 氣血: <span id="myHealth">${myHealth}</span></div>
+            <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
+        `;
+        document.getElementById('enemyHealthContainer').innerHTML = `
+            <div>敵方氣血: <span id="opponentHealth">${opponentHealth}</span></div>
+            <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+        `;
+    }
 }
     
 
