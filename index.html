@@ -1333,6 +1333,8 @@ database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
     attack: playerClass.attack,
     defense: playerClass.defense,
     dodge: playerClass.dodge
+    name: user.displayName, // 添加名稱
+                level: playerLevel     // 添加等級
 });
         });
     }
