@@ -1084,7 +1084,6 @@
         <!-- 敵方血條移至頂部 -->
     <div id="enemyHealthContainer">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span id="opponentName">敵方</span>
         <span>等級: <span id="opponentLevel">1</span></span>
         <span>積分: <span id="opponentScore">0</span></span>
     </div>
@@ -1702,10 +1701,9 @@ function updateHealthDisplay(room) {
             <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
         `;
 
-        // 更新敵方氣血條顯示
+        // 更新敵方氣血條顯示（移除「敵方」文字，保留等級和積分）
         document.getElementById('enemyHealthContainer').innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span id="opponentName">敵方</span>
                 <span>等級: <span id="opponentLevel">1</span></span>
                 <span>積分: <span id="opponentScore">0</span></span>
             </div>
@@ -1713,20 +1711,23 @@ function updateHealthDisplay(room) {
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
 
-        // 獲取對方用戶名稱
+        // 獲取對方用戶資料
         const opponentUserId = room[opponentPath]?.userId;
         if (opponentUserId) {
             database.ref('users/' + opponentUserId).once('value', (snapshot) => {
                 const opponentData = snapshot.val();
                 if (opponentData) {
-                    document.getElementById('opponentName').textContent = opponentData.displayName || '未知敵人';
+                    // 更新對方等級和積分
                     document.getElementById('opponentLevel').textContent = opponentData.level || 1;
                     document.getElementById('opponentScore').textContent = opponentData.score || 0;
+                    // 在氣血前添加對方用戶名稱
+                    const opponentHealthDiv = document.querySelector('#enemyHealthContainer > div:nth-child(2)');
+                    opponentHealthDiv.innerHTML = `${opponentData.displayName || '未知敵人'} 🗡 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span>`;
                 }
             });
         }
 
-        // 更新用戶資訊
+        // 更新己方用戶資訊（遊戲內顯示）
         database.ref('users/' + user.uid).once('value', (snapshot) => {
             const userData = snapshot.val() || { level: 1, exp: 0, score: 0 };
             document.getElementById('userNameInGame').textContent = user.displayName || '未命名玩家';
