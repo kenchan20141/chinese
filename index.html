@@ -1684,7 +1684,7 @@ function updateHealthDisplay(room) {
 
     // 更新己方顯示（保持不變）
     document.getElementById('myHealthContainer').innerHTML = `
-        <div>${user.displayName} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
+        <div>${user.displayNames} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
     `;
 
@@ -1692,9 +1692,9 @@ function updateHealthDisplay(room) {
     const opponentUid = room[opponentPath]?.userId;
     if (opponentUid) {
         // 從 Firebase 獲取敵方 USERINFO
-        database.ref('users/' + opponentUid).once('value', (snapshot) => {
-            const opponentData = snapshot.val() || { displayName: '未知玩家', level: 1 };
-            const opponentName = opponentData.displayName || '未知玩家';
+        database.ref('displayNames').once('value', (snapshot) => {
+            const opponentData = snapshot.val() || { displayNames: '未知玩家', level: 1 };
+            const opponentName = opponentData.displayNames || '未知玩家';
             const opponentLevel = opponentData.level || 1;
 
             // 更新敵方顯示
