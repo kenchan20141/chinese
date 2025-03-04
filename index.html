@@ -1463,22 +1463,25 @@ function checkAnswer(isCorrect, questionId) {
     }
 
     // 鐵甲宗治療代碼
-    if (playerClass && playerClass.type === 'tank' && !hasHealedThisTurn) {
-        hasHealedThisTurn = true;
-        const healAmount = 2;
-        const playerPath = isHost ? 'player1' : 'player2';
-        database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
-            firebase.database.ServerValue.increment(healAmount)
-        );
-        const myHealthElement = document.getElementById('myHealth');
-        const shieldIcon = document.createElement('span');
-        shieldIcon.className = 'shield-icon';
-        shieldIcon.innerHTML = '🛡️';
-        myHealthElement.appendChild(shieldIcon);
-        setTimeout(() => {
-            shieldIcon.remove();
-        }, 1000);
-    }
+   if (playerClass && playerClass.type === 'tank' && !hasHealedThisTurn) {
+    hasHealedThisTurn = true;
+    const healAmount = 2;
+    const playerPath = isHost ? 'player1' : 'player2';
+    database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
+        firebase.database.ServerValue.increment(healAmount)
+    );
+    const myHealthElement = document.getElementById('myHealth');
+    const shieldIcon = document.createElement('span');
+    shieldIcon.className = 'shield-icon';
+    shieldIcon.innerHTML = '🛡️';
+    myHealthElement.appendChild(shieldIcon);
+    // 播放恢復音效
+    soundEffects.heal.currentTime = 0;
+    soundEffects.heal.play();
+    setTimeout(() => {
+        shieldIcon.remove();
+    }, 1000);
+}
 
     if (effectElement.className) {
         document.body.appendChild(effectElement);
@@ -1549,15 +1552,17 @@ function checkAnswer(isCorrect, questionId) {
 
     // 根據答對或答錯分開處理音效和震動
     navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
-    if (isCorrect) {
-        // 答對時：音效 + 震動
-        soundEffects.attack.currentTime = 0;
-        soundEffects.attack.play();
-        if (navigator.vibrate) navigator.vibrate(200);
-    } else {
-        // 答錯時：僅震動
-        if (navigator.vibrate) navigator.vibrate(200);
-    }
+if (isCorrect) {
+    // 答對時：播放攻擊音效 + 震動
+    soundEffects.attack.currentTime = 0;
+    soundEffects.attack.play();
+    if (navigator.vibrate) navigator.vibrate(200);
+} else {
+    // 答錯時：播放扣減音效 + 震動
+    soundEffects.damage.currentTime = 0;
+    soundEffects.damage.play();
+    if (navigator.vibrate) navigator.vibrate(200);
+}
 
     // 移除動畫
     setTimeout(() => {
@@ -1658,6 +1663,18 @@ function updateHealthDisplay(room) {
     const myHealth = isHost ? room.player1.health : (room.player2?.health || 100);
     const myName = isHost ? (room.player1?.name || '玩家1') : (room.player2?.name || '玩家2');
     const opponentName = isHost ? (room.player2?.name || '玩家2') : (room.player1?.name || '玩家1');
+
+    // 記錄前一次的氣血值（需定義全域變數）
+    if (typeof window.previousMyHealth === 'undefined') {
+        window.previousMyHealth = myHealth;
+    }
+
+    // 檢查氣血是否減少
+    if (myHealth < window.previousMyHealth) {
+        soundEffects.damage.currentTime = 0;
+        soundEffects.damage.play();
+    }
+    window.previousMyHealth = myHealth;
 
     document.getElementById('myHealthContainer').innerHTML = `
         <div>${myName} 氣血: <span id="myHealth">${Math.max(myHealth, 0)}</span></div>
@@ -1828,6 +1845,8 @@ const soundEffects = {
     attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3'),
     victory: new Audio('https://taira-komori.jpn.org/sound_os2/event01/clapping_short2.mp3'),
     defeat: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
+    heal: new Audio('https://taira-komori.jpn.org/sound_os2/game01/powerup01.mp3'), // 恢復氣血音效
+    damage: new Audio('https://taira-komori.jpn.org/sound_os2/game01/powerup10.mp3') // 扣減氣血音效
 };
 
     const difficultySettings = {
@@ -2392,6 +2411,18 @@ if (user) {
 function startSinglePlayer() {
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('difficultySelection').style.display = 'block';
+
+    setInterval(() => {
+    if (Math.random() < settings.damageChance) {
+        const damage = 10;
+        database.ref('rooms/' + currentRoomId + '/player1/health').set(
+            firebase.database.ServerValue.increment(-damage)
+        );
+        // 計時器扣血時播放扣減音效
+        soundEffects.damage.currentTime = 0;
+        soundEffects.damage.play();
+    }
+}, settings.damageInterval);
 }
 
 // 選擇難度並啟動遊戲
@@ -2540,33 +2571,29 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     let damage = 0;
     if (isCorrect) {
-        // 增加扣减敌方气血的逻辑，假设敌方气血初始为100，每次答对扣10点
         const enemyHealthElement = document.getElementById('opponentHealth');
         const enemyHealth = parseInt(enemyHealthElement.textContent, 10);
         const newEnemyHealth = enemyHealth - 10;
         enemyHealthElement.textContent = newEnemyHealth;
         document.getElementById('opponentHealthBar').style.width = newEnemyHealth + '%';
 
-        // 添加答对时的音效和震动
-        const soundEffects = {
-            attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
-        };
+        // 答對時播放攻擊音效
         soundEffects.attack.currentTime = 0;
         soundEffects.attack.play();
         navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
         if (navigator.vibrate) navigator.vibrate(200);
 
-        // 检查敌方气血是否归零
         if (newEnemyHealth <= 0) {
-            handleSinglePlayerGameOver(true); // 传递参数表示胜利
+            handleSinglePlayerGameOver(true);
         }
     } else {
-        damage = 10; // 答错扣 10 点气血
+        damage = 10;
         database.ref('rooms/' + currentRoomId + '/player1/health').set(
             firebase.database.ServerValue.increment(-damage)
         );
-        // 答错时仅震动
-        navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+        // 答錯時播放扣減音效
+        soundEffects.damage.currentTime = 0;
+        soundEffects.damage.play();
         if (navigator.vibrate) navigator.vibrate(200);
     }
 
