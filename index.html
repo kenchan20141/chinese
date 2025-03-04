@@ -1694,8 +1694,8 @@ function updateHealthDisplay(room) {
     if (opponentUid) {
         // 從 Firebase 獲取敵方 USERINFO
         database.ref('users/' + opponentUid).once('value', (snapshot) => {
-            const opponentData = snapshot.val() || { displayNames: '未知玩家', level: 1 };
-            const opponentName = opponentData.displayNames || '未知玩家';
+            const opponentData = snapshot.val() || { displayName: '未知玩家', level: 1 };
+            const opponentName = opponentData.displayName || '未知玩家';
             const opponentLevel = opponentData.level || 1;
 
             // 更新敵方顯示
@@ -1749,11 +1749,11 @@ document.getElementById('loginBtn').onclick = function() {
             const user = userCredential.user;
             if (!user.displayName) {
                 const displayName = prompt("請輸入您的顯示名稱");
-                if (displayNames) {
+                if (displayName) {
                     user.updateProfile({
-                        displayName: displayNames
+                        displayName: displayName
                     }).then(() => {
-                        alert("登入成功：" + displayNames);
+                        alert("登入成功：" + displayName);
                     }).catch((error) => {
                         alert("設置顯示名稱失敗：" + error.message);
                     });
@@ -1762,7 +1762,7 @@ document.getElementById('loginBtn').onclick = function() {
                     return;
                 }
             } else {
-                alert("登入成功：" + user.displayNames);
+                alert("登入成功：" + user.displayName);
             }
             document.getElementById('loginBtn').style.display = 'none';
         })
@@ -1775,14 +1775,14 @@ document.getElementById('loginBtn').onclick = function() {
 document.getElementById('registerBtn').onclick = function() {
     const email = prompt("請輸入郵箱");
     const password = prompt("請輸入密碼");
-    const displayNames = prompt("請輸入您的顯示名稱");
-    if (!email || !password || !displayNames) {
+    const displayName = prompt("請輸入您的顯示名稱");
+    if (!email || !password || !displayName) {
         alert("郵箱、密碼和顯示名稱不能為空");
         return;
     }
 
     const displayNamesRef = database.ref('displayNames');
-    displayNamesRef.child(displayNames).once('value')
+    displayNamesRef.child(displayName).once('value')
         .then((snapshot) => {
             if (snapshot.exists()) {
                 alert("該顯示名稱已被使用，請選擇其他名稱");
@@ -1793,19 +1793,14 @@ document.getElementById('registerBtn').onclick = function() {
         })
         .then((userCredential) => {
             const user = userCredential.user;
-            return Promise.all([
-                user.updateProfile({ displayName: displayNames }),
-                displayNamesRef.child(displayNames).set(true),
-                database.ref('users/' + user.uid).set({
-                    displayNames: displayNames,  // 添加到 users 節點
-                    level: 1,
-                    exp: 0,
-                    score: 0
-                })
-            ]);
+            return user.updateProfile({
+                displayName: displayName
+            }).then(() => {
+                return displayNamesRef.child(displayName).set(true);
+            });
         })
         .then(() => {
-            alert("註冊成功：" + displayNames);
+            alert("註冊成功：" + displayName);
             document.getElementById('loginBtn').style.display = 'none';
             document.getElementById('registerBtn').style.display = 'none';
             document.getElementById('logoutContainer').style.display = 'block';
@@ -1849,7 +1844,7 @@ document.getElementById('logoutBtn').onclick = function() {
         document.getElementById('registerBtn').style.display = 'none';
         document.getElementById('logoutContainer').style.display = 'block';
         userInfo.style.display = 'block';
-        userName.textContent = user.displayNames || '未命名玩家';
+        userName.textContent = user.displayName || '未命名玩家';
 
         // 從資料庫獲取資料
         database.ref('users/' + user.uid).once('value', (snapshot) => {
@@ -1912,11 +1907,6 @@ function toggleMusic() {
 }
 
 function createRoom() {
-    const user = auth.currentUser;
-    if (!user) {
-        alert("請先登入！");
-        return;
-    }
     currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
     isHost = true;
     document.getElementById('roomControl').style.display = 'none';
@@ -1928,49 +1918,21 @@ function createRoom() {
     const topicSelector = Math.random() < 0.5 ? 'player1' : 'player2';
 
     database.ref('rooms/' + currentRoomId).set({
-        player1: { 
-            userId: user.uid,  // 添加 userId
-            health: 100, 
-            class: null, 
-            currentQuestion: null 
-        },
-        player2: null,  // player2 初始為 null，等待加入
+        player1: { health: 100, class: null, currentQuestion: null },
+        player2: { health: 100, class: null, currentQuestion: null },
         gameStarted: false,
         gameEnded: false,
         winner: null,
-        topicSelector: topicSelector
+        topicSelector: topicSelector // 新增字段
     });
     listenToRoomChanges();
 }
 
 function joinRoom() {
-    const user = auth.currentUser;
-    if (!user) {
-        alert("請先登入！");
-        return;
-    }
     currentRoomId = document.getElementById('roomId').value;
-    if (!currentRoomId) {
-        alert("請輸入房間號！");
-        return;
-    }
-    isHost = false;
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('classSelection').style.display = 'block';
-
-    // 設置 player2 資料
-    database.ref('rooms/' + currentRoomId + '/player2').set({
-        userId: user.uid,  // 添加 userId
-        health: 100,
-        class: null,
-        currentQuestion: null
-    }).then(() => {
-        listenToRoomChanges();
-    }).catch((error) => {
-        alert("加入房間失敗：" + error.message);
-        document.getElementById('roomControl').style.display = 'block';
-        document.getElementById('classSelection').style.display = 'none';
-    });
+    listenToRoomChanges();
 }
 
     function createRoomWithId(roomId) {
@@ -2163,61 +2125,57 @@ function startNewGameSession() {
     
 function updateHealthDisplay(room) {
     const user = auth.currentUser;
-    if (!user) return;
+    if (user) {
+        document.getElementById('myHealthContainer').innerHTML = `
+            <div>${user.displayName} 氣血: <span id="myHealth">${Math.max(isHost ? room.player1.health : (room.player2?.health || 100), 0)}</span></div>
+            <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
+        `;
+    }
+     // 在原有代码前添加职业头像显示
+    const myClass = isHost ? room.player1.class : (room.player2?.class || '');
+    const opponentClass = isHost ? (room.player2?.class || '') : room.player1.class;
 
-    const playerPath = isHost ? 'player1' : 'player2';
-    const opponentPath = isHost ? 'player2' : 'player1';
-
-    const myMaxHealth = room[playerPath]?.maxHealth || 1000;
-    const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
-    const myHealth = Math.max(room[playerPath]?.health || 0, 0);
-    const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
-
-    const myHealthPercentage = (myHealth / myMaxHealth) * 100;
-    const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
-
-    // 更新己方顯示
+ // 添加职业头像
     document.getElementById('myHealthContainer').innerHTML = `
-        <div>${user.displayNames} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
-        <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+            <img src="https://example.com/${myClass}.png" style="width:50px; height:50px; border-radius:50%;">
+            <div>🏹 你的氣血: <span id="myHealth">100</span></div>
+        </div>
+        <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
     `;
+    
+    document.getElementById('enemyHealthContainer').innerHTML = `
+        <div style="display:flex; align-items:center; gap:1rem;">
+            <img src="https://example.com/${opponentClass}.png" style="width:50px; height:50px; border-radius:50%;">
+            <div>🗡 敵方氣血: <span id="opponentHealth">100</span></div>
+        </div>
+        <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
+    `;
+    
 
-    // 獲取敵方 UID
-    const opponentUid = room[opponentPath]?.userId;
-    if (opponentUid) {
-        // 從 leaderboard 獲取敵方名稱
-        database.ref('leaderboard/' + opponentUid + '/name').once('value', (nameSnapshot) => {
-            const opponentName = nameSnapshot.val() || '未知玩家';
+    if (user) {
+        const playerPath = isHost ? 'player1' : 'player2';
+        const opponentPath = isHost ? 'player2' : 'player1';
 
-            // 從 users 獲取敵方等級
-            database.ref('users/' + opponentUid + '/level').once('value', (levelSnapshot) => {
-                const opponentLevel = levelSnapshot.val() || 1;
+        // 從房間數據中獲取各自的 maxHealth 和 health
+        const myMaxHealth = room[playerPath]?.maxHealth || 1000;
+        const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
+        const myHealth = Math.max(room[playerPath]?.health || 0, 0);
+        const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
 
-                // 更新敵方顯示
-                document.getElementById('enemyHealthContainer').innerHTML = `
-                    <div>${opponentName} (等級 ${opponentLevel}) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
-                    <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
-                `;
-            }).catch((error) => {
-                console.error('獲取敵方等級失敗:', error);
-                // 錯誤處理：顯示預設等級
-                document.getElementById('enemyHealthContainer').innerHTML = `
-                    <div>${opponentName} (等級 1) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
-                    <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
-                `;
-            });
-        }).catch((error) => {
-            console.error('獲取敵方名稱失敗:', error);
-            // 錯誤處理：顯示預設名稱和等級
-            document.getElementById('enemyHealthContainer').innerHTML = `
-                <div>未知玩家 (等級 1) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
-                <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
-            `;
-        });
-    } else {
-        // 敵方尚未加入
+        // 計算氣血百分比
+        const myHealthPercentage = (myHealth / myMaxHealth) * 100;
+        const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
+
+        // 更新己方氣血條顯示
+        document.getElementById('myHealthContainer').innerHTML = `
+            <div>${user.displayName} 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
+            <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
+        `;
+
+        // 更新敵方氣血條顯示
         document.getElementById('enemyHealthContainer').innerHTML = `
-            <div>等待玩家加入... 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
     }
@@ -2480,7 +2438,7 @@ userRef.once('value', (snapshot) => {
                 // 更新排行榜
                 const leaderboardRef = database.ref('leaderboard/' + user.uid);
                 leaderboardRef.set({
-                    name: user.displayNames,
+                    name: user.displayName,
                     score: userData.score
                 });
             });
@@ -3020,5 +2978,6 @@ if (room.hostRematch && room.clientRematch) {
 
     
 </html>
+
 
 
