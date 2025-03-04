@@ -244,6 +244,10 @@
     left: 1rem;
     right: 1rem;
     z-index: 2;
+    padding: 10px; /* 增加內邊距，避免文字擠在一起 */
+    line-height: 1.5; /* 增加行高，使文字分隔更清晰 */
+    font-size: 1.2rem; /* 統一字體大小 */
+    font-family: 'WangHanZhongWeiBei', cursive; /* 統一字體家族 */
 }
 
 /* 己方血條定位 */
@@ -1079,10 +1083,14 @@
         <div class="decorative-border"></div>
         <!-- 敵方血條移至頂部 -->
     <div id="enemyHealthContainer">
-        <div>🗡 敵方氣血: <span id="opponentHealth">100</span>
-            <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
-        </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span id="opponentName">敵方</span>
+        <span>等級: <span id="opponentLevel">1</span></span>
+        <span>積分: <span id="opponentScore">0</span></span>
     </div>
+    <div>🗡 氣血: <span id="opponentHealth">100</span> / <span id="opponentMaxHealth">100</span></div>
+    <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
+</div>
 
         <div id="topicSelection" style="display: none;
     position: fixed;
@@ -1696,9 +1704,27 @@ function updateHealthDisplay(room) {
 
         // 更新敵方氣血條顯示
         document.getElementById('enemyHealthContainer').innerHTML = `
-            <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span id="opponentName">敵方</span>
+                <span>等級: <span id="opponentLevel">1</span></span>
+                <span>積分: <span id="opponentScore">0</span></span>
+            </div>
+            <div>🗡 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
+
+        // 獲取對方用戶名稱
+        const opponentUserId = room[opponentPath]?.userId;
+        if (opponentUserId) {
+            database.ref('users/' + opponentUserId).once('value', (snapshot) => {
+                const opponentData = snapshot.val();
+                if (opponentData) {
+                    document.getElementById('opponentName').textContent = opponentData.displayName || '未知敵人';
+                    document.getElementById('opponentLevel').textContent = opponentData.level || 1;
+                    document.getElementById('opponentScore').textContent = opponentData.score || 0;
+                }
+            });
+        }
 
         // 更新用戶資訊
         database.ref('users/' + user.uid).once('value', (snapshot) => {
