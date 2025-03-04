@@ -1398,18 +1398,34 @@ function selectTopic(topic) {
  function startCountdown() {
     database.ref(`rooms/${currentRoomId}`).once('value').then(snapshot => {
         const room = snapshot.val();
-        if (!room || room.countdownStarted || room.gameStarted || !room.topicSelected || isCountdownActive) {
-            console.log('未滿足倒數條件');
+        // 添加檢查：確保題庫已選擇且遊戲未開始
+        if (!room || room.countdownStarted || room.gameStarted || !room.topicSelected) {
+            console.log('未滿足倒數條件：', {
+                countdownStarted: room?.countdownStarted,
+                gameStarted: room?.gameStarted,
+                topicSelected: room?.topicSelected
+            });
             return;
         }
 
-        isCountdownActive = true;
+        // 設置倒數計時開始標誌
         database.ref(`rooms/${currentRoomId}`).update({ countdownStarted: true });
 
         let countdown = 3;
         const countdownElement = document.createElement('div');
         countdownElement.id = 'countdown';
-        // ... 其餘樣式設置保持不變 ...
+        countdownElement.style.position = 'fixed';
+        countdownElement.style.top = '0';
+        countdownElement.style.left = '0';
+        countdownElement.style.width = '100%';
+        countdownElement.style.height = '100%';
+        countdownElement.style.display = 'flex';
+        countdownElement.style.alignItems = 'center';
+        countdownElement.style.justifyContent = 'center';
+        countdownElement.style.background = 'rgba(45, 41, 38, 0.95)';
+        countdownElement.style.color = 'var(--gold)';
+        countdownElement.style.fontSize = '10rem';
+        countdownElement.style.zIndex = '10001';
         document.body.appendChild(countdownElement);
 
         function updateCountdown() {
@@ -1419,11 +1435,11 @@ function selectTopic(topic) {
                 setTimeout(updateCountdown, 1000);
             } else {
                 countdownElement.remove();
+                // 結束後統一設置遊戲開始並重置倒數標誌
                 database.ref(`rooms/${currentRoomId}`).update({
                     gameStarted: true,
                     countdownStarted: false
                 });
-                isCountdownActive = false;
             }
         }
         updateCountdown();
@@ -1876,7 +1892,6 @@ document.getElementById('logoutBtn').onclick = function() {
 const database = firebase.database();
 
 let currentRoomId = null;
-let isCountdownActive = false; // 追踪倒數計時是否進行中
 let isHost = false;
 let timer;
 let timeLeft = 15;
@@ -2196,14 +2211,64 @@ function startGame(room) {
         return;
     }
 
-    // 確保遊戲區域顯示並加載問題
-    document.getElementById('gameArea').style.display = 'block';
-    const playerPath = isHost ? 'player1' : 'player2';
-    const question = room[playerPath].currentQuestion;
-    if (!question) {
-        loadNewQuestion();
-    } else {
-        displayQuestion(question);
+    if (!room.topicSelected) {
+        const selector = room.topicSelector;
+        if (!selector) {
+            const newSelector = Math.random() < 0.5 ? 'player1' : 'player2';
+            database.ref(`rooms/${currentRoomId}`).update({
+                topicSelector: newSelector
+            });
+            return;
+        }
+
+        if ((isHost && selector === 'player1') || (!isHost && selector === 'player2')) {
+            isSelectingTopic = true;
+            document.getElementById('topicSelection').style.display = 'block';
+            // 確保移除可能存在的等待頁面
+            const existingWaitingMessage = document.getElementById('waitingForTopic');
+            if (existingWaitingMessage) {
+                existingWaitingMessage.remove();
+            }
+        } else {
+            isSelectingTopic = false;
+            // 僅在非題庫選擇者時顯示等待頁面，且避免重複創建
+            let waitingMessage = document.getElementById('waitingForTopic');
+            if (!waitingMessage) {
+                waitingMessage = document.createElement('div');
+                waitingMessage.id = 'waitingForTopic';
+                waitingMessage.style.position = 'fixed';
+                waitingMessage.style.top = '0';
+                waitingMessage.style.left = '0';
+                waitingMessage.style.width = '100%';
+                waitingMessage.style.height = '100%';
+                waitingMessage.style.display = 'flex';
+                waitingMessage.style.alignItems = 'center';
+                waitingMessage.style.justifyContent = 'center';
+                waitingMessage.style.background = 'rgba(45, 41, 38, 0.95)';
+                waitingMessage.style.color = 'var(--gold)';
+                waitingMessage.style.fontSize = '2rem';
+                waitingMessage.style.textAlign = 'center';
+                waitingMessage.style.padding = '2rem';
+                waitingMessage.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.5)';
+                waitingMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+                waitingMessage.style.zIndex = '10000';
+                waitingMessage.textContent = '等待玩家選擇題庫...';
+                document.body.appendChild(waitingMessage);
+            }
+        }
+   } else {
+        // 移除等待頁面
+        const waitingMessage = document.getElementById('waitingForTopic');
+        if (waitingMessage) waitingMessage.remove();
+
+        document.getElementById('gameArea').style.display = 'block';
+        const playerPath = isHost ? 'player1' : 'player2';
+        const question = room[playerPath].currentQuestion;
+        if (!question) {
+            loadNewQuestion();
+        } else {
+            displayQuestion(question);
+        }
     }
 }
 
