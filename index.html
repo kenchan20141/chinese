@@ -1795,22 +1795,29 @@ document.getElementById('logoutBtn').onclick = function() {
     const userInfo = document.getElementById('userInfo');
     const userName = document.getElementById('userName');
     const userScore = document.getElementById('userScore');
-    
+    const userLevel = document.getElementById('userLevel');
+    const expFill = document.getElementById('expFill');
+
     if (user) {
-        // 用戶已登入
         document.getElementById('loginBtn').style.display = 'none';
         document.getElementById('registerBtn').style.display = 'none';
         document.getElementById('logoutContainer').style.display = 'block';
         userInfo.style.display = 'block';
         userName.textContent = user.displayName || '未命名玩家';
 
-        // 從 leaderboard 獲取積分
+        // 從資料庫獲取資料
+        database.ref('users/' + user.uid).once('value', (snapshot) => {
+            const userData = snapshot.val() || { level: 1, exp: 0 };
+            userLevel.textContent = userData.level;
+            const expPercentage = (userData.exp / (100 * userData.level)) * 100;
+            expFill.style.width = expPercentage + '%';
+        });
+
         database.ref('leaderboard/' + user.uid).once('value', (snapshot) => {
             const data = snapshot.val();
             userScore.textContent = data ? data.score : 0;
         });
     } else {
-        // 用戶未登入
         document.getElementById('loginBtn').style.display = 'inline-block';
         document.getElementById('registerBtn').style.display = 'inline-block';
         document.getElementById('logoutContainer').style.display = 'none';
