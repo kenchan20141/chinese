@@ -2178,17 +2178,18 @@ function updateHealthDisplay(room) {
     // 獲取敵方 UID
     const opponentUid = room[opponentPath]?.userId;
     if (opponentUid) {
-        database.ref('users/' + opponentUid).once('value').then((snapshot) => {
+        // 從 Firebase 獲取敵方用戶信息
+        database.ref('displayNames').once('value').then((snapshot) => {
             const opponentData = snapshot.val();
-            if (opponentData) {
-                const opponentName = opponentData.displayName || '未知玩家';
+            if (opponentData && opponentData.displayName) {
+                const opponentName = opponentData.displayName;
                 const opponentLevel = opponentData.level || 1;
                 document.getElementById('enemyHealthContainer').innerHTML = `
                     <div>🗡 敵方 (<span id="enemyName">${opponentName}</span>, 等級 <span id="enemyLevel">${opponentLevel}</span>) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
                     <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
                 `;
             } else {
-                console.error('敵方資料不存在:', opponentUid);
+                console.warn(`敵方 UID ${opponentUid} 的資料無效或缺失 displayName`);
                 document.getElementById('enemyHealthContainer').innerHTML = `
                     <div>🗡 敵方 (<span id="enemyName">未知玩家</span>, 等級 <span id="enemyLevel">1</span>) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
                     <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
