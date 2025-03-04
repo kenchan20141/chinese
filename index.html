@@ -1,3 +1,9 @@
+遊戲的問題有二：
+其一，現在己方玩家答對問題時扣減對方的氣血非常少，其基本扣減氣血(BASE DAMAGE)應有50點至80點，我希望這個數值是浮動的，以增加變化；
+其二，我希望在多人模式的遊戲界面中，能實時看到敵方的用戶名稱、等級，這些資訊必須在敵方氣血附近，如果修訂後的版面資訊有重複之處，則請你協助整理一下，這個名稱和等級必須參照對方登入時的USERINFO，請你幫我修訂的代碼。
+
+請指引我要刪甚麼、加甚麼和替代甚麼。
+
 
 
 <!DOCTYPE html>
@@ -1682,7 +1688,7 @@ function updateHealthDisplay(room) {
     const myHealthPercentage = (myHealth / myMaxHealth) * 100;
     const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
 
-    // 更新己方顯示
+    // 更新己方顯示（保持不變）
     document.getElementById('myHealthContainer').innerHTML = `
         <div>${user.displayName} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
@@ -2143,7 +2149,11 @@ function updateHealthDisplay(room) {
         <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
     `;
     
-   
+    document.getElementById('enemyHealthContainer').innerHTML = `
+        <div style="display:flex; align-items:center; gap:1rem;">
+            <img src="https://example.com/${opponentClass}.png" style="width:50px; height:50px; border-radius:50%;">
+            <div>🗡 敵方氣血: <span id="opponentHealth">100</span></div>
+        </div>
         <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
     `;
     
