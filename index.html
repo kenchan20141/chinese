@@ -1306,52 +1306,53 @@ function selectClass(className) {
         assassin: { attack: 1.0, defense: 0.9, dodge: 0.3, skill: 'dodge' },
         mage: { attack: 1.1, defense: 1, dodge: 0, skill: 'counter' }
     };
-    
+
     playerClass = classData[className];
     playerClass.type = className;
-    
-    // 显示选择反馈
-    document.getElementById('selectedClassInfo').innerHTML = `
-        <p>已選擇：${document.querySelector(`.class-card[onclick="selectClass('${className}')"] h3`).textContent}</p>
-        <p>等待對手選擇流派...</p>
-    `;
 
-// 移除所有卡片的选中状态
-document.querySelectorAll('.class-card').forEach(card => {
-    card.classList.remove('selected');
-    card.querySelector('.selected-tick').style.display = 'none';
-});
+    // 根據等級調整屬性
+    const user = auth.currentUser;
+    if (user) {
+        database.ref('users/' + user.uid).once('value', (snapshot) => {
+            const userData = snapshot.val() || { level: 1, exp: 0 };
+            playerLevel = userData.level;
+            playerExp = userData.exp;
+            playerClass.attack += (playerLevel - 1) * 0.1;  // 每級增加 0.1 攻擊力
+            playerClass.defense += (playerLevel - 1) * 0.1;  // 每級增加 0.1 防禦力
+            const maxHealth = 1000 + (playerLevel - 1) * 100;  // 每級增加 100 氣血
 
-// 设置当前选中卡片
-const selectedCard = document.querySelector(`.class-card[onclick="selectClass('${className}')"]`);
-selectedCard.classList.add('selected');
-selectedCard.querySelector('.selected-tick').style.display = 'flex';
+            const playerPath = isHost ? 'player1' : 'player2';
+            database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+                class: className,
+                health: maxHealth,  // 根據等級設置初始氣血
+                attack: playerClass.attack,
+                defense: playerClass.defense,
+                dodge: playerClass.dodge
+            });
+        });
+    }
 
-    // 显示确认信息
+    // 選擇反饋（保持不變）
+    document.querySelectorAll('.class-card').forEach(card => {
+        card.classList.remove('selected');
+        card.querySelector('.selected-tick').style.display = 'none';
+    });
+    const selectedCard = document.querySelector(`.class-card[onclick="selectClass('${className}')"]`);
+    selectedCard.classList.add('selected');
+    selectedCard.querySelector('.selected-tick').style.display = 'flex';
     document.getElementById('selectedClassInfo').innerHTML = `
         <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${selectedCard.querySelector('h3').textContent}</p>
         <p>等待對手選擇流派...</p>
     `;
-    
-    // 更新数据库
-    const playerPath = isHost ? 'player1' : 'player2';
-    database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-        class: className,
-        health: 100,
-        attack: playerClass.attack,
-        defense: playerClass.defense,
-        dodge: playerClass.dodge
-    });
 
-// 顯示彈出圖片並在動畫結束後隱藏
     const popupImage = selectedCard.querySelector('.popup-image');
     popupImage.style.display = 'block';
     setTimeout(() => {
         popupImage.style.display = 'none';
-    }, 500); // 動畫持續時間為0.5秒
-    
+    }, 500);
 }
 
+    
     function selectGrade(grade) {
     selectedGrade = grade;
     document.getElementById('selectedGrade').textContent = `選擇 ${grade} 題庫`;
