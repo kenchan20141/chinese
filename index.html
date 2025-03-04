@@ -1328,13 +1328,15 @@ function selectClass(className) {
             const maxHealth = 1000 + (playerLevel - 1) * 100;  // 每級增加 100 氣血
 
             const playerPath = isHost ? 'player1' : 'player2';
-            database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-                class: className,
-                health: maxHealth,  // 根據等級設置初始氣血
-                attack: playerClass.attack,
-                defense: playerClass.defense,
-                dodge: playerClass.dodge
-            });
+           const maxHealth = 1000 + (playerLevel - 1) * 100;
+database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+    class: className,
+    health: maxHealth,
+    maxHealth: maxHealth,  // 新增存儲最大氣血值
+    attack: playerClass.attack,
+    defense: playerClass.defense,
+    dodge: playerClass.dodge
+});
         });
     }
 
