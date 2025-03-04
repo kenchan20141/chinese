@@ -1072,6 +1072,11 @@
 
     <div id="gameArea">
         <div class="decorative-border"></div>
+    <!-- 新增用戶資訊顯示區域 -->
+    <div id="userInfoInGame" style="position: absolute; top: 10px; left: 10px; color: white; font-size: 1.2rem;">
+        <span id="userNameInGame"></span> | 積分: <span id="userScoreInGame">0</span> | 等級: <span id="userLevelInGame">1</span>
+    </div>
+        <div class="decorative-border"></div>
         <!-- 敵方血條移至頂部 -->
     <div id="enemyHealthContainer">
         <div>🗡 敵方氣血: <span id="opponentHealth">100</span>
@@ -1674,7 +1679,7 @@ function updateHealthDisplay(room) {
         const opponentPath = isHost ? 'player2' : 'player1';
 
         // 獲取各自的 maxHealth 和 health
-        const myMaxHealth = room[playerPath]?.maxHealth || 1000;  // 預設1000，若無數據
+        const myMaxHealth = room[playerPath]?.maxHealth || 1000;
         const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
         const myHealth = Math.max(room[playerPath]?.health || 0, 0);
         const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
@@ -1694,6 +1699,14 @@ function updateHealthDisplay(room) {
             <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
+
+        // 更新用戶資訊
+        database.ref('users/' + user.uid).once('value', (snapshot) => {
+            const userData = snapshot.val() || { level: 1, exp: 0, score: 0 };
+            document.getElementById('userNameInGame').textContent = user.displayName || '未命名玩家';
+            document.getElementById('userScoreInGame').textContent = userData.score || 0;
+            document.getElementById('userLevelInGame').textContent = userData.level || 1;
+        });
     }
 }
     
