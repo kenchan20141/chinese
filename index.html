@@ -1512,39 +1512,44 @@ function checkAnswer(isCorrect, questionId) {
         }
     }, 50);
 
-    // 傷害計算與動畫
-    let baseDamage = Math.floor((timeLeft / 15) * 13);
+   // 傷害計算與動畫
+let baseDamage;
+if (isCorrect) {
+    baseDamage = Math.floor((timeLeft / 15) * 13);  // 答對時的傷害計算保持不變
+} else {
+    baseDamage = Math.floor(Math.random() * 31) + 50;  // 答錯時隨機生成 50 至 80 點
+}
 
-    // 霸刀門雙倍攻擊判定（30%概率）
-    if (playerClass.type === 'warrior' && isCorrect && Math.random() < 0.3) {
-        baseDamage *= 2;
-        const swordFlash = document.createElement('div');
-        swordFlash.className = 'sword-flash';
-        swordFlash.style.top = `${Math.random() * 40 + 30}%`;
-        document.body.appendChild(swordFlash);
-        setTimeout(() => swordFlash.remove(), 400);
-    }
+// 霸刀門雙倍攻擊判定（30%概率）
+if (playerClass.type === 'warrior' && isCorrect && Math.random() < 0.3) {
+    baseDamage *= 2;
+    const swordFlash = document.createElement('div');
+    swordFlash.className = 'sword-flash';
+    swordFlash.style.top = `${Math.random() * 40 + 30}%`;
+    document.body.appendChild(swordFlash);
+    setTimeout(() => swordFlash.remove(), 400);
+}
 
-    // 影流教閃避判定（30%概率）
-    if (playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
-        baseDamage = 0;
-        const dodgeDisplay = document.getElementById('dodgeText');
-        dodgeDisplay.style.display = 'block';
-        setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
-    }
+// 影流教閃避判定（30%概率）
+if (playerClass.type === 'assassin' && !isCorrect && Math.random() < 0.3) {
+    baseDamage = 0;
+    const dodgeDisplay = document.getElementById('dodgeText');
+    dodgeDisplay.style.display = 'block';
+    setTimeout(() => dodgeDisplay.style.display = 'none', 1000);
+}
 
-    let damage;
-    if (isCorrect) {
-        damage = Math.floor(baseDamage * playerClass.attack / opponentDefense);
-    } else {
-        damage = Math.floor(baseDamage / playerClass.defense);
-        if (playerClass.type === 'mage') {
-            damage = Math.floor(damage * 0.7);
-            const reduceDisplay = document.getElementById('reduceDamageText');
-            reduceDisplay.style.display = 'block';
-            setTimeout(() => reduceDisplay.style.display = 'none', 1200);
-        }
+let damage;
+if (isCorrect) {
+    damage = Math.floor(baseDamage * playerClass.attack / opponentDefense);
+} else {
+    damage = Math.floor(baseDamage / playerClass.defense);
+    if (playerClass.type === 'mage') {
+        damage = Math.floor(damage * 0.7);
+        const reduceDisplay = document.getElementById('reduceDamageText');
+        reduceDisplay.style.display = 'block';
+        setTimeout(() => reduceDisplay.style.display = 'none', 1200);
     }
+}
 
     const targetElement = isCorrect 
         ? document.getElementById('opponentHealthBar')
