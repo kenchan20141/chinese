@@ -1384,16 +1384,29 @@ function selectTopic(topic) {
         selectedGrade: selectedGrade,
         selectedTopic: selectedTopic,
         topicSelected: true
+    }).then(() => {
+        document.getElementById('topicSelection').style.display = 'none';
+        // 移除任何可能的等待信息
+        const waitingMessage = document.getElementById('waitingForTopic');
+        if (waitingMessage) waitingMessage.remove();
+        startCountdown();
+    }).catch(error => {
+        console.error('更新題庫選擇失敗:', error);
     });
-    document.getElementById('topicSelection').style.display = 'none';
-    startCountdown();
 }
     
-  function startCountdown() {
-    // 檢查房間狀態，避免重複觸發
+ function startCountdown() {
     database.ref(`rooms/${currentRoomId}`).once('value').then(snapshot => {
         const room = snapshot.val();
-        if (room.countdownStarted || room.gameStarted) return; // 已開始倒數或遊戲已開始則退出
+        // 添加檢查：確保題庫已選擇且遊戲未開始
+        if (!room || room.countdownStarted || room.gameStarted || !room.topicSelected) {
+            console.log('未滿足倒數條件：', {
+                countdownStarted: room?.countdownStarted,
+                gameStarted: room?.gameStarted,
+                topicSelected: room?.topicSelected
+            });
+            return;
+        }
 
         // 設置倒數計時開始標誌
         database.ref(`rooms/${currentRoomId}`).update({ countdownStarted: true });
@@ -1422,7 +1435,7 @@ function selectTopic(topic) {
                 setTimeout(updateCountdown, 1000);
             } else {
                 countdownElement.remove();
-                // 結束後設置遊戲開始並重置倒數標誌
+                // 結束後統一設置遊戲開始並重置倒數標誌
                 database.ref(`rooms/${currentRoomId}`).update({
                     gameStarted: true,
                     countdownStarted: false
@@ -2893,17 +2906,19 @@ function listenToRoomChanges() {
 
         updateHealthDisplay(room);
 
-        if (room.topicSelected && !room.gameStarted) {
-    // 移除等待消息
+        if (room.topicSelected && !room.gameStarted && !room.countdownStarted) {
+    // 移除等待消息並開始倒數計時
     const waitingForTopic = document.getElementById('waitingForTopic');
     if (waitingForTopic) waitingForTopic.remove();
-    // 開始倒數計時
     startCountdown();
 }
 
 if (room.gameStarted) {
-  
-    // 開始遊戲
+    document.getElementById('waitingArea').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'none';
+    document.getElementById('topicSelection').style.display = 'none';
+    const waitingForTopic = document.getElementById('waitingForTopic');
+    if (waitingForTopic) waitingForTopic.remove();
     startGame(room);
 }
 
