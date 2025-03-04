@@ -2172,6 +2172,11 @@ function updateHealthDisplay(room) {
             <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
         `;
 
+        // 更新敵方氣血條顯示
+        document.getElementById('enemyHealthContainer').innerHTML = `
+            <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+        `;
     }
 }
 
