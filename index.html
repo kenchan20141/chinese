@@ -1478,9 +1478,6 @@ function checkAnswer(isCorrect, questionId) {
         setTimeout(() => {
             shieldIcon.remove();
         }, 1000);
-        // 添加恢復氣血音效
-    soundEffects.heal.currentTime = 0; // 重置音效播放時間
-    soundEffects.heal.play(); // 播放音效
     }
 
     if (effectElement.className) {
@@ -1558,10 +1555,8 @@ function checkAnswer(isCorrect, questionId) {
         soundEffects.attack.play();
         if (navigator.vibrate) navigator.vibrate(200);
     } else {
-        // 答錯時：播放扣減音效 + 震動
-    soundEffects.damage.currentTime = 0;
-    soundEffects.damage.play();
-    if (navigator.vibrate) navigator.vibrate(200);
+        // 答錯時：僅震動
+        if (navigator.vibrate) navigator.vibrate(200);
     }
 
     // 移除動畫
@@ -1833,8 +1828,6 @@ const soundEffects = {
     attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3'),
     victory: new Audio('https://taira-komori.jpn.org/sound_os2/event01/clapping_short2.mp3'),
     defeat: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
-    heal: new Audio('https://taira-komori.jpn.org/sound_os2/game01/powerup01.mp3'), // 恢復氣血音效
-    damage: new Audio('https://taira-komori.jpn.org/sound_os2/game01/powerup10.mp3') // 扣減氣血音效
 };
 
     const difficultySettings = {
