@@ -1324,12 +1324,12 @@ function selectClass(className) {
             playerExp = userData.exp;
             playerClass.attack += (playerLevel - 1) * 0.1;  // 每級增加 0.1 攻擊力
             playerClass.defense += (playerLevel - 1) * 0.1;  // 每級增加 0.1 防禦力
+            
             const maxHealth = 1000 + (playerLevel - 1) * 100;  // 每級增加 100 氣血
-
-            const playerPath = isHost ? 'player1' : 'player2';
             database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
                 class: className,
                 health: maxHealth,  // 根據等級設置初始氣血
+                maxHealth: maxHealth,  // 新增存儲最大氣血值
                 attack: playerClass.attack,
                 defense: playerClass.defense,
                 dodge: playerClass.dodge
