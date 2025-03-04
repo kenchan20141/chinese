@@ -1,3 +1,4 @@
+攻擊力搞好
 
 
 <!DOCTYPE html>
@@ -1684,7 +1685,7 @@ function updateHealthDisplay(room) {
 
     // 更新己方顯示（保持不變）
     document.getElementById('myHealthContainer').innerHTML = `
-        <div>${user.displayNames} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
+        <div>${user.displayName} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
     `;
 
@@ -1692,9 +1693,9 @@ function updateHealthDisplay(room) {
     const opponentUid = room[opponentPath]?.userId;
     if (opponentUid) {
         // 從 Firebase 獲取敵方 USERINFO
-        database.ref('displayNames').once('value', (snapshot) => {
-            const opponentData = snapshot.val() || { displayNames: '未知玩家', level: 1 };
-            const opponentName = opponentData.displayNames || '未知玩家';
+        database.ref('users/' + opponentUid).once('value', (snapshot) => {
+            const opponentData = snapshot.val() || { displayName: '未知玩家', level: 1 };
+            const opponentName = opponentData.displayName || '未知玩家';
             const opponentLevel = opponentData.level || 1;
 
             // 更新敵方顯示
@@ -2146,7 +2147,9 @@ function updateHealthDisplay(room) {
     document.getElementById('enemyHealthContainer').innerHTML = `
         <div style="display:flex; align-items:center; gap:1rem;">
             <img src="https://example.com/${opponentClass}.png" style="width:50px; height:50px; border-radius:50%;">
-            
+            <div>🗡 敵方氣血: <span id="opponentHealth">100</span></div>
+        </div>
+        <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
     `;
     
 
