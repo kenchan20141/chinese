@@ -1074,7 +1074,7 @@
         <div class="decorative-border"></div>
         <!-- 敵方血條移至頂部 -->
     <div id="enemyHealthContainer">
-        <div>🗡 敵方氣血: <span id="opponentHealth">100</span>
+        
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
         </div>
     </div>
@@ -2146,9 +2146,7 @@ function updateHealthDisplay(room) {
     document.getElementById('enemyHealthContainer').innerHTML = `
         <div style="display:flex; align-items:center; gap:1rem;">
             <img src="https://example.com/${opponentClass}.png" style="width:50px; height:50px; border-radius:50%;">
-            <div>🗡 敵方氣血: <span id="opponentHealth">100</span></div>
-        </div>
-        <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
+            
     `;
     
 
