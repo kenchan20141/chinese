@@ -1,5 +1,7 @@
 
 
+
+
 <!DOCTYPE html>
 <html>
     
@@ -15,8 +17,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
-
-        
 
 #userInfo {
     font-size: 1.2rem;
@@ -2376,7 +2376,12 @@ function handleGameEnd(winnerType) {
         victoryText.textContent = isWinner ? "武道昌隆！" : "雖敗猶榮！";
     }
 
-        // 創建彈出視窗
+    const resultSound = isWinner ? soundEffects.victory : soundEffects.defeat;
+    resultSound.play();
+
+    
+
+    // 創建彈出視窗
 const statsOverlay = document.createElement('div');
 statsOverlay.style.cssText = `
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -2415,32 +2420,6 @@ document.body.appendChild(statsOverlay);
 
 // 5 秒後自動移除
 setTimeout(() => statsOverlay.remove(), 5000);
-
-    const resultSound = isWinner ? soundEffects.victory : soundEffects.defeat;
-    resultSound.play();
-
-    // 添加經驗值和升級邏輯
-    const user = auth.currentUser;
-    if (user && isWinner) {
-        const userRef = database.ref('users/' + user.uid);
-        userRef.transaction((userData) => {
-            if (!userData) userData = { level: 1, exp: 0 };
-            userData.exp += 50;  // 獲勝增加 50 經驗值
-            const expRequired = 100 * userData.level;
-            if (userData.exp >= expRequired) {
-                userData.level += 1;
-                userData.exp -= expRequired;
-            }
-            return userData;
-        }).then(() => {
-            // 更新本地變數
-            userRef.once('value', (snapshot) => {
-                const userData = snapshot.val();
-                playerLevel = userData.level;
-                playerExp = userData.exp;
-            });
-        });
-    }
 
     // 重賽按鈕邏輯（保持不變）
     const buttonContainer = document.createElement('div');
