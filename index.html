@@ -2311,28 +2311,20 @@ function checkGameOver() {
 function handleGameEnd(winnerType) {
     if (gameOver) return;
     gameOver = true;
-    
-    // 新增強制停止計時器
+
     clearInterval(timer);
     timeLeft = 0;
     document.getElementById('timer').textContent = '🕒0秒';
 
-    // 新增禁用所有按鈕
     document.querySelectorAll('#options button').forEach(btn => {
         btn.style.pointerEvents = 'none';
         btn.style.opacity = '0.5';
     });
 
-    
-    clearInterval(timer);
-    document.querySelectorAll('#options button').forEach(btn => btn.disabled = true);
-
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    
-    const isWinner = (winnerType === 'player1' && isHost) || 
-                    (winnerType === 'player2' && !isHost);
-    
+    const isWinner = (winnerType === 'player1' && isHost) || (winnerType === 'player2' && !isHost);
+
     victoryOverlay.style.display = 'flex';
     if (winnerType === 'draw') {
         victoryText.textContent = "平分秋色！";
@@ -2366,49 +2358,20 @@ function handleGameEnd(winnerType) {
         });
     }
 
-    victoryText.style.animation = 'none';
-    setTimeout(() => victoryText.style.animation = 'victoryPulse 1s ease-out', 10);
-// 新增重赛按钮容器
-   // 先移除已存在的按钮
-const existingButtons = document.querySelector('.rematch-buttons');
-if (existingButtons) existingButtons.remove();
-
-const buttonContainer = document.createElement('div');
+    // 重賽按鈕邏輯（保持不變）
+    const buttonContainer = document.createElement('div');
     buttonContainer.className = 'rematch-buttons';
-    
     const rematchBtn = document.createElement('button');
     rematchBtn.textContent = '再戰江湖';
     const mainMenuBtn = document.createElement('button');
     mainMenuBtn.textContent = '歸隱山林';
-
-    // 按钮点击处理
     rematchBtn.onclick = () => handleRematchRequest();
     mainMenuBtn.onclick = () => {
         database.ref('rooms/' + currentRoomId).remove();
         window.location.reload();
     };
-
     buttonContainer.appendChild(rematchBtn);
     buttonContainer.appendChild(mainMenuBtn);
-    const user = auth.currentUser;
-if (user) {
-    const userId = user.uid;
-    const isWinner = (winnerType === 'player1' && isHost) || (winnerType === 'player2' && !isHost);
-    const scoreChange = isWinner ? 10 : -5; // 贏加10分，輸扣5分
-
-    const userRef = database.ref('leaderboard/' + userId);
-    userRef.transaction((currentData) => {
-        if (currentData) {
-            currentData.score = (currentData.score || 0) + scoreChange;
-        } else {
-            currentData = {
-                name: user.displayName, // 直接使用 displayName，不需要後備值
-                score: scoreChange
-            };
-        }
-        return currentData;
-    });
-}
     victoryOverlay.appendChild(buttonContainer);
 }
 
