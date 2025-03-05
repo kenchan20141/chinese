@@ -3001,19 +3001,24 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
     } else {
         soundEffects.defeat.play();
         if (navigator.vibrate) {
-            navigator.vibrate(500); // 答錯震動 500ms
+            navigator.vibrate(200); // 答錯震動 500ms
         }
         let defenseReduction = singlePlayerClass.defense * (1 + (playerLevel - 1) * 0.05); // 等級每升1級，防禦力增加5%
+        let damageToPlayer = baseDamage * difficultyMultiplier; // 初始傷害 = 基礎傷害 * 難度倍率
+
         if (singlePlayerClass.type === 'assassin' && Math.random() < singlePlayerClass.dodge) {
-            defenseReduction = 0;
+            damageToPlayer = 0; // 刺客閃避成功，扣血為0
             document.getElementById('dodgeText').style.display = 'block';
             setTimeout(() => document.getElementById('dodgeText').style.display = 'none', 1000);
-        } else if (singlePlayerClass.type === 'mage') {
-            defenseReduction *= 0.7;
-            document.getElementById('reduceDamageText').style.display = 'block';
-            setTimeout(() => document.getElementById('reduceDamageText').style.display = 'none', 1200);
+        } else {
+            if (singlePlayerClass.type === 'mage') {
+                damageToPlayer *= 0.7; // 法師減傷30%
+                document.getElementById('reduceDamageText').style.display = 'block';
+                setTimeout(() => document.getElementById('reduceDamageText').style.display = 'none', 1200);
+            }
+            damageToPlayer = Math.max(Math.round(damageToPlayer * (1 - defenseReduction)), 50); // 確保最低50點
         }
-        const damageToPlayer = Math.round(baseDamage * difficultyMultiplier * (1 - defenseReduction)); // 確保整數
+
         singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0); // 確保整數
         updateSinglePlayerHealthDisplay();
         if (singlePlayerHealth <= 0) {
