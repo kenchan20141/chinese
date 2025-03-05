@@ -2094,63 +2094,76 @@ function toggleMusic() {
 }
 
 function createRoom() {
-    currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
-    isHost = true;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    document.getElementById('waitingArea').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = currentRoomId;
+    const roomId = document.getElementById('roomId').value.trim();
+    if (roomId.length !== 4) {
+        alert('請輸入四位房間編號');
+        return;
+    }
+    const user = auth.currentUser;
+    const userId = user ? user.uid : 'guest_' + Date.now();
+    const displayName = user ? user.displayName : '訪客';
 
-    // 隨機決定題庫選擇者
-    const topicSelector = Math.random() < 0.5 ? 'player1' : 'player2';
-
-    database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null },
-        player2: { health: 100, class: null, currentQuestion: null },
-        gameStarted: false,
-        gameEnded: false,
-        winner: null,
-        topicSelector: topicSelector // 新增字段
+    const roomRef = database.ref('rooms/' + roomId);
+    roomRef.once('value').then((snapshot) => {
+        if (snapshot.exists()) {
+            alert('此戰場已存在，請輸入其他編號');
+        } else {
+            isHost = true;
+            currentRoomId = roomId;
+            roomRef.set({
+                player1: { userId: userId, health: 100, class: null, name: displayName },
+                createdAt: Date.now(),
+            });
+            roomRef.onDisconnect().remove();
+            document.getElementById('roomControl').style.display = 'none';
+            document.getElementById('waitingArea').style.display = 'block';
+            document.getElementById('displayRoomId').textContent = roomId;
+            document.getElementById('classSelection').style.display = 'block';
+            listenToRoomChanges();
+        }
     });
-    listenToRoomChanges();
 }
 
 function joinRoom() {
-    currentRoomId = document.getElementById('roomId').value;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    listenToRoomChanges();
-}
-
-    function createRoomWithId(roomId) {
-    currentRoomId = roomId;
-    isHost = true;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    document.getElementById('waitingArea').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = currentRoomId;
-
+    const roomId = document.getElementById('roomId').value.trim();
+    if (roomId.length !== 4) {
+        alert('請輸入四位房間編號');
+        return;
+    }
     const user = auth.currentUser;
-if (user) {
-    database.ref('rooms/' + currentRoomId).set({
-        player1: {
-            userId: user.uid,
-            name: user.displayName || '未知玩家',
-            level: playerLevel || 1,
+    const userId = user ? user.uid : 'guest_' + Date.now();
+    const displayName = user ? user.displayName : '訪客';
+
+    const roomRef = database.ref('rooms/' + roomId);
+    roomRef.once('value').then((snapshot) => {
+        const room = snapshot.val();
+        if (!room) {
+            alert('該戰場不存在，請確認編號');
+            return;
+        }
+        if (room.player2) {
+            alert('此戰場已滿，請選擇其他戰場');
+            return;
+        }
+        if (user && room.player1.userId === user.uid) {
+            alert('不能加入自己創建的房間');
+            return;
+        }
+        isHost = false;
+        currentRoomId = roomId;
+        roomRef.child('player2').set({
+            userId: userId,
             health: 100,
             class: null,
-            currentQuestion: null
-        },
-        player2: null,
-        gameStarted: false,
-        gameEnded: false,
-        winner: null
+            name: displayName,
+        });
+        roomRef.child('player2').onDisconnect().remove();
+        document.getElementById('roomControl').style.display = 'none';
+        document.getElementById('waitingArea').style.display = 'block';
+        document.getElementById('displayRoomId').textContent = roomId;
+        document.getElementById('classSelection').style.display = 'block';
+        listenToRoomChanges();
     });
-} else {
-    alert('請先登入！');
-    return;
-}
-    listenToRoomChanges();
 }
 
 function joinRoomWithId(roomId) {
@@ -2255,10 +2268,7 @@ function startGameSession() {
 
   function randomMatch() {
     const user = auth.currentUser;
-    if (!user) {
-        alert('請先登入！');
-        return;
-    }
+   
 
     console.log("randomMatch called");
     const waitingRef = database.ref('waitingRooms');
@@ -2620,19 +2630,18 @@ function handleGameEnd(winnerType) {
     const resultSound = isWinner ? soundEffects.victory : soundEffects.defeat;
     resultSound.play();
 
-    // 添加經驗值和升級邏輯
     const user = auth.currentUser;
-    let statsOverlay; // 定義 statsOverlay
+    let statsOverlay;
     if (user) {
         const userRef = database.ref('users/' + user.uid);
         userRef.transaction((userData) => {
             if (!userData) userData = { level: 1, exp: 0, score: 0 };
             if (isWinner) {
-                userData.exp += 50; // 獲勝增加 50 經驗值
-                userData.score += 100; // 贏家增加 100 積分
-           } else {
-                userData.exp += 20;  // 輸家增加 20 經驗值
-                userData.score = Math.max(0, userData.score - 50); // 輸家扣減 50 積分，最低為 0
+                userData.exp += 50;
+                userData.score += 100;
+            } else {
+                userData.exp += 20;
+                userData.score = Math.max(0, userData.score - 50);
             }
             const expRequired = 100 * userData.level;
             if (userData.exp >= expRequired) {
@@ -2641,38 +2650,33 @@ function handleGameEnd(winnerType) {
             }
             return userData;
         }).then(() => {
-
-userRef.once('value', (snapshot) => {
+            userRef.once('value', (snapshot) => {
                 const userData = snapshot.val();
                 playerLevel = userData.level;
                 playerExp = userData.exp;
-                // 更新排行榜
                 const leaderboardRef = database.ref('leaderboard/' + user.uid);
                 leaderboardRef.set({
                     name: user.displayName,
                     score: userData.score
                 });
-            });
 
-            
-            // 創建彈出視窗顯示經驗值 BAR
-            statsOverlay = document.createElement('div');
-            statsOverlay.style.cssText = `
-                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
-                border-radius: 15px; z-index: 10000; color: white; text-align: center;
-                width: 80%; max-width: 400px;
-            `;
+                statsOverlay = document.createElement('div');
+                statsOverlay.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
+                    border-radius: 15px; z-index: 10000; color: white; text-align: center;
+                    width: 80%; max-width: 400px;
+                `;
 
-            userRef.once('value', (snapshot) => {
-                const userData = snapshot.val();
                 const expRequired = 100 * userData.level;
-                const expPercentage = (userData.exp / expRequired) * 100;
+                const expPercentage = ((userData.exp / expRequired) * 100).toFixed(1);
+                const remainingExp = expRequired - userData.exp;
 
                 statsOverlay.innerHTML = `
                     <h2>遊戲結束</h2>
                     <p>等級: ${userData.level}</p>
-                    <p>經驗值: ${userData.exp} / ${expRequired}</p>
+                    <p>經驗值: ${userData.exp} / ${expRequired} (${expPercentage}%)</p>
+                    <p>升級還需: ${remainingExp} 經驗</p>
                     <div style="width: 100%; height: 20px; background: #333; border-radius: 5px; margin: 1rem 0;">
                         <div style="height: 100%; background: #4CAF50; width: ${expPercentage}%; transition: width 1s ease;"></div>
                     </div>
@@ -2687,7 +2691,6 @@ userRef.once('value', (snapshot) => {
         });
     }
 
-    // 重賽按鈕邏輯
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'rematch-buttons';
     const rematchBtn = document.createElement('button');
@@ -2703,12 +2706,10 @@ userRef.once('value', (snapshot) => {
     buttonContainer.appendChild(mainMenuBtn);
     victoryOverlay.appendChild(buttonContainer);
 
-    // 5 秒後移除彈出視窗
     setTimeout(() => {
         if (statsOverlay) statsOverlay.remove();
     }, 5000);
 }
-
 
     // 啟動單機模式
 function startSinglePlayer() {
