@@ -3087,7 +3087,12 @@ function showEffect(className) {
     setTimeout(() => effect.remove(), 400);
 }
 
-    function handleSinglePlayerGameOver(isWinner) {
+  function handleSinglePlayerGameOver(isWinner) {
+    // 清除健康扣減計時器
+    if (damageInterval) {
+        clearInterval(damageInterval);
+        damageInterval = null;
+    }
     if (gameOver) return;
     gameOver = true;
 
@@ -3137,15 +3142,16 @@ function showEffect(className) {
         singlePlayerSelectedGrade = null;
         singlePlayerSelectedTopic = null;
         singlePlayerClass = null;
+        selectedDifficulty = null; // 確保難度被重置
         gameOver = false;
         answered = false;
         answeredQuestions.clear();
 
-        // 重置氣血
+        // 重置玩家氣血
         const baseHealth = 1000;
         const healthPerLevel = 100;
         singlePlayerHealth = baseHealth + (playerLevel - 1) * healthPerLevel;
-        enemyHealth = difficultySettings[selectedDifficulty].enemyHealth;
+        // enemyHealth 在選擇難度時會重新設置，因此這裡不設置
 
         // 更新氣血顯示
         updateSinglePlayerHealthDisplay();
@@ -3156,8 +3162,8 @@ function showEffect(className) {
         const buttons = victoryOverlay.querySelector('.rematch-buttons');
         if (buttons) buttons.remove();
 
-        // 顯示職業選擇界面（而不是直接跳到難度選擇）
-        document.getElementById('singlePlayerClassSelection').style.display = 'block';
+        // 顯示難度選擇界面（而非職業選擇）
+        document.getElementById('difficultySelection').style.display = 'block';
     };
 
     mainMenuBtn.onclick = () => {
