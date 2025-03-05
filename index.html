@@ -2953,8 +2953,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    const baseDamage = 50 + Math.random() * 30;
-    const levelMultiplier = 1 + playerLevel * 0.1;
+    const baseDamage = 50 + Math.random() * 30; // 基數 50-80
     const difficultyMultiplier = {
         easy: 0.8,
         normal: 1.0,
@@ -2963,22 +2962,22 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
     }[selectedDifficulty];
 
     if (isCorrect) {
-        soundEffects.attack.play(); // 添加攻擊音效
+        soundEffects.attack.play();
         let attackMultiplier = singlePlayerClass.attack;
         if (singlePlayerClass.type === 'warrior' && Math.random() < 0.3) {
             attackMultiplier *= 2;
             showEffect('sword-flash');
         }
-        const damageToEnemy = baseDamage * attackMultiplier * levelMultiplier;
-        enemyHealth = Math.max(enemyHealth - damageToEnemy, 0);
+        const damageToEnemy = Math.round(baseDamage * attackMultiplier); // 確保整數
+        enemyHealth = Math.max(Math.round(enemyHealth - damageToEnemy), 0); // 確保整數
         updateSinglePlayerHealthDisplay();
         if (enemyHealth <= 0) {
             handleSinglePlayerGameOver(true);
             return;
         }
     } else {
-        soundEffects.defeat.play(); // 添加失敗音效
-        let defenseReduction = singlePlayerClass.defense;
+        soundEffects.defeat.play();
+        let defenseReduction = singlePlayerClass.defense * (1 + (playerLevel - 1) * 0.05); // 等級每升1級，防禦力增加5%
         if (singlePlayerClass.type === 'assassin' && Math.random() < singlePlayerClass.dodge) {
             defenseReduction = 0;
             document.getElementById('dodgeText').style.display = 'block';
@@ -2988,8 +2987,8 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
             document.getElementById('reduceDamageText').style.display = 'block';
             setTimeout(() => document.getElementById('reduceDamageText').style.display = 'none', 1200);
         }
-        const damageToPlayer = baseDamage * difficultyMultiplier * (1 - defenseReduction);
-        singlePlayerHealth = Math.max(singlePlayerHealth - damageToPlayer, 0);
+        const damageToPlayer = Math.round(baseDamage * difficultyMultiplier * (1 - defenseReduction)); // 確保整數
+        singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0); // 確保整數
         updateSinglePlayerHealthDisplay();
         if (singlePlayerHealth <= 0) {
             handleSinglePlayerGameOver(false);
@@ -2999,7 +2998,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
         hasHealedThisTurn = true;
-        singlePlayerHealth = Math.min(singlePlayerHealth + 2, 1000 + (playerLevel - 1) * 100);
+        singlePlayerHealth = Math.min(Math.round(singlePlayerHealth + 2), 1000 + (playerLevel - 1) * 100); // 確保整數
         updateSinglePlayerHealthDisplay();
         document.getElementById('healText').style.display = 'block';
         setTimeout(() => document.getElementById('healText').style.display = 'none', 1000);
