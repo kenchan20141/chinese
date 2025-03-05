@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html>
     
@@ -1285,7 +1286,7 @@
 <script>
 
 
-auth.onAuthStateChanged((user) => {
+    auth.onAuthStateChanged((user) => {
     if (user) {
         // 用戶已登入
         document.getElementById('logoutContainer').style.display = 'block';
@@ -1299,7 +1300,6 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-    
     // 在代码开头定义不同难度的经验奖励
 const expRewards = {
     easy: 10,
@@ -1942,22 +1942,36 @@ appId: "1:948613965375:web:ae966d7dd461e328093a8a"
 firebase.initializeApp(firebaseConfig);
   
 
-// 登入按鈕事件（假設綁定在 loginBtn 上）
+// 「登入」按鈕事件
 document.getElementById('loginBtn').onclick = function() {
-    const email = prompt('請輸入郵箱'); // 簡單示例，實際應使用輸入框
-    const password = prompt('請輸入密碼');
+    const email = prompt("請輸入郵箱");
+    const password = prompt("請輸入密碼");
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
-            // 登入成功
-            document.getElementById('logoutContainer').style.display = 'block';
-            console.log('登入成功，用户:', userCredential.user);
+            const user = userCredential.user;
+            if (!user.displayName) {
+                const displayName = prompt("請輸入您的顯示名稱");
+                if (displayName) {
+                    user.updateProfile({
+                        displayName: displayName
+                    }).then(() => {
+                        alert("登入成功：" + displayName);
+                    }).catch((error) => {
+                        alert("設置顯示名稱失敗：" + error.message);
+                    });
+                } else {
+                    alert("顯示名稱不能為空");
+                    return;
+                }
+            } else {
+                alert("登入成功：" + user.displayName);
+            }
+            document.getElementById('loginBtn').style.display = 'none';
         })
         .catch((error) => {
-            console.error('登入失敗:', error);
-            alert('登入失敗: ' + error.message);
+            alert("登入失敗：" + error.message);
         });
 };
-
 
 // 「注冊」按鈕事件（新位置）
 document.getElementById('registerBtn').onclick = function() {
