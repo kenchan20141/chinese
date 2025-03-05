@@ -3140,6 +3140,8 @@ function showEffect(className) {
 }
 
     function resetSinglePlayerGame() {
+clearInterval(damageInterval); // 添加：確保清除扣血計時器
+        
     // 重置遊戲狀態
     gameOver = false;
     answered = false;
