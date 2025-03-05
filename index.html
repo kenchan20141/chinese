@@ -2011,17 +2011,19 @@ document.getElementById('registerBtn').onclick = function() {
         });
 };
 
-// 獨立的登出邏輯（新增位置）
+// 登出按鈕事件
 document.getElementById('logoutBtn').onclick = function() {
     auth.signOut()
         .then(() => {
-            alert("已登出");
-            document.getElementById('loginBtn').style.display = 'inline-block';
-            document.getElementById('registerBtn').style.display = 'inline-block';
+            // 登出成功
             document.getElementById('logoutContainer').style.display = 'none';
+            document.getElementById('registerBtn').style.display = 'block';
+            document.getElementById('loginBtn').style.display = 'block';
+            console.log('已登出');
         })
         .catch((error) => {
-            alert("登出失敗：" + error.message);
+            console.error('登出失敗:', error);
+            alert('登出失敗: ' + error.message);
         });
 };
 
