@@ -2784,25 +2784,21 @@ function selectSinglePlayerTopic(topic) {
 }
 
 function updateSinglePlayerHealthDisplay() {
-    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100; // 動態計算己方最大氣血
-    const maxEnemyHealth = difficultySettings[selectedDifficulty].enemyHealth; // 動態敵方最大氣血
+    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100;
+    const maxEnemyHealth = difficultySettings[selectedDifficulty].enemyHealth;
 
-    // 更新己方氣血
-    document.getElementById('myHealth').textContent = `${singlePlayerHealth} / ${maxPlayerHealth}`;
+    document.getElementById('myHealth').textContent = `${Math.round(singlePlayerHealth)} / ${maxPlayerHealth}`;
     document.getElementById('myHealthBar').style.width = `${(singlePlayerHealth / maxPlayerHealth) * 100}%`;
 
-    // 更新敵方氣血
-    document.getElementById('opponentHealth').textContent = `${enemyHealth} / ${maxEnemyHealth}`;
+    document.getElementById('opponentHealth').textContent = `${Math.round(enemyHealth)} / ${maxEnemyHealth}`;
     document.getElementById('opponentHealthBar').style.width = `${(enemyHealth / maxEnemyHealth) * 100}%`;
 
-    // 添加血條衝擊波特效
     const healthBar = singlePlayerHealth < maxPlayerHealth * 0.3 ? 'myHealthBar' : 'opponentHealthBar';
     const wave = document.createElement('div');
     wave.className = 'health-wave';
     document.getElementById(healthBar).appendChild(wave);
     setTimeout(() => wave.remove(), 500);
 }
-
 
     
     function loadNewQuestionSinglePlayer() {
