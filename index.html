@@ -1459,6 +1459,26 @@ joinRoomBtn.onclick = function() {
     }
 };
 
+function updateUserInfo() {
+    const user = auth.currentUser;
+    if (user) {
+        database.ref('users/' + user.uid).once('value', (snapshot) => {
+            const userData = snapshot.val();
+            const expRequired = 100 * userData.level;
+            const expPercentage = ((userData.exp / expRequired) * 100).toFixed(1);
+            const remainingExp = expRequired - userData.exp;
+            document.getElementById('userInfo').innerHTML = `
+                <span id="userName">${user.displayName}</span> | 積分: <span id="userScore">${userData.score || 0}</span> | 等級: <span id="userLevel">${userData.level}</span>
+                <div>經驗值: ${userData.exp} / ${expRequired} (${expPercentage}%) 升級還需: ${remainingExp} 經驗
+                    <div id="expBar" style="width: 100px; height: 10px; background: #333; border-radius: 5px; display: inline-block;">
+                        <div id="expFill" style="height: 100%; background: #4CAF50; width: ${expPercentage}%; transition: width 0.5s ease;"></div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+}
+
     
     
 function selectClass(className) {
