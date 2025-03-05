@@ -2902,13 +2902,14 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    const difficultyDamage = {
-        easy: 8,
-        normal: 12,
-        hard: 15,
-        hell: 20
-    };
-    let damage = difficultyDamage[selectedDifficulty];
+    const baseDamage = 50 + Math.random() * 30; // 隨機基數 50-80
+    const levelMultiplier = 1 + playerLevel * 0.1; // 等級調整
+    const difficultyMultiplier = {
+        easy: 0.8,
+        normal: 1.0,
+        hard: 1.2,
+        hell: 1.5
+    }[selectedDifficulty]; // 難度係數
 
     if (isCorrect) {
         let attackMultiplier = singlePlayerClass.attack;
@@ -2916,24 +2917,26 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
             attackMultiplier *= 2;
             showEffect('sword-flash');
         }
-        enemyHealth = Math.max(enemyHealth - (damage * attackMultiplier), 0);
+        const damageToEnemy = baseDamage * attackMultiplier * levelMultiplier;
+        enemyHealth = Math.max(enemyHealth - damageToEnemy, 0);
         updateSinglePlayerHealthDisplay();
         if (enemyHealth <= 0) {
             handleSinglePlayerGameOver(true);
             return;
         }
     } else {
-        let actualDamage = damage * singlePlayerClass.defense;
+        let defenseReduction = singlePlayerClass.defense;
         if (singlePlayerClass.type === 'assassin' && Math.random() < singlePlayerClass.dodge) {
-            actualDamage = 0;
+            defenseReduction = 0;
             document.getElementById('dodgeText').style.display = 'block';
             setTimeout(() => document.getElementById('dodgeText').style.display = 'none', 1000);
         } else if (singlePlayerClass.type === 'mage') {
-            actualDamage *= 0.7;
+            defenseReduction *= 0.7;
             document.getElementById('reduceDamageText').style.display = 'block';
             setTimeout(() => document.getElementById('reduceDamageText').style.display = 'none', 1200);
         }
-        singlePlayerHealth = Math.max(singlePlayerHealth - actualDamage, 0);
+        const damageToPlayer = baseDamage * difficultyMultiplier * (1 - defenseReduction);
+        singlePlayerHealth = Math.max(singlePlayerHealth - damageToPlayer, 0);
         updateSinglePlayerHealthDisplay();
         if (singlePlayerHealth <= 0) {
             handleSinglePlayerGameOver(false);
@@ -2943,7 +2946,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
         hasHealedThisTurn = true;
-        singlePlayerHealth = Math.min(singlePlayerHealth + 2, 100);
+        singlePlayerHealth = Math.min(singlePlayerHealth + 2, 1000 + (playerLevel - 1) * 100); // 考慮等級調整最大氣血
         updateSinglePlayerHealthDisplay();
         document.getElementById('healText').style.display = 'block';
         setTimeout(() => document.getElementById('healText').style.display = 'none', 1000);
