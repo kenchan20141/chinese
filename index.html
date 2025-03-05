@@ -1996,10 +1996,10 @@ const soundEffects = {
 };
 
     const difficultySettings = {
-    easy: { damageChance: 0.2, damageInterval: 10000 }, // 20% 機率，每 10 秒扣血
-    normal: { damageChance: 0.4, damageInterval: 8000 }, // 40% 機率，每 8 秒扣血
-    hard: { damageChance: 0.6, damageInterval: 6000 }, // 60% 機率，每 6 秒扣血
-    hell: { damageChance: 0.8, damageInterval: 4000 } // 80% 機率，每 4 秒扣血
+    easy: { enemyHealth: 1000, damageChance: 0.2, damageInterval: 10000 }, 20% 機率，每 10 秒扣血
+    normal: { enemyHealth: 1500, damageChance: 0.4, damageInterval: 8000 },
+    hard: { enemyHealth: 2000, damageChance: 0.6, damageInterval: 6000 },
+    hell: { enemyHealth: 3000, damageChance: 0.8, damageInterval: 5000 }
 };
 
 // 修改重點 2：初始按鈕文字設定
@@ -2644,9 +2644,24 @@ function selectDifficulty(difficulty) {
     const settings = difficultySettings[difficulty];
     if (!settings) return;
 
-    // 初始化单机模式
-    singlePlayerHealth = 100;
-    enemyHealth = 100;
+    // 計算己方氣血：基礎1000點，每級增加100點
+    const baseHealth = 1000;
+    const healthPerLevel = 100;
+    const user = auth.currentUser;
+    if (user) {
+        database.ref('users/' + user.uid).once('value', (snapshot) => {
+            const userData = snapshot.val() || { level: 1, exp: 0 };
+            playerLevel = userData.level; // 更新全局 playerLevel
+            singlePlayerHealth = baseHealth + (playerLevel - 1) * healthPerLevel; // 計算氣血
+            enemyHealth = settings.enemyHealth; // 設置敵方氣血
+            updateSinglePlayerHealthDisplay(); // 更新顯示
+        });
+    } else {
+        singlePlayerHealth = baseHealth; // 未登入時使用基礎值
+        enemyHealth = settings.enemyHealth;
+        updateSinglePlayerHealthDisplay();
+    }
+
     gameOver = false;
     answered = false;
     singlePlayerClass = null; // 重置職業
@@ -2658,6 +2673,8 @@ function selectDifficulty(difficulty) {
     document.getElementById('difficultySelection').style.display = 'none';
     document.getElementById('singlePlayerClassSelection').style.display = 'block';
 }
+
+    
 function selectSinglePlayerClass(className) {
     const classData = {
         warrior: { attack: 1.2, defense: 0.9, dodge: 0, skill: 'doubleDamage' },
