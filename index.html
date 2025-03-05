@@ -16,15 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
 
-.difficulty-icon {
-    width: 140px;
-    height: 140px;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 2px solid var(--gold);
-    margin-bottom: 1rem;
-}
-        
+
 .difficulty-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -944,14 +936,13 @@
     <!-- 新增裝飾性邊框 -->
     <div class="main-border"></div>
     
-    <!-- 修改1: 在用户信息部分添加百分比和升级所需 -->
-<div id="userInfo" class="info-box" style="display: none;">
+    <!-- 用戶信息區域 -->
+   <div id="userInfo" class="info-box" style="display: none;">
     <span id="userName"></span> | 積分: <span id="userScore">0</span> | 等級: <span id="userLevel">1</span>
     <div>經驗值: 
         <div id="expBar" style="width: 100px; height: 10px; background: #333; border-radius: 5px; display: inline-block;">
             <div id="expFill" style="height: 100%; background: #4CAF50; width: 0%; transition: width 0.5s ease;"></div>
-        </div><span id="expText">0/0 (0.0%)</span>
-        <div id="expRemaining" style="display: inline-block; margin-left: 0px;">升級還需：0 經驗值</div>
+        </div>
     </div>
 </div>
     
@@ -1164,43 +1155,43 @@
     <h2 style="color: var(--gold); margin-bottom: 2rem;">選擇難度</h2>
     <div class="difficulty-grid">
         <div class="difficulty-card" onclick="selectDifficulty('easy')">
-            <img src="https://i.ibb.co/TqwmNJN2/image.png" class="difficulty-icon">
+            <img src="https://example.com/difficulty-easy.png" class="difficulty-icon">
             <div class="selected-tick">✓</div>
-            <h3>布魯貓</h3>
-            <p>敵方氣血: 1000</p>
-            <p>正確率: 30%</p>
+            <h3>容易</h3>
+            <p>敵方氣血: 100</p>
+            <p>答中率: 80%</p>
             <div class="popup-image" style="display: none;">
-                <img src="https://i.ibb.co/TqwmNJN2/image.png" alt="容易難度全圖">
+                <img src="https://example.com/difficulty-easy-full.png" alt="容易難度全圖">
             </div>
         </div>
         <div class="difficulty-card" onclick="selectDifficulty('normal')">
-            <img src="https://i.ibb.co/spz2tv88/3.png" class="difficulty-icon">
+            <img src="https://example.com/difficulty-normal.png" class="difficulty-icon">
             <div class="selected-tick">✓</div>
-            <h3>雪羽千央</h3>
-            <p>敵方氣血: 1500</p>
-            <p>正確率: 50%</p>
+            <h3>普通</h3>
+            <p>敵方氣血: 150</p>
+            <p>答中率: 60%</p>
             <div class="popup-image" style="display: none;">
-                <img src="https://i.ibb.co/spz2tv88/3.png" alt="普通難度全圖">
+                <img src="https://example.com/difficulty-normal-full.png" alt="普通難度全圖">
             </div>
         </div>
         <div class="difficulty-card" onclick="selectDifficulty('hard')">
-            <img src="https://i.ibb.co/B5SqSkqs/image.png" class="difficulty-icon">
+            <img src="https://example.com/difficulty-hard.png" class="difficulty-icon">
             <div class="selected-tick">✓</div>
-            <h3>鶴棲朔</h3>
-            <p>敵方氣血: 2000</p>
-            <p>正確率: 70%</p>
+            <h3>困難</h3>
+            <p>敵方氣血: 200</p>
+            <p>答中率: 40%</p>
             <div class="popup-image" style="display: none;">
-                <img src="https://i.ibb.co/B5SqSkqs/image.png" alt="困難難度全圖">
+                <img src="https://example.com/difficulty-hard-full.png" alt="困難難度全圖">
             </div>
         </div>
         <div class="difficulty-card" onclick="selectDifficulty('hell')">
-            <img src="https://i.ibb.co/1G8nGFC2/4.png" class="difficulty-icon">
+            <img src="https://example.com/difficulty-hell.png" class="difficulty-icon">
             <div class="selected-tick">✓</div>
-            <h3>赤淵綾音</h3>
-            <p>敵方氣血: 3000</p>
-            <p>正確率: 90%</p>
+            <h3>地獄</h3>
+            <p>敵方氣血: 250</p>
+            <p>答中率: 20%</p>
             <div class="popup-image" style="display: none;">
-                <img src="https://i.ibb.co/1G8nGFC2/4.png" alt="地獄難度全圖">
+                <img src="https://example.com/difficulty-hell-full.png" alt="地獄難度全圖">
             </div>
         </div>
     </div>
@@ -1285,21 +1276,6 @@
     
 <script>
 
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        // 用戶已登入
-        document.getElementById('logoutContainer').style.display = 'block';
-        document.getElementById('registerBtn').style.display = 'none';
-        document.getElementById('loginBtn').style.display = 'none';
-    } else {
-        // 用戶未登入
-        document.getElementById('logoutContainer').style.display = 'none';
-        document.getElementById('registerBtn').style.display = 'block';
-        document.getElementById('loginBtn').style.display = 'block';
-    }
-});
-
-    
     // 在代码开头定义不同难度的经验奖励
 const expRewards = {
     easy: 10,
@@ -1948,6 +1924,9 @@ document.getElementById('loginBtn').onclick = function() {
     const password = prompt("請輸入密碼");
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
+            // 登入成功
+            document.getElementById('logoutContainer').style.display = 'block';
+            console.log('登入成功，用户:', userCredential.user);})
             const user = userCredential.user;
             if (!user.displayName) {
                 const displayName = prompt("請輸入您的顯示名稱");
@@ -2026,52 +2005,54 @@ document.getElementById('registerBtn').onclick = function() {
         });
 };
 
-// 登出按鈕事件
+// 獨立的登出邏輯（新增位置）
 document.getElementById('logoutBtn').onclick = function() {
     auth.signOut()
         .then(() => {
-            // 登出成功
+            alert("已登出");
+            document.getElementById('loginBtn').style.display = 'inline-block';
+            document.getElementById('registerBtn').style.display = 'inline-block';
             document.getElementById('logoutContainer').style.display = 'none';
-            document.getElementById('registerBtn').style.display = 'block';
-            document.getElementById('loginBtn').style.display = 'block';
-            console.log('已登出');
         })
         .catch((error) => {
-            console.error('登出失敗:', error);
-            alert('登出失敗: ' + error.message);
+            alert("登出失敗：" + error.message);
         });
 };
 
     
     const auth = firebase.auth();
    auth.onAuthStateChanged((user) => {
+    const userInfo = document.getElementById('userInfo');
+    const userName = document.getElementById('userName');
+    const userScore = document.getElementById('userScore');
+    const userLevel = document.getElementById('userLevel');
+    const expFill = document.getElementById('expFill');
+
     if (user) {
-        const userRef = database.ref('users/' + user.uid);
-        userRef.once('value', (snapshot) => {
-            const userData = snapshot.val() || { level: 1, exp: 0, score: 0 };
-            playerLevel = userData.level;
-            playerExp = userData.exp;
-            const expRequired = 100 * playerLevel; // 每級所需經驗值
-            const expPercentage = (playerExp / expRequired) * 100;
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('registerBtn').style.display = 'none';
+        document.getElementById('logoutContainer').style.display = 'block';
+        userInfo.style.display = 'block';
+        userName.textContent = user.displayName || '未命名玩家';
 
-            // 顯示用戶信息
-            document.getElementById('userInfo').style.display = 'block';
-            document.getElementById('userName').textContent = user.displayName || '未知玩家';
-            document.getElementById('userScore').textContent = userData.score;
-            document.getElementById('userLevel').textContent = playerLevel;
+        // 從資料庫獲取資料
+      database.ref('users/' + user.uid).once('value', (snapshot) => {
+    const userData = snapshot.val() || { level: 1, exp: 0 };
+    playerLevel = userData.level; // 設置全局變量
+    userLevel.textContent = userData.level;
+    const expPercentage = (userData.exp / (100 * userData.level)) * 100;
+    expFill.style.width = expPercentage + '%';
+});
 
-            // 更新經驗值條
-            document.getElementById('expFill').style.width = `${expPercentage}%`;
-
-            // 更新經驗值文字
-            document.getElementById('expText').textContent = `${playerExp}/${expRequired} (${expPercentage.toFixed(1)}%)`;
-
-            // 更新升級還需經驗值
-            document.getElementById('expRemaining').textContent = `升級還需：${expRequired - playerExp} 經驗值`;
+        database.ref('leaderboard/' + user.uid).once('value', (snapshot) => {
+            const data = snapshot.val();
+            userScore.textContent = data ? data.score : 0;
         });
     } else {
-        // 未登錄時隱藏用戶信息
-        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('loginBtn').style.display = 'inline-block';
+        document.getElementById('registerBtn').style.display = 'inline-block';
+        document.getElementById('logoutContainer').style.display = 'none';
+        userInfo.style.display = 'none';
     }
 });
 const database = firebase.database();
@@ -2116,53 +2097,32 @@ function toggleMusic() {
 }
 
 function createRoom() {
-    const roomIdInput = document.getElementById('roomId').value.trim();
-    if (roomIdInput.length !== 4) {
-        alert('請輸入四位戰場編號');
-        return;
-    }
-    const userId = generateUserId();
-    const player1Ref = database.ref('rooms/' + roomIdInput + '/player1');
-    player1Ref.set({ userId: userId, health: 100, class: null, currentQuestion: null });
-    player1Ref.onDisconnect().remove();
-    currentRoomId = roomIdInput;
+    currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
     isHost = true;
     document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('waitingArea').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = roomIdInput;
     document.getElementById('classSelection').style.display = 'block';
+    document.getElementById('waitingArea').style.display = 'block';
+    document.getElementById('displayRoomId').textContent = currentRoomId;
+
+    // 隨機決定題庫選擇者
+    const topicSelector = Math.random() < 0.5 ? 'player1' : 'player2';
+
+    database.ref('rooms/' + currentRoomId).set({
+        player1: { health: 100, class: null, currentQuestion: null },
+        player2: { health: 100, class: null, currentQuestion: null },
+        gameStarted: false,
+        gameEnded: false,
+        winner: null,
+        topicSelector: topicSelector // 新增字段
+    });
     listenToRoomChanges();
 }
 
 function joinRoom() {
-    const roomId = document.getElementById('roomId').value.trim();
-    if (roomId.length !== 4) {
-        alert('請輸入四位戰場編號');
-        return;
-    }
-    const userId = generateUserId();
-    const roomRef = database.ref('rooms/' + roomId);
-    roomRef.once('value').then(snapshot => {
-        if (snapshot.exists()) {
-            const room = snapshot.val();
-            if (room.player2) {
-                alert('戰場已滿');
-                return;
-            }
-            const player2Ref = database.ref('rooms/' + roomId + '/player2');
-            player2Ref.set({ userId: userId, health: 100, class: null, currentQuestion: null });
-            player2Ref.onDisconnect().remove();
-            currentRoomId = roomId;
-            isHost = false;
-            document.getElementById('roomControl').style.display = 'none';
-            document.getElementById('waitingArea').style.display = 'block';
-            document.getElementById('displayRoomId').textContent = roomId;
-            document.getElementById('classSelection').style.display = 'block';
-            listenToRoomChanges();
-        } else {
-            alert('戰場不存在');
-        }
-    });
+    currentRoomId = document.getElementById('roomId').value;
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('classSelection').style.display = 'block';
+    listenToRoomChanges();
 }
 
     function createRoomWithId(roomId) {
@@ -2221,8 +2181,29 @@ function joinRoomWithId(roomId) {
     }
 }
 
+    function joinWaitingQueue() {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        alert("請先登入！");
+        return;
+    }
 
-   
+    const waitingRef = database.ref('waitingRooms');
+    const userId = user.uid;
+
+    // 檢查是否已在等待隊列中
+    waitingRef.child(userId).once('value', (snapshot) => {
+        if (!snapshot.exists()) {
+            // 加入等待隊列
+            waitingRef.child(userId).set({
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            checkForMatch();
+        } else {
+            alert("您已在等待中，請稍候！");
+        }
+    });
+}
 
 function checkForMatch() {
     const waitingRef = database.ref('waitingRooms');
@@ -3468,9 +3449,6 @@ if (room.hostRematch && room.clientRematch) {
 
 <!-- 新增减伤提示 -->
 <div id="reduceDamageText" style="display:none; position:fixed; top:40%; left:50%; transform:translate(-50%,-50%); font-size:2rem; color:#00ffff; text-shadow:0 0 10px rgba(0,255,255,0.5);">🔥 離火護體 傷害減少30%</div>
-
-
-
     
 </body>
 
