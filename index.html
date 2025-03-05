@@ -2784,25 +2784,21 @@ function selectSinglePlayerTopic(topic) {
 }
 
 function updateSinglePlayerHealthDisplay() {
-    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100; // 動態計算己方最大氣血
-    const maxEnemyHealth = difficultySettings[selectedDifficulty].enemyHealth; // 動態敵方最大氣血
+    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100;
+    const maxEnemyHealth = difficultySettings[selectedDifficulty].enemyHealth;
 
-    // 更新己方氣血
-    document.getElementById('myHealth').textContent = `${singlePlayerHealth} / ${maxPlayerHealth}`;
+    document.getElementById('myHealth').textContent = `${Math.round(singlePlayerHealth)} / ${maxPlayerHealth}`;
     document.getElementById('myHealthBar').style.width = `${(singlePlayerHealth / maxPlayerHealth) * 100}%`;
 
-    // 更新敵方氣血
-    document.getElementById('opponentHealth').textContent = `${enemyHealth} / ${maxEnemyHealth}`;
+    document.getElementById('opponentHealth').textContent = `${Math.round(enemyHealth)} / ${maxEnemyHealth}`;
     document.getElementById('opponentHealthBar').style.width = `${(enemyHealth / maxEnemyHealth) * 100}%`;
 
-    // 添加血條衝擊波特效
     const healthBar = singlePlayerHealth < maxPlayerHealth * 0.3 ? 'myHealthBar' : 'opponentHealthBar';
     const wave = document.createElement('div');
     wave.className = 'health-wave';
     document.getElementById(healthBar).appendChild(wave);
     setTimeout(() => wave.remove(), 500);
 }
-
 
     
     function loadNewQuestionSinglePlayer() {
@@ -2906,28 +2902,36 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    const difficultyDamage = {
-        easy: 8,
-        normal: 12,
-        hard: 15,
-        hell: 20
+    // 定義難度倍率
+    const difficultyMultipliers = {
+        easy: 0.8,
+        normal: 1.0,
+        hard: 1.2,
+        hell: 1.5
     };
-    let damage = difficultyDamage[selectedDifficulty];
+    const difficultyMultiplier = difficultyMultipliers[selectedDifficulty];
+
+    // 計算基礎傷害：隨機50-80 + 等級調整（每級+5）
+    const randomBase = Math.floor(Math.random() * (80 - 50 + 1)) + 50;
+    const levelAdjustment = (playerLevel - 1) * 5;
+    const baseDamage = Math.round((randomBase + levelAdjustment) * difficultyMultiplier);
 
     if (isCorrect) {
-        let attackMultiplier = singlePlayerClass.attack;
+        let attackDamage = baseDamage * singlePlayerClass.attack;
         if (singlePlayerClass.type === 'warrior' && Math.random() < 0.3) {
-            attackMultiplier *= 2;
+            attackDamage *= 2;
             showEffect('sword-flash');
         }
-        enemyHealth = Math.max(enemyHealth - (damage * attackMultiplier), 0);
+        enemyHealth = Math.max(enemyHealth - Math.round(attackDamage), 0);
         updateSinglePlayerHealthDisplay();
+        soundEffects.correct.play();
+        showHitMarker();
         if (enemyHealth <= 0) {
             handleSinglePlayerGameOver(true);
             return;
         }
     } else {
-        let actualDamage = damage * singlePlayerClass.defense;
+        let actualDamage = baseDamage * singlePlayerClass.defense;
         if (singlePlayerClass.type === 'assassin' && Math.random() < singlePlayerClass.dodge) {
             actualDamage = 0;
             document.getElementById('dodgeText').style.display = 'block';
@@ -2937,8 +2941,9 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
             document.getElementById('reduceDamageText').style.display = 'block';
             setTimeout(() => document.getElementById('reduceDamageText').style.display = 'none', 1200);
         }
-        singlePlayerHealth = Math.max(singlePlayerHealth - actualDamage, 0);
+        singlePlayerHealth = Math.max(singlePlayerHealth - Math.round(actualDamage), 0);
         updateSinglePlayerHealthDisplay();
+        soundEffects.wrong.play();
         if (singlePlayerHealth <= 0) {
             handleSinglePlayerGameOver(false);
             return;
