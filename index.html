@@ -3138,11 +3138,14 @@ function showEffect(className) {
     victoryOverlay.appendChild(buttonContainer);
 }
 
-    function resetSinglePlayerGame() {
+  function resetSinglePlayerGame() {
     // 重置遊戲狀態
     gameOver = false;
     answered = false;
-    singlePlayerHealth = 1000 + (playerLevel - 1) * 100; // 重置玩家氣血
+    
+    // 根據玩家等級計算最大氣血值
+    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100; // 每級增加 100 點氣血
+    singlePlayerHealth = maxPlayerHealth; // 設置為滿血
     enemyHealth = difficultySettings[selectedDifficulty].enemyHealth; // 重置敵方氣血
     updateSinglePlayerHealthDisplay();
 
