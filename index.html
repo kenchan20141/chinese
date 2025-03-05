@@ -950,7 +950,11 @@
             <span>隨機分配</span>
             <div class="btn-glow"></div>
         </button>
-        
+        <button onclick="startSinglePlayer()" class="action-btn single-player-btn">
+    <i class="fas fa-user"></i>
+    <span>單機模式</span>
+    <div class="btn-glow"></div>
+</button>
     </div>
 
    
@@ -1913,7 +1917,12 @@ const soundEffects = {
     defeat: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
 };
 
- 
+    const difficultySettings = {
+    easy: { damageChance: 0.2, damageInterval: 10000 }, // 20% 機率，每 10 秒扣血
+    normal: { damageChance: 0.4, damageInterval: 8000 }, // 40% 機率，每 8 秒扣血
+    hard: { damageChance: 0.6, damageInterval: 6000 }, // 60% 機率，每 6 秒扣血
+    hell: { damageChance: 0.8, damageInterval: 4000 } // 80% 機率，每 4 秒扣血
+};
 
 // 修改重點 2：初始按鈕文字設定
 document.querySelector('.music-control').textContent = '🔇';  // 加入這行初始化設定
@@ -2545,6 +2554,290 @@ userRef.once('value', (snapshot) => {
 }
 
 
+    // 啟動單機模式
+function startSinglePlayer() {
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('difficultySelection').style.display = 'block';
+}
+
+// 選擇難度並啟動遊戲
+function selectDifficulty(difficulty) {
+    const settings = difficultySettings[difficulty];
+    if (!settings) return;
+
+    // 初始化单机模式
+    currentRoomId ='single_' + Date.now();
+    isHost = true;
+    gameOver = false;
+    answered = false;
+    playerClass = null; // 单机模式不需要职业
+
+    // 设置玩家气血
+    const initialHealth = 100;
+    // 添加敌方初始气血设置
+    const enemyInitialHealth = 100;
+    database.ref('rooms/' + currentRoomId).set({
+        player1: { health: initialHealth },
+        enemy: { health: enemyInitialHealth }, // 添加敌方气血
+        gameStarted: true,
+        gameEnded: false,
+        winner: null
+    });
+
+    // 显示游戏区域
+    document.getElementById('difficultySelection').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+    const victoryOverlay = document.querySelector('.victory-overlay');
+victoryOverlay.style.display = 'none';
+
+    // 开始扣血计时器，确保按照难度设置的时间间距扣血
+    clearInterval(timer); // 清除可能存在的旧计时器
+    setInterval(() => {
+        if (Math.random() < settings.damageChance) {
+            const damage = 10; // 每次扣减 10 点气血
+            database.ref('rooms/' + currentRoomId + '/player1/health').set(
+                firebase.database.ServerValue.increment(-damage)
+            );
+        }
+    }, settings.damageInterval);
+
+    // 监听气血变化
+    listenToSinglePlayerHealth();
+    loadNewQuestionSinglePlayer();
+}
+
+// 監聽單機模式氣血
+function listenToSinglePlayerHealth() {
+    const roomRef = database.ref('rooms/' + currentRoomId);
+    roomRef.on('value', (snapshot) => {
+        const room = snapshot.val();
+        if (!room) return;
+
+        const health = room.player1.health;
+        document.getElementById('myHealth').textContent = Math.max(health, 0);
+        document.getElementById('myHealthBar').style.width = Math.max(health, 0) + '%';
+
+        if (health <= 0) {
+            handleSinglePlayerGameOver();
+        }
+    });
+}
+
+// 單機模式問題加載
+function loadNewQuestionSinglePlayer() {
+    const totalQuestions = 622;
+    const randomId = Math.floor(Math.random() * totalQuestions);
+
+    const questionRef = database.ref(`questions/${randomId}`);
+    questionRef.once('value').then(snapshot => {
+        const originalQuestion = snapshot.val();
+        if (!originalQuestion) {
+            console.error('無法找到該問題數據');
+            return;
+        }
+
+        const optionsCopy = [...originalQuestion.options];
+        const correctAnswer = optionsCopy[originalQuestion.correctIndex];
+        const shuffledOptions = shuffleArray(optionsCopy);
+        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+
+        const processedQuestion = {
+            question: originalQuestion.question,
+            options: shuffledOptions,
+            correctIndex: newCorrectIndex,
+            id: Date.now()
+        };
+
+        currentQuestionId = processedQuestion.id;
+        database.ref('rooms/' + currentRoomId + '/player1').update({
+            currentQuestion: processedQuestion
+        });
+
+        answered = false;
+        displayQuestionSinglePlayer(processedQuestion);
+    }).catch(error => {
+        console.error('下載問題數據時出錯:', error);
+    });
+}
+
+// 顯示單機模式問題
+function displayQuestionSinglePlayer(question) {
+    window.currentQuestion = question;
+    document.getElementById('question').textContent = question.question;
+    const optionsDiv = document.getElementById('options');
+    optionsDiv.innerHTML = '';
+
+    question.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.textContent = option;
+        button.setAttribute('data-question-id', question.id);
+        button.onclick = () => {
+            if (!answered) {
+                checkAnswerSinglePlayer(index === question.correctIndex, question.id);
+            }
+        };
+        optionsDiv.appendChild(button);
+    });
+    startTimer();
+}
+
+// 單機模式答案檢查
+function checkAnswerSinglePlayer(isCorrect, questionId) {
+    if (answeredQuestions.has(questionId)) return;
+    answeredQuestions.add(questionId);
+
+    if (answered || gameOver) return;
+    answered = true;
+
+    clearInterval(timer);
+
+    const buttons = document.querySelectorAll('#options button');
+    const correctIndex = window.currentQuestion.correctIndex;
+    buttons.forEach((btn, index) => {
+        btn.style.pointerEvents = 'none';
+        if (index === correctIndex) {
+            btn.style.cssText = `
+                background: #2ecc71 !important;
+                border: 2px solid #27ae60 !important;
+                transform: scale(1.05);
+            `;
+        }
+    });
+
+    let damage = 0;
+    if (isCorrect) {
+        // 增加扣减敌方气血的逻辑，假设敌方气血初始为100，每次答对扣10点
+        const enemyHealthElement = document.getElementById('opponentHealth');
+        const enemyHealth = parseInt(enemyHealthElement.textContent, 10);
+        const newEnemyHealth = enemyHealth - 10;
+        enemyHealthElement.textContent = newEnemyHealth;
+        document.getElementById('opponentHealthBar').style.width = newEnemyHealth + '%';
+
+        // 添加答对时的音效和震动
+        const soundEffects = {
+            attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
+        };
+        soundEffects.attack.currentTime = 0;
+        soundEffects.attack.play();
+        navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+        if (navigator.vibrate) navigator.vibrate(200);
+
+        // 检查敌方气血是否归零
+        if (newEnemyHealth <= 0) {
+            handleSinglePlayerGameOver(true); // 传递参数表示胜利
+        }
+    } else {
+        damage = 10; // 答错扣 10 点气血
+        database.ref('rooms/' + currentRoomId + '/player1/health').set(
+            firebase.database.ServerValue.increment(-damage)
+        );
+        // 答错时仅震动
+        navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+        if (navigator.vibrate) navigator.vibrate(200);
+    }
+
+    const targetElement = document.getElementById('myHealthBar');
+    targetElement.classList.add('damage-flash');
+    document.getElementById('gameArea').classList.add('screen-shake');
+    document.querySelectorAll('.health-fill').forEach(bar => bar.classList.add('damage-effect'));
+
+    setTimeout(() => {
+        targetElement.classList.remove('damage-flash');
+        document.getElementById('gameArea').classList.remove('screen-shake');
+        document.querySelectorAll('.health-fill').forEach(bar => bar.classList.remove('damage-effect'));
+    }, 500);
+
+    setTimeout(() => {
+        buttons.forEach(btn => {
+            btn.style.cssText = '';
+            btn.style.pointerEvents = 'auto';
+        });
+        answered = false;
+        loadNewQuestionSinglePlayer();
+    }, 700);
+}
+
+
+    function handleSinglePlayerGameOver() {
+    if (gameOver) return;
+    gameOver = true;
+
+    clearInterval(timer);
+    document.querySelectorAll('#options button').forEach(btn => btn.disabled = true);
+
+    const victoryOverlay = document.querySelector('.victory-overlay');
+    const victoryText = document.querySelector('.victory-text');
+    const isWinner = /* 判断是否为胜方的逻辑，这里假设敌方气血先归零则为胜方，你可能需要根据实际情况调整 */ document.getElementById('opponentHealth').textContent <= 0;
+victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
+    victoryOverlay.style.display = 'flex';
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'rematch-buttons';
+
+    const restartBtn = document.createElement('button');
+    restartBtn.textContent = '再戰江湖';
+    const mainMenuBtn = document.createElement('button');
+    mainMenuBtn.textContent = '歸隱山林';
+
+    restartBtn.onclick = () => {
+        database.ref('rooms/' + currentRoomId).remove();
+        const victoryOverlay = document.querySelector('.victory-overlay');
+const buttons = victoryOverlay.querySelector('.rematch-buttons');
+if (buttons) buttons.remove();
+victoryOverlay.style.display = 'none';
+
+
+// 初始化敌方气血
+        const enemyInitialHealth = 100;
+        document.getElementById('opponentHealth').textContent = enemyInitialHealth;
+        document.getElementById('opponentHealthBar').style.width = enemyInitialHealth + '%';
+
+        
+        startSinglePlayer();
+    };
+    mainMenuBtn.onclick = () => {
+        database.ref('rooms/' + currentRoomId).remove();
+        window.location.reload();
+    };
+
+    buttonContainer.appendChild(restartBtn);
+    buttonContainer.appendChild(mainMenuBtn);
+    victoryOverlay.appendChild(buttonContainer);
+
+    // 新增逻辑：在点击“再战江湖”时，清除可能存在的遮挡画面
+    const waitingForRematch = document.getElementById('waitingForRematch');
+    if (waitingForRematch) waitingForRematch.remove();
+}
+
+document.getElementById('showLeaderboardBtn').onclick = function() {
+    const leaderboardRef = database.ref('leaderboard');
+    leaderboardRef.orderByChild('score').limitToLast(10).once('value', (snapshot) => {
+        const leaderboard = [];
+        snapshot.forEach((childSnapshot) => {
+            const data = childSnapshot.val();
+            leaderboard.push(data);
+        });
+        leaderboard.reverse(); // 降序排列
+
+        // 顯示排行榜
+        let leaderboardHTML = '<h2 style="text-align: center; color: var(--gold);">🏆 排行榜 - 前十名</h2><ul>';
+        leaderboard.forEach((entry, index) => {
+            leaderboardHTML += `<li style="font-size: 1.2rem; padding: 0.5rem;">${index + 1}. ${entry.name} - ${entry.score} 分</li>`;
+        });
+        leaderboardHTML += '</ul>';
+        
+        const leaderboardDiv = document.createElement('div');
+        leaderboardDiv.style.cssText = `
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
+            border-radius: 15px; width: 80%; max-width: 600px; /* 使用百分比和最大宽度结合 */
+            z-index: 10000; color: white;
+        `;
+        leaderboardDiv.innerHTML = leaderboardHTML + '<button onclick="this.parentElement.remove()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #e74c3c; border: none; border-radius: 5px; color: white;">關閉</button>';
+        document.body.appendChild(leaderboardDiv);
+    });
+};
+    
 
 function handleRematchRequest() {
     if (isRematching) return;
