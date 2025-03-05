@@ -2905,13 +2905,19 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    const difficultyDamage = {
-        easy: 8,
-        normal: 12,
-        hard: 15,
-        hell: 20
+    // 定義難度倍率
+    const difficultyMultipliers = {
+        easy: 0.8,
+        normal: 1.0,
+        hard: 1.2,
+        hell: 1.5
     };
-    let damage = difficultyDamage[selectedDifficulty];
+    const difficultyMultiplier = difficultyMultipliers[selectedDifficulty];
+
+    // 計算基礎傷害：隨機50-80 + 等級調整（每級+5）
+    const randomBase = Math.floor(Math.random() * (80 - 50 + 1)) + 50;
+    const levelAdjustment = (playerLevel - 1) * 5;
+    const baseDamage = Math.round((randomBase + levelAdjustment) * difficultyMultiplier);
 
     if (isCorrect) {
         let attackMultiplier = singlePlayerClass.attack;
