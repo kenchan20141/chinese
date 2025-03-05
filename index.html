@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html>
     
@@ -2680,17 +2681,8 @@ function selectSinglePlayerClass(className) {
         mage: { attack: 1.1, defense: 1.0, dodge: 0, skill: 'counter' }
     };
 
-    // 根據等級計算基礎屬性
-    const baseAttack = 1.0 + (playerLevel - 1) * 0.1; // 每級增加0.1攻擊力
-    const baseDefense = 1.0 + (playerLevel - 1) * 0.05; // 每級增加0.05防禦力
-
-    // 應用職業加成
-    singlePlayerClass = {
-        ...classData[className],
-        attack: baseAttack * classData[className].attack,
-        defense: baseDefense * classData[className].defense,
-        type: className
-    };
+    singlePlayerClass = classData[className];
+    singlePlayerClass.type = className;
 
     // 選擇反饋
     document.querySelectorAll('#singlePlayerClassSelection .class-card').forEach(card => {
@@ -2708,6 +2700,7 @@ function selectSinglePlayerClass(className) {
     popupImage.style.display = 'block';
     setTimeout(() => {
         popupImage.style.display = 'none';
+        // 進入題庫選擇界面
         document.getElementById('singlePlayerClassSelection').style.display = 'none';
         document.getElementById('singlePlayerTopicSelection').style.display = 'block';
     }, 500);
@@ -2986,35 +2979,10 @@ function showEffect(className) {
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    victoryText.textContent = isWinner ? "武道昌隆！" : "雖敗猶榮！";
+    const isWinner = /* 判断是否为胜方的逻辑，这里假设敌方气血先归零则为胜方，你可能需要根据实际情况调整 */ document.getElementById('opponentHealth').textContent <= 0;
+victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
     victoryOverlay.style.display = 'flex';
 
-    // 處理經驗值增加（僅在獲勝時）
-    const expRewards = {
-        easy: 10,
-        normal: 30,
-        hard: 100,
-        hell: 200
-    };
-    const user = auth.currentUser;
-    if (isWinner && user) {
-        const userRef = database.ref('users/' + user.uid);
-        userRef.transaction((userData) => {
-            if (!userData) userData = { level: 1, exp: 0, score: 0 };
-            userData.exp += expRewards[selectedDifficulty]; // 增加經驗值
-            const expRequired = 100 * userData.level;
-            if (userData.exp >= expRequired) {
-                userData.level += 1;
-                userData.exp -= expRequired;
-                playerLevel = userData.level; // 更新全局變數
-            }
-            return userData;
-        }).then(() => {
-            alert(`恭喜！你獲得了 ${expRewards[selectedDifficulty]} 點經驗值。`);
-        });
-    }
-
-    // 重賽和返回主菜單按鈕
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'rematch-buttons';
 
@@ -3024,19 +2992,11 @@ function showEffect(className) {
     mainMenuBtn.textContent = '歸隱山林';
 
     restartBtn.onclick = () => {
+        database.ref('rooms/' + currentRoomId).remove();
         const victoryOverlay = document.querySelector('.victory-overlay');
-        const buttons = victoryOverlay.querySelector('.rematch-buttons');
-        if (buttons) buttons.remove();
-        victoryOverlay.style.display = 'none';
-        startSinglePlayer(); // 重啟單機模式
-    };
-    mainMenuBtn.onclick = () => {
-        window.location.reload(); // 返回主菜單
-    };
-
-    buttonContainer.appendChild(restartBtn);
-    buttonContainer.appendChild(mainMenuBtn);
-    victoryOverlay.appendChild(buttonContainer);
+const buttons = victoryOverlay.querySelector('.rematch-buttons');
+if (buttons) buttons.remove();
+victoryOverlay.style.display = 'none';
 
 
 // 初始化敌方气血
