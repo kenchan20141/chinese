@@ -2784,15 +2784,16 @@ function selectSinglePlayerTopic(topic) {
 }
 
 function updateSinglePlayerHealthDisplay() {
-    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100;
+    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100; // 動態計算最大氣血
     const maxEnemyHealth = difficultySettings[selectedDifficulty].enemyHealth;
 
-    document.getElementById('myHealth').textContent = `${Math.round(singlePlayerHealth)} / ${maxPlayerHealth}`;
+    document.getElementById('myHealth').textContent = `${singlePlayerHealth} / ${maxPlayerHealth}`;
     document.getElementById('myHealthBar').style.width = `${(singlePlayerHealth / maxPlayerHealth) * 100}%`;
 
-    document.getElementById('opponentHealth').textContent = `${Math.round(enemyHealth)} / ${maxEnemyHealth}`;
+    document.getElementById('opponentHealth').textContent = `${enemyHealth} / ${maxEnemyHealth}`;
     document.getElementById('opponentHealthBar').style.width = `${(enemyHealth / maxEnemyHealth) * 100}%`;
 
+    // 添加動畫效果
     const healthBar = singlePlayerHealth < maxPlayerHealth * 0.3 ? 'myHealthBar' : 'opponentHealthBar';
     const wave = document.createElement('div');
     wave.className = 'health-wave';
