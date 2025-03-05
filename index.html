@@ -2821,6 +2821,7 @@ function listenToSinglePlayerHealth() {
 
 // 顯示單機模式問題
 function displayQuestionSinglePlayer(question) {
+    console.log('Displaying question:', question); // 添加日誌
     window.currentQuestion = question;
     document.getElementById('question').textContent = question.question;
     const optionsDiv = document.getElementById('options');
@@ -2831,6 +2832,7 @@ function displayQuestionSinglePlayer(question) {
         button.textContent = option;
         button.setAttribute('data-question-id', question.id);
         button.onclick = () => {
+            console.log('Option clicked:', index); // 添加日誌
             if (!answered) {
                 checkAnswerSinglePlayer(index === question.correctIndex, question.id);
             }
@@ -2842,10 +2844,17 @@ function displayQuestionSinglePlayer(question) {
 
 // 單機模式答案檢查
 function checkAnswerSinglePlayer(isCorrect, questionId) {
-    if (answeredQuestions.has(questionId)) return;
+    console.log('Checking answer for question ID:', questionId, 'isCorrect:', isCorrect); // 添加日誌
+    if (answeredQuestions.has(questionId)) {
+        console.log('Question already answered'); // 添加日誌
+        return;
+    }
     answeredQuestions.add(questionId);
 
-    if (answered || gameOver) return;
+    if (answered || gameOver) {
+        console.log('Already answered or game over'); // 添加日誌
+        return;
+    }
     answered = true;
 
     clearInterval(timer);
