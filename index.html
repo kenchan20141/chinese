@@ -1708,36 +1708,33 @@ function updateHealthDisplay(room) {
     const myHealthPercentage = (myHealth / myMaxHealth) * 100;
     const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
 
-    // 更新己方顯示（保持不變）
+    // 更新己方顯示
     document.getElementById('myHealthContainer').innerHTML = `
-        <div>${user.displayName} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
+        <div>${user.displayName || '未知玩家'} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
     `;
 
-    // 獲取敵方 UID
-    const opponentUid = room[opponentPath]?.userId;
-    if (opponentUid) {
-        // 從 Firebase 獲取敵方 USERINFO
-        database.ref('users/' + opponentUid).once('value', (snapshot) => {
-            const opponentData = snapshot.val() || { displayName: '未知玩家', level: 1 };
-            const opponentName = opponentData.displayName || '未知玩家';
-            const opponentLevel = opponentData.level || 1;
+    // 更新敵方顯示
+    const opponentData = room[opponentPath];
+    if (opponentData && opponentData.userId) {
+        // 從 Firebase 用戶數據庫獲取對方名稱和等級
+        database.ref('users/' + opponentData.userId).once('value').then(snapshot => {
+            const userData = snapshot.val() || {};
+            const opponentName = userData.displayName || opponentData.name || '未知玩家';
+            const opponentLevel = userData.level || opponentData.level || 1;
 
-            // 更新敵方顯示
             document.getElementById('enemyHealthContainer').innerHTML = `
                 <div>${opponentName} (等級 ${opponentLevel}) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
                 <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
             `;
-        }).catch((error) => {
-            console.error('獲取敵方資訊失敗:', error);
-            // 錯誤處理：顯示預設值
+        }).catch(error => {
+            console.error('獲取對方用戶數據失敗:', error);
             document.getElementById('enemyHealthContainer').innerHTML = `
                 <div>未知玩家 (等級 1) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
                 <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
             `;
         });
     } else {
-        // 如果沒有敵方 UID，顯示等待訊息
         document.getElementById('enemyHealthContainer').innerHTML = `
             <div>等待玩家加入... 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
@@ -1821,7 +1818,15 @@ document.getElementById('registerBtn').onclick = function() {
             return user.updateProfile({
                 displayName: displayName
             }).then(() => {
-                return displayNamesRef.child(displayName).set(true);
+                // 添加到 users 節點
+                return database.ref('users/' + user.uid).set({
+                    displayName: displayName,
+                    level: 1,
+                    exp: 0,
+                    score: 0
+                }).then(() => {
+                    return displayNamesRef.child(displayName).set(true);
+                });
             });
         })
         .then(() => {
