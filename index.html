@@ -1134,6 +1134,8 @@
     
 <script>
 
+    
+
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1262,6 +1264,9 @@ window.onload = function() {
 };
     
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
+    let isSinglePlayer = false; // 標誌單機模式
+let selectedGrade = null;   // 儲存單機模式選中的年級
+let selectedTopic = null;   // 儲存單機模式選中的題庫
     let playerLevel = 1;  // 預設等級為 1
     let singlePlayerHealth = 100;  // 玩家氣血
 let enemyHealth = 100;         // 敵人氣血
@@ -2558,8 +2563,15 @@ userRef.once('value', (snapshot) => {
 
     // 啟動單機模式
 function startSinglePlayer() {
+    isSinglePlayer = true; // 設置單機模式標誌
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('difficultySelection').style.display = 'block';
+    // 重置選擇狀態
+    selectedGrade = null;
+    selectedTopic = null;
+    document.getElementById('topicSelection').style.display = 'none';
+    document.getElementById('gradeSelection').style.display = 'grid';
+    document.getElementById('topicDetail').style.display = 'none';
 }
 
 // 選擇難度並啟動遊戲
