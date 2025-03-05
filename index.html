@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html>
     
@@ -1996,10 +1995,10 @@ const soundEffects = {
 };
 
     const difficultySettings = {
-    easy: { enemyHealth: 1000, damageChance: 0.2, damageInterval: 10000 }, 20% 機率，每 10 秒扣血
-    normal: { enemyHealth: 1500, damageChance: 0.4, damageInterval: 8000 },
-    hard: { enemyHealth: 2000, damageChance: 0.6, damageInterval: 6000 },
-    hell: { enemyHealth: 3000, damageChance: 0.8, damageInterval: 5000 }
+    easy: { enemyHealth: 1000, damageChance: 0.3, damageInterval: 10000 },
+    normal: { enemyHealth: 1500, damageChance: 0.5, damageInterval: 8000 },
+    hard: { enemyHealth: 2000, damageChance: 0.7, damageInterval: 6000 },
+    hell: { enemyHealth: 3000, damageChance: 0.9, damageInterval: 4000 }
 };
 
 // 修改重點 2：初始按鈕文字設定
@@ -2673,8 +2672,6 @@ function selectDifficulty(difficulty) {
     document.getElementById('difficultySelection').style.display = 'none';
     document.getElementById('singlePlayerClassSelection').style.display = 'block';
 }
-
-    
 function selectSinglePlayerClass(className) {
     const classData = {
         warrior: { attack: 1.2, defense: 0.9, dodge: 0, skill: 'doubleDamage' },
