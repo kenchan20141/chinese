@@ -1914,77 +1914,102 @@ function stopDangerAlert() {
 }
 
     
-// Firebase 配置（請替換為實際值）
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    databaseURL: "YOUR_DATABASE_URL",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+apiKey: "AIzaSyBLUpaWYdcJTrI9KmiiCJ7ZeTE2IRjkobU",
+authDomain: "for-test-6bc8f.firebaseapp.com",
+databaseURL: "https://for-test-6bc8f-default-rtdb.firebaseio.com",
+projectId: "for-test-6bc8f", 
+storageBucket: "for-test-6bc8f.firebasestorage.app",
+messagingSenderId: "948613965375",
+appId: "1:948613965375:web:ae966d7dd461e328093a8a"
+
 };
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const database = firebase.database();
+  
 
-// 獲取按鈕元素
-const registerBtn = document.getElementById('registerBtn');
-const loginBtn = document.getElementById('loginBtn');
-const logoutContainer = document.getElementById('logoutContainer');
-
-// 監聽登入狀態並更新 UI
-firebase.auth().onAuthStateChanged(function(user) {
-    if (user) {
-        logoutContainer.style.display = 'block';
-        registerBtn.style.display = 'none';
-        loginBtn.style.display = 'none';
-    } else {
-        logoutContainer.style.display = 'none';
-        registerBtn.style.display = 'block';
-        loginBtn.style.display = 'block';
-    }
-});
-
-// 登入按鈕事件
-document.getElementById('loginBtn').addEventListener('click', function() {
-    const email = prompt('請輸入電子郵件');
-    const password = prompt('請輸入密碼');
+// 「登入」按鈕事件
+document.getElementById('loginBtn').onclick = function() {
+    const email = prompt("請輸入郵箱");
+    const password = prompt("請輸入密碼");
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
-            console.log('登入成功:', userCredential.user.email);
+            const user = userCredential.user;
+            if (!user.displayName) {
+                const displayName = prompt("請輸入您的顯示名稱");
+                if (displayName) {
+                    user.updateProfile({
+                        displayName: displayName
+                    }).then(() => {
+                        alert("登入成功：" + displayName);
+                    }).catch((error) => {
+                        alert("設置顯示名稱失敗：" + error.message);
+                    });
+                } else {
+                    alert("顯示名稱不能為空");
+                    return;
+                }
+            } else {
+                alert("登入成功：" + user.displayName);
+            }
+            document.getElementById('loginBtn').style.display = 'none';
         })
         .catch((error) => {
-            console.error('登入失敗:', error.message);
-            alert('登入失敗: ' + error.message);
+            alert("登入失敗：" + error.message);
         });
-});
+};
 
-// 登出按鈕事件
-document.getElementById('logoutBtn').addEventListener('click', function() {
-    auth.signOut()
-        .then(() => {
-            console.log('登出成功');
+// 「注冊」按鈕事件（新位置）
+document.getElementById('registerBtn').onclick = function() {
+    const email = prompt("請輸入郵箱");
+    const password = prompt("請輸入密碼");
+    const displayName = prompt("請輸入您的顯示名稱");
+    if (!email || !password || !displayName) {
+        alert("郵箱、密碼和顯示名稱不能為空");
+        return;
+    }
+
+    const displayNamesRef = database.ref('displayNames');
+    displayNamesRef.child(displayName).once('value')
+        .then((snapshot) => {
+            if (snapshot.exists()) {
+                alert("該顯示名稱已被使用，請選擇其他名稱");
+                return Promise.reject("顯示名稱已存在");
+            } else {
+                return auth.createUserWithEmailAndPassword(email, password);
+            }
         })
-        .catch((error) => {
-            console.error('登出失敗:', error.message);
-            alert('登出失敗: ' + error.message);
-        });
-});
-
-// 註冊按鈕事件（可選）
-document.getElementById('registerBtn').addEventListener('click', function() {
-    const email = prompt('請輸入電子郵件');
-    const password = prompt('請輸入密碼');
-    auth.createUserWithEmailAndPassword(email, password)
         .then((userCredential) => {
-            console.log('註冊成功:', userCredential.user.email);
+            const user = userCredential.user;
+            return user.updateProfile({
+                displayName: displayName
+            }).then(() => {
+                // 添加到 users 節點
+                return database.ref('users/' + user.uid).set({
+                    displayName: displayName,
+                    level: 1,
+                    exp: 0,
+                    score: 0
+                }).then(() => {
+                    return displayNamesRef.child(displayName).set(true);
+                });
+            });
+        })
+        .then(() => {
+            alert("註冊成功：" + displayName);
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('registerBtn').style.display = 'none';
+            document.getElementById('logoutContainer').style.display = 'block';
         })
         .catch((error) => {
-            console.error('註冊失敗:', error.message);
-            alert('註冊失敗: ' + error.message);
+            if (error === "顯示名稱已存在") {
+                // 已處理
+            } else if (error.code === 'auth/email-already-in-use') {
+                alert("該郵箱已被註冊");
+            } else {
+                alert("註冊失敗：" + error.message);
+            }
         });
-});
+};
 
 // 獨立的登出邏輯（新增位置）
 document.getElementById('logoutBtn').onclick = function() {
@@ -1999,7 +2024,6 @@ document.getElementById('logoutBtn').onclick = function() {
             alert("登出失敗：" + error.message);
         });
 };
-
 
     
     const auth = firebase.auth();
