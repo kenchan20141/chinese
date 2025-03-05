@@ -943,12 +943,12 @@
     
     <!-- 用戶信息區域 -->
    <div id="userInfo" class="info-box" style="display: none;">
-    <span id="userName"></span> | 積分: <span id="userScore">0</span> | 等級: <span id="userLevel">1</span>
-    <div>經驗值: 
-        <div id="expBar" style="width: 100px; height: 10px; background: #333; border-radius: 5px; display: inline-block;">
-            <div id="expFill" style="height: 100%; background: #4CAF50; width: 0%; transition: width 0.5s ease;"></div>
-        </div>
-    </div>
+   <span id="userName">${user.displayName}</span> | 積分: <span id="userScore">${userData.score || 0}</span> | 等級: <span id="userLevel">${userData.level}</span>
+                <div>經驗值: ${userData.exp} / ${expRequired} (${expPercentage}%) 升級還需: ${remainingExp} 經驗
+                    <div id="expBar" style="width: 100px; height: 10px; background: #333; border-radius: 5px; display: inline-block;">
+                        <div id="expFill" style="height: 100%; background: #4CAF50; width: ${expPercentage}%; transition: width 0.5s ease;"></div>
+                    </div>
+                </div>
 </div>
     
     <!-- 強化標題 -->
