@@ -3133,10 +3133,9 @@ function showEffect(className) {
     mainMenuBtn.textContent = '歸隱山林';
 
     restartBtn.onclick = () => {
-        // 重置相關變數
+        // 重置所有相關變數
         singlePlayerSelectedGrade = null;
         singlePlayerSelectedTopic = null;
-        selectedDifficulty = null;
         singlePlayerClass = null;
         gameOver = false;
         answered = false;
@@ -3146,7 +3145,10 @@ function showEffect(className) {
         const baseHealth = 1000;
         const healthPerLevel = 100;
         singlePlayerHealth = baseHealth + (playerLevel - 1) * healthPerLevel;
-        enemyHealth = difficultySettings[selectedDifficulty]?.enemyHealth || 100;
+        enemyHealth = difficultySettings[selectedDifficulty].enemyHealth;
+
+        // 更新氣血顯示
+        updateSinglePlayerHealthDisplay();
 
         // 隱藏遊戲區域和勝利畫面
         document.getElementById('gameArea').style.display = 'none';
@@ -3154,8 +3156,8 @@ function showEffect(className) {
         const buttons = victoryOverlay.querySelector('.rematch-buttons');
         if (buttons) buttons.remove();
 
-        // 顯示難度選擇界面
-        document.getElementById('difficultySelection').style.display = 'block';
+        // 顯示職業選擇界面（而不是直接跳到難度選擇）
+        document.getElementById('singlePlayerClassSelection').style.display = 'block';
     };
 
     mainMenuBtn.onclick = () => {
