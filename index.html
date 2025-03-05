@@ -2820,31 +2820,6 @@ function selectSinglePlayerTopic(topic) {
     countdownElement.style.zIndex = '10001';
     document.body.appendChild(countdownElement);
 
-       // 修改後
-const baseDamage = Math.floor(Math.random() * 31) + 50; // 隨機50-80
-let defenseAdjustment = 1.0;
-
-// 職業特性調整
-switch(singlePlayerClass.type) {
-    case 'assassin': 
-        defenseAdjustment *= 0.9; // 防禦-10%
-        break;
-    case 'tank': 
-        defenseAdjustment *= 1.2; // 防禦+20%
-        break;
-}
-
-// 難度係數調整
-const difficultyDefense = {
-    easy: 1.0,
-    normal: 1.1,
-    hard: 1.2,
-    hell: 1.3
-}[selectedDifficulty];
-
-const totalDefense = defenseAdjustment * difficultyDefense;
-const finalDamage = Math.round(baseDamage * (1 - totalDefense));
-
     function updateCountdown() {
         if (countdown > 0) {
             countdownElement.textContent = countdown;
@@ -2998,28 +2973,13 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    const baseDamage = Math.floor(Math.random() * 31) + 50; // 隨機50-80
-let defenseAdjustment = 1.0;
-    // 職業特性調整
-switch(singlePlayerClass.type) {
-    case 'assassin': 
-        defenseAdjustment *= 0.9; // 防禦-10%
-        break;
-    case 'tank': 
-        defenseAdjustment *= 1.2; // 防禦+20%
-        break;
-}
-
-// 難度係數調整
-const difficultyDefense = {
-    easy: 1.0,
-    normal: 1.1,
-    hard: 1.2,
-    hell: 1.3
-}[selectedDifficulty];
-
-const totalDefense = defenseAdjustment * difficultyDefense;
-const finalDamage = Math.round(baseDamage * (1 - totalDefense));
+    const baseDamage = 50 + Math.random() * 30; // 基數 50-80
+    const difficultyMultiplier = {
+        easy: 0.8,
+        normal: 1.0,
+        hard: 1.2,
+        hell: 1.5
+    }[selectedDifficulty];
 
     if (isCorrect) {
         soundEffects.attack.play();
