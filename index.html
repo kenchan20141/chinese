@@ -1697,48 +1697,42 @@ function updateHealthDisplay(room) {
     const user = auth.currentUser;
     if (!user) return;
 
-    const playerPath = isHost ? 'player1' : 'player2';
-    const opponentPath = isHost ? 'player2' : 'player1';
+    const playerPath = 'player1'; // 單機模式總是 player1
+    let opponentPath = room.isSinglePlayer ? 'enemy' : (isHost ? 'player2' : 'player1');
 
-    const myMaxHealth = room[playerPath]?.maxHealth || 1000;
-    const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
+    const myMaxHealth = room[playerPath]?.maxHealth || 100;
+    const opponentMaxHealth = room[opponentPath]?.maxHealth || 100;
     const myHealth = Math.max(room[playerPath]?.health || 0, 0);
     const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
 
     const myHealthPercentage = (myHealth / myMaxHealth) * 100;
     const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
 
-    // 更新己方顯示
     document.getElementById('myHealthContainer').innerHTML = `
         <div>${user.displayName || '未知玩家'} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
     `;
 
-    // 更新敵方顯示
-    const opponentData = room[opponentPath];
-    if (opponentData && opponentData.userId) {
-        // 從 Firebase 用戶數據庫獲取對方名稱和等級
-        database.ref('users/' + opponentData.userId).once('value').then(snapshot => {
-            const userData = snapshot.val() || {};
-            const opponentName = userData.displayName || opponentData.name || '未知玩家';
-            const opponentLevel = userData.level || opponentData.level || 1;
-
+    if (room.isSinglePlayer) {
+        document.getElementById('enemyHealthContainer').innerHTML = `
+            <div>AI 對手 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+        `;
+    } else {
+        const opponentData = room[opponentPath];
+        if (opponentData) {
+            const opponentName = opponentData.name || '未知玩家';
+            const opponentLevel = opponentData.level || 1;
             document.getElementById('enemyHealthContainer').innerHTML = `
                 <div>${opponentName} (等級 ${opponentLevel}) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
                 <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
             `;
-        }).catch(error => {
-            console.error('獲取對方用戶數據失敗:', error);
+        } else {
             document.getElementById('enemyHealthContainer').innerHTML = `
-                <div>未知玩家 (等級 1) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+                <div>等待玩家加入... 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
                 <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
             `;
-        });
-    } else {
-        document.getElementById('enemyHealthContainer').innerHTML = `
-            <div>等待玩家加入... 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
-            <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
-        `;
+        }
     }
 }
     
