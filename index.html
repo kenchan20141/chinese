@@ -1135,6 +1135,38 @@
     
 <script>
 
+const dailyDownloadLimit = 1 * 1024 * 1024; // 360MB in bytes
+let currentDownloadBytes = 0;
+
+function monitorDownload(bytes) {
+    currentDownloadBytes += bytes;
+    if (currentDownloadBytes >= dailyDownloadLimit) {
+        switchToNextDatabase();
+    }
+}
+
+function switchToNextDatabase() {
+    currentDatabaseIndex = (currentDatabaseIndex + 1) % databaseConfigs.length;
+    database = apps[currentDatabaseIndex].database();
+    currentDownloadBytes = 0;
+    console.log(`已切換到數據庫 ${currentDatabaseIndex}`);
+}
+
+// 替換所有 database.ref 的讀取邏輯以監控下載量
+function wrapDatabaseRef(ref) {
+    const originalOnce = ref.once;
+    ref.once = function(eventType) {
+        return originalOnce.call(ref, eventType).then(snapshot => {
+            const data = snapshot.val();
+            const bytes = data ? JSON.stringify(data).length : 0;
+            monitorDownload(bytes);
+            return snapshot;
+        });
+    };
+    return ref;
+}
+
+    
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1327,7 +1359,7 @@ function selectClass(className) {
             playerClass.defense += (playerLevel - 1) * 0.1;  // 每級增加 0.1 防禦力
             const maxHealth = 1000 + (playerLevel - 1) * 100;  // 每級增加 100 氣血
 const playerPath = isHost ? 'player1' : 'player2';
-database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+originalDatabase.ref(`rooms/${currentRoomId}/${playerPath}`).update({
     class: className,
     health: maxHealth,
     maxHealth: maxHealth,
@@ -1749,17 +1781,34 @@ function stopDangerAlert() {
 }
 
     
-const firebaseConfig = {
-apiKey: "AIzaSyBLUpaWYdcJTrI9KmiiCJ7ZeTE2IRjkobU",
-authDomain: "for-test-6bc8f.firebaseapp.com",
-databaseURL: "https://for-test-6bc8f-default-rtdb.firebaseio.com",
-projectId: "for-test-6bc8f", 
-storageBucket: "for-test-6bc8f.firebasestorage.app",
-messagingSenderId: "948613965375",
-appId: "1:948613965375:web:ae966d7dd461e328093a8a"
+const databaseConfigs = [
+    {
+        apiKey: "AIzaSyBLUpaWYdcJTrI9KmiiCJ7ZeTE2IRjkobU",
+        authDomain: "for-test-6bc8f.firebaseapp.com",
+        databaseURL: "https://for-test-6bc8f-default-rtdb.firebaseio.com",
+        projectId: "for-test-6bc8f",
+        storageBucket: "for-test-6bc8f.firebasestorage.app",
+        messagingSenderId: "948613965375",
+        appId: "1:948613965375:web:ae966d7dd461e328093a8a"
+    },
+    {
+         apiKey: "AIzaSyB6MC_t2CXC1HG-QLjZ7lYk-pYJFp3PSjw",
+  authDomain: "for-test2-dd394.firebaseapp.com",
+  databaseURL: " https://for-test2-dd394-default-rtdb.firebaseio.com/",
+  projectId: "for-test2-dd394",
+  storageBucket: "for-test2-dd394.firebasestorage.app",
+  messagingSenderId: "348250219431",
+  appId: "1:348250219431:web:60631c8395154270568c82"
 
-};
-firebase.initializeApp(firebaseConfig);
+    }
+];
+
+let currentDatabaseIndex = 0;
+const apps = databaseConfigs.map((config, index) => 
+    firebase.initializeApp(config, `app-${index}`)
+);
+const originalDatabase = apps[0].database(); // A 數據庫用於寫入
+let database = apps[currentDatabaseIndex].database(); // 當前用於讀取
   
 
 // 「登入」按鈕事件
@@ -1948,7 +1997,7 @@ function createRoom() {
     // 隨機決定題庫選擇者
     const topicSelector = Math.random() < 0.5 ? 'player1' : 'player2';
 
-    database.ref('rooms/' + currentRoomId).set({
+    originalDatabase.ref('rooms/' + currentRoomId).set({
         player1: { health: 100, class: null, currentQuestion: null },
         player2: { health: 100, class: null, currentQuestion: null },
         gameStarted: false,
@@ -1976,7 +2025,7 @@ function joinRoom() {
 
     const user = auth.currentUser;
 if (user) {
-    database.ref('rooms/' + currentRoomId).set({
+    originalDatabase.ref('rooms/' + currentRoomId).set({
         player1: {
             userId: user.uid,
             name: user.displayName || '未知玩家',
@@ -2315,7 +2364,7 @@ function loadNewQuestion() {
     hasHealedThisTurn = false; // 重置恢復狀態
     
     // 從數據庫獲取選擇的題庫
-    database.ref(`rooms/${currentRoomId}`).once('value').then(snapshot => {
+    wrapDatabaseRef(database.ref(`rooms/${currentRoomId}`)).once('value').then(snapshot => {
         const room = snapshot.val();
         const grade = room.selectedGrade;
         const topic = room.selectedTopic;
@@ -2576,7 +2625,7 @@ function selectDifficulty(difficulty) {
     const initialHealth = 100;
     // 添加敌方初始气血设置
     const enemyInitialHealth = 100;
-    database.ref('rooms/' + currentRoomId).set({
+    originalDatabase.ref('rooms/' + currentRoomId).set({
         player1: { health: initialHealth },
         enemy: { health: enemyInitialHealth }, // 添加敌方气血
         gameStarted: true,
@@ -2895,7 +2944,7 @@ function handleRematchRequest() {
 
 
 function listenToRoomChanges() {
-    const roomRef = database.ref('rooms/' + currentRoomId);
+    const roomRef = wrapDatabaseRef(database.ref('rooms/' + currentRoomId));
     roomRef.off('value');
 
     roomRef.on('value', (snapshot) => {
