@@ -3148,6 +3148,37 @@ function showEffect(className) {
     victoryOverlay.appendChild(buttonContainer);
 }
 
+    function resetSinglePlayerGame() {
+    // 重置遊戲狀態
+    gameOver = false;
+    answered = false;
+    singlePlayerHealth = 1000 + (playerLevel - 1) * 100; // 重置玩家氣血
+    enemyHealth = difficultySettings[selectedDifficulty].enemyHealth; // 重置敵方氣血
+    updateSinglePlayerHealthDisplay();
+
+    // 清除舊問題顯示
+    document.getElementById('question').textContent = '';
+    document.getElementById('options').innerHTML = '';
+
+    // 隱藏勝利畫面並移除按鈕
+    const victoryOverlay = document.querySelector('.victory-overlay');
+    victoryOverlay.style.display = 'none';
+    const buttons = victoryOverlay.querySelector('.rematch-buttons');
+    if (buttons) buttons.remove();
+
+    // 重置答案按鈕狀態
+    document.querySelectorAll('#options button').forEach(btn => {
+        btn.disabled = false;
+        btn.style.pointerEvents = 'auto';
+        btn.style.opacity = '1';
+    });
+
+    // 返回難度選擇界面
+    document.getElementById('difficultySelection').style.display = 'block';
+    document.getElementById('gameArea').style.display = 'none';
+    document.getElementById('singlePlayerTopicSelection').style.display = 'none';
+}
+
 document.getElementById('showLeaderboardBtn').onclick = function() {
     const leaderboardRef = database.ref('leaderboard');
     leaderboardRef.orderByChild('score').limitToLast(10).once('value', (snapshot) => {
