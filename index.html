@@ -1285,6 +1285,21 @@
     
 <script>
 
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        // 用戶已登入
+        document.getElementById('logoutContainer').style.display = 'block';
+        document.getElementById('registerBtn').style.display = 'none';
+        document.getElementById('loginBtn').style.display = 'none';
+    } else {
+        // 用戶未登入
+        document.getElementById('logoutContainer').style.display = 'none';
+        document.getElementById('registerBtn').style.display = 'block';
+        document.getElementById('loginBtn').style.display = 'block';
+    }
+});
+
+    
     // 在代码开头定义不同难度的经验奖励
 const expRewards = {
     easy: 10,
