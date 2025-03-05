@@ -2983,6 +2983,9 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     if (isCorrect) {
         soundEffects.attack.play();
+        if (navigator.vibrate) {
+            navigator.vibrate(200); // 答對震動 200ms
+        }
         let attackMultiplier = singlePlayerClass.attack;
         if (singlePlayerClass.type === 'warrior' && Math.random() < 0.3) {
             attackMultiplier *= 2;
@@ -2997,6 +3000,9 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     } else {
         soundEffects.defeat.play();
+        if (navigator.vibrate) {
+            navigator.vibrate(500); // 答錯震動 500ms
+        }
         let defenseReduction = singlePlayerClass.defense * (1 + (playerLevel - 1) * 0.05); // 等級每升1級，防禦力增加5%
         if (singlePlayerClass.type === 'assassin' && Math.random() < singlePlayerClass.dodge) {
             defenseReduction = 0;
