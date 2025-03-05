@@ -2743,6 +2743,10 @@ function selectSinglePlayerTopic(topic) {
         } else {
             countdownElement.remove();
             document.getElementById('gameArea').style.display = 'block';
+            // 確保所有其他遮擋元素被隱藏
+            document.querySelectorAll('#roomControl, #difficultySelection, #singlePlayerClassSelection, #singlePlayerTopicSelection, #waitingArea, #classSelection, #topicSelection').forEach(el => {
+                el.style.display = 'none';
+            });
             // 啟動扣血計時器
             const settings = difficultySettings[selectedDifficulty]; // 使用全局變量
             if (!settings) {
