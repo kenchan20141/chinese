@@ -1131,80 +1131,6 @@
     </div>
 </div>
 
-    <!-- 單機模式角色選擇 -->
-<div id="classSelectionSingle" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); padding: 0rem; z-index: 9999; overflow-y: auto;">
-    <h2 style="color: var(--gold); margin-bottom: 2rem;">選擇你的武道流派</h2>
-    <div class="class-grid">
-        <!-- 戰士 -->
-        <div class="class-card" onclick="selectClassSingle('warrior')">
-            <img src="https://i.ibb.co/XfWY2Lgc/1.png" class="class-icon">
-            <div class="selected-tick">✓</div>
-            <h3>霸刀流</h3>
-            <p>攻擊+20% 防禦-10%</p>
-            <ul class="class-stats">
-                <li>⚔️ 裂空擊：命中後有30%機率造成雙倍傷害</li>
-            </ul>
-            <div class="popup-image" style="display: none;">
-                <img src="https://i.ibb.co/XfWY2Lgc/1.png" alt="霸刀流全圖">
-            </div>
-        </div>
-        <!-- 坦克 -->
-        <div class="class-card" onclick="selectClassSingle('tank')">
-            <img src="https://i.ibb.co/ZR4Z2ZDT/image.png" class="class-icon">
-            <div class="selected-tick">✓</div>
-            <h3>鐵甲宗</h3>
-            <p>防禦+20% 攻擊-10%</p>
-            <ul class="class-stats">
-                <li>🛡️ 金鐘罩：每回合自動恢復2點氣血</li>
-            </ul>
-            <div class="popup-image" style="display: none;">
-                <img src="https://i.ibb.co/ZR4Z2ZDT/image.pngg" alt="鐵甲宗全圖">
-            </div>
-        </div>
-        <!-- 刺客 -->
-        <div class="class-card" onclick="selectClassSingle('assassin')">
-            <img src="https://i.ibb.co/W4V5bX8X/image.png" class="class-icon">
-            <div class="selected-tick">✓</div>
-            <h3>影流教</h3>
-            <p>閃避+30% 防禦-10%</p>
-            <ul class="class-stats">
-                <li>🎯 鬼影步：30%機率完全閃避傷害</li>
-            </ul>
-            <div class="popup-image" style="display: none;">
-                <img src="https://i.ibb.co/W4V5bX8X/image.png" alt="影流教全圖">
-            </div>
-        </div>
-        <!-- 法師 -->
-        <div class="class-card" onclick="selectClassSingle('mage')">
-            <img src="https://i.ibb.co/tM82mXtr/3.png" class="class-icon">
-            <div class="selected-tick">✓</div>
-            <h3>玄天閣</h3>
-            <p>攻擊+10%</p>
-            <ul class="class-stats">
-                <li>🔥 離火訣：錯答傷害扣減30%</li>
-            </ul>
-            <div class="popup-image" style="display: none;">
-                <img src="https://i.ibb.co/tM82mXtr/3.png" alt="玄天閣全圖">
-            </div>
-        </div>
-    </div>
-    <div id="selectedClassInfoSingle" style="margin-top: 2rem;"></div>
-</div>
-
-<!-- 單機模式年級和題庫選擇 -->
-<div id="topicSelectionSingle" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(45, 41, 38, 0.95); padding: 2rem; border: none; border-radius: 0; z-index: 9999; overflow-y: auto;">
-    <h2 style="color: #d4af37; text-align: center;">選擇題庫</h2>
-    <div id="gradeSelectionSingle" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; width: 300px;">
-        <button onclick="selectGradeSingle('中一')" class="grade-btn">中一</button>
-        <button onclick="selectGradeSingle('中五')" class="grade-btn">中五</button>
-    </div>
-    <div id="topicDetailSingle" style="display: none; margin-top: 1rem;">
-        <h3 id="selectedGradeSingle" style="color: #d4af37; text-align: center;"></h3>
-        <div id="topicListSingle" style="display: grid; grid-template-columns: repeat(1, 1fr); gap: 1rem; margin-top: 1rem;"></div>
-    </div>
-</div>
-
-
     
     
 <script>
@@ -2627,6 +2553,290 @@ userRef.once('value', (snapshot) => {
     }, 5000);
 }
 
+
+    // 啟動單機模式
+function startSinglePlayer() {
+    document.getElementById('roomControl').style.display = 'none';
+    document.getElementById('difficultySelection').style.display = 'block';
+}
+
+// 選擇難度並啟動遊戲
+function selectDifficulty(difficulty) {
+    const settings = difficultySettings[difficulty];
+    if (!settings) return;
+
+    // 初始化单机模式
+    currentRoomId ='single_' + Date.now();
+    isHost = true;
+    gameOver = false;
+    answered = false;
+    playerClass = null; // 单机模式不需要职业
+
+    // 设置玩家气血
+    const initialHealth = 100;
+    // 添加敌方初始气血设置
+    const enemyInitialHealth = 100;
+    database.ref('rooms/' + currentRoomId).set({
+        player1: { health: initialHealth },
+        enemy: { health: enemyInitialHealth }, // 添加敌方气血
+        gameStarted: true,
+        gameEnded: false,
+        winner: null
+    });
+
+    // 显示游戏区域
+    document.getElementById('difficultySelection').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+    const victoryOverlay = document.querySelector('.victory-overlay');
+victoryOverlay.style.display = 'none';
+
+    // 开始扣血计时器，确保按照难度设置的时间间距扣血
+    clearInterval(timer); // 清除可能存在的旧计时器
+    setInterval(() => {
+        if (Math.random() < settings.damageChance) {
+            const damage = 10; // 每次扣减 10 点气血
+            database.ref('rooms/' + currentRoomId + '/player1/health').set(
+                firebase.database.ServerValue.increment(-damage)
+            );
+        }
+    }, settings.damageInterval);
+
+    // 监听气血变化
+    listenToSinglePlayerHealth();
+    loadNewQuestionSinglePlayer();
+}
+
+// 監聽單機模式氣血
+function listenToSinglePlayerHealth() {
+    const roomRef = database.ref('rooms/' + currentRoomId);
+    roomRef.on('value', (snapshot) => {
+        const room = snapshot.val();
+        if (!room) return;
+
+        const health = room.player1.health;
+        document.getElementById('myHealth').textContent = Math.max(health, 0);
+        document.getElementById('myHealthBar').style.width = Math.max(health, 0) + '%';
+
+        if (health <= 0) {
+            handleSinglePlayerGameOver();
+        }
+    });
+}
+
+// 單機模式問題加載
+function loadNewQuestionSinglePlayer() {
+    const totalQuestions = 622;
+    const randomId = Math.floor(Math.random() * totalQuestions);
+
+    const questionRef = database.ref(`questions/${randomId}`);
+    questionRef.once('value').then(snapshot => {
+        const originalQuestion = snapshot.val();
+        if (!originalQuestion) {
+            console.error('無法找到該問題數據');
+            return;
+        }
+
+        const optionsCopy = [...originalQuestion.options];
+        const correctAnswer = optionsCopy[originalQuestion.correctIndex];
+        const shuffledOptions = shuffleArray(optionsCopy);
+        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+
+        const processedQuestion = {
+            question: originalQuestion.question,
+            options: shuffledOptions,
+            correctIndex: newCorrectIndex,
+            id: Date.now()
+        };
+
+        currentQuestionId = processedQuestion.id;
+        database.ref('rooms/' + currentRoomId + '/player1').update({
+            currentQuestion: processedQuestion
+        });
+
+        answered = false;
+        displayQuestionSinglePlayer(processedQuestion);
+    }).catch(error => {
+        console.error('下載問題數據時出錯:', error);
+    });
+}
+
+// 顯示單機模式問題
+function displayQuestionSinglePlayer(question) {
+    window.currentQuestion = question;
+    document.getElementById('question').textContent = question.question;
+    const optionsDiv = document.getElementById('options');
+    optionsDiv.innerHTML = '';
+
+    question.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.textContent = option;
+        button.setAttribute('data-question-id', question.id);
+        button.onclick = () => {
+            if (!answered) {
+                checkAnswerSinglePlayer(index === question.correctIndex, question.id);
+            }
+        };
+        optionsDiv.appendChild(button);
+    });
+    startTimer();
+}
+
+// 單機模式答案檢查
+function checkAnswerSinglePlayer(isCorrect, questionId) {
+    if (answeredQuestions.has(questionId)) return;
+    answeredQuestions.add(questionId);
+
+    if (answered || gameOver) return;
+    answered = true;
+
+    clearInterval(timer);
+
+    const buttons = document.querySelectorAll('#options button');
+    const correctIndex = window.currentQuestion.correctIndex;
+    buttons.forEach((btn, index) => {
+        btn.style.pointerEvents = 'none';
+        if (index === correctIndex) {
+            btn.style.cssText = `
+                background: #2ecc71 !important;
+                border: 2px solid #27ae60 !important;
+                transform: scale(1.05);
+            `;
+        }
+    });
+
+    let damage = 0;
+    if (isCorrect) {
+        // 增加扣减敌方气血的逻辑，假设敌方气血初始为100，每次答对扣10点
+        const enemyHealthElement = document.getElementById('opponentHealth');
+        const enemyHealth = parseInt(enemyHealthElement.textContent, 10);
+        const newEnemyHealth = enemyHealth - 10;
+        enemyHealthElement.textContent = newEnemyHealth;
+        document.getElementById('opponentHealthBar').style.width = newEnemyHealth + '%';
+
+        // 添加答对时的音效和震动
+        const soundEffects = {
+            attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
+        };
+        soundEffects.attack.currentTime = 0;
+        soundEffects.attack.play();
+        navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+        if (navigator.vibrate) navigator.vibrate(200);
+
+        // 检查敌方气血是否归零
+        if (newEnemyHealth <= 0) {
+            handleSinglePlayerGameOver(true); // 传递参数表示胜利
+        }
+    } else {
+        damage = 10; // 答错扣 10 点气血
+        database.ref('rooms/' + currentRoomId + '/player1/health').set(
+            firebase.database.ServerValue.increment(-damage)
+        );
+        // 答错时仅震动
+        navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+        if (navigator.vibrate) navigator.vibrate(200);
+    }
+
+    const targetElement = document.getElementById('myHealthBar');
+    targetElement.classList.add('damage-flash');
+    document.getElementById('gameArea').classList.add('screen-shake');
+    document.querySelectorAll('.health-fill').forEach(bar => bar.classList.add('damage-effect'));
+
+    setTimeout(() => {
+        targetElement.classList.remove('damage-flash');
+        document.getElementById('gameArea').classList.remove('screen-shake');
+        document.querySelectorAll('.health-fill').forEach(bar => bar.classList.remove('damage-effect'));
+    }, 500);
+
+    setTimeout(() => {
+        buttons.forEach(btn => {
+            btn.style.cssText = '';
+            btn.style.pointerEvents = 'auto';
+        });
+        answered = false;
+        loadNewQuestionSinglePlayer();
+    }, 700);
+}
+
+
+    function handleSinglePlayerGameOver() {
+    if (gameOver) return;
+    gameOver = true;
+
+    clearInterval(timer);
+    document.querySelectorAll('#options button').forEach(btn => btn.disabled = true);
+
+    const victoryOverlay = document.querySelector('.victory-overlay');
+    const victoryText = document.querySelector('.victory-text');
+    const isWinner = /* 判断是否为胜方的逻辑，这里假设敌方气血先归零则为胜方，你可能需要根据实际情况调整 */ document.getElementById('opponentHealth').textContent <= 0;
+victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
+    victoryOverlay.style.display = 'flex';
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'rematch-buttons';
+
+    const restartBtn = document.createElement('button');
+    restartBtn.textContent = '再戰江湖';
+    const mainMenuBtn = document.createElement('button');
+    mainMenuBtn.textContent = '歸隱山林';
+
+    restartBtn.onclick = () => {
+        database.ref('rooms/' + currentRoomId).remove();
+        const victoryOverlay = document.querySelector('.victory-overlay');
+const buttons = victoryOverlay.querySelector('.rematch-buttons');
+if (buttons) buttons.remove();
+victoryOverlay.style.display = 'none';
+
+
+// 初始化敌方气血
+        const enemyInitialHealth = 100;
+        document.getElementById('opponentHealth').textContent = enemyInitialHealth;
+        document.getElementById('opponentHealthBar').style.width = enemyInitialHealth + '%';
+
+        
+        startSinglePlayer();
+    };
+    mainMenuBtn.onclick = () => {
+        database.ref('rooms/' + currentRoomId).remove();
+        window.location.reload();
+    };
+
+    buttonContainer.appendChild(restartBtn);
+    buttonContainer.appendChild(mainMenuBtn);
+    victoryOverlay.appendChild(buttonContainer);
+
+    // 新增逻辑：在点击“再战江湖”时，清除可能存在的遮挡画面
+    const waitingForRematch = document.getElementById('waitingForRematch');
+    if (waitingForRematch) waitingForRematch.remove();
+}
+
+document.getElementById('showLeaderboardBtn').onclick = function() {
+    const leaderboardRef = database.ref('leaderboard');
+    leaderboardRef.orderByChild('score').limitToLast(10).once('value', (snapshot) => {
+        const leaderboard = [];
+        snapshot.forEach((childSnapshot) => {
+            const data = childSnapshot.val();
+            leaderboard.push(data);
+        });
+        leaderboard.reverse(); // 降序排列
+
+        // 顯示排行榜
+        let leaderboardHTML = '<h2 style="text-align: center; color: var(--gold);">🏆 排行榜 - 前十名</h2><ul>';
+        leaderboard.forEach((entry, index) => {
+            leaderboardHTML += `<li style="font-size: 1.2rem; padding: 0.5rem;">${index + 1}. ${entry.name} - ${entry.score} 分</li>`;
+        });
+        leaderboardHTML += '</ul>';
+        
+        const leaderboardDiv = document.createElement('div');
+        leaderboardDiv.style.cssText = `
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
+            border-radius: 15px; width: 80%; max-width: 600px; /* 使用百分比和最大宽度结合 */
+            z-index: 10000; color: white;
+        `;
+        leaderboardDiv.innerHTML = leaderboardHTML + '<button onclick="this.parentElement.remove()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #e74c3c; border: none; border-radius: 5px; color: white;">關閉</button>';
+        document.body.appendChild(leaderboardDiv);
+    });
+};
     
 
 function handleRematchRequest() {
@@ -2786,302 +2996,6 @@ if (room.hostRematch && room.clientRematch) {
         }
     }
 }
-
-
-// 單機模式相關變量
-let singlePlayerDifficulty = null;
-let singlePlayerClass = null;
-let singlePlayerGrade = null;
-let singlePlayerTopic = null;
-let singlePlayerHealth = 100;
-let enemyHealth = 100;
-let currentQuestionSingle = null;
-let answeredSingle = false;
-let gameOverSingle = false;
-let timerSingle = null;
-let timeLeftSingle = 15;
-
-// 啟動單機模式
-function startSinglePlayer() {
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('difficultySelection').style.display = 'block';
-}
-
-// 選擇難度
-function selectDifficulty(difficulty) {
-    singlePlayerDifficulty = difficulty;
-    document.getElementById('difficultySelection').style.display = 'none';
-    document.getElementById('classSelectionSingle').style.display = 'block';
-}
-
-// 選擇角色
-function selectClassSingle(className) {
-    const classData = {
-        warrior: { attack: 1.2, defense: 0.9, dodge: 0, skill: 'doubleDamage' },
-        tank: { attack: 0.9, defense: 1.2, dodge: 0, skill: 'heal' },
-        assassin: { attack: 1.0, defense: 0.9, dodge: 0.3, skill: 'dodge' },
-        mage: { attack: 1.1, defense: 1, dodge: 0, skill: 'counter' }
-    };
-
-    singlePlayerClass = classData[className];
-    singlePlayerClass.type = className;
-
-    // 選擇反饋
-    document.querySelectorAll('#classSelectionSingle .class-card').forEach(card => {
-        card.classList.remove('selected');
-        card.querySelector('.selected-tick').style.display = 'none';
-    });
-    const selectedCard = document.querySelector(`#classSelectionSingle .class-card[onclick="selectClassSingle('${className}')"]`);
-    selectedCard.classList.add('selected');
-    selectedCard.querySelector('.selected-tick').style.display = 'flex';
-    document.getElementById('selectedClassInfoSingle').innerHTML = `
-        <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${selectedCard.querySelector('h3').textContent}</p>
-    `;
-
-    const popupImage = selectedCard.querySelector('.popup-image');
-    popupImage.style.display = 'block';
-    setTimeout(() => {
-        popupImage.style.display = 'none';
-        document.getElementById('classSelectionSingle').style.display = 'none';
-        document.getElementById('topicSelectionSingle').style.display = 'block';
-    }, 500);
-}
-
-// 選擇年級
-function selectGradeSingle(grade) {
-    singlePlayerGrade = grade;
-    document.getElementById('selectedGradeSingle').textContent = `選擇 ${grade} 題庫`;
-    document.getElementById('gradeSelectionSingle').style.display = 'none';
-    document.getElementById('topicDetailSingle').style.display = 'block';
-
-    // 根據年級加載相應的題庫
-    const topics = grade === '中一' ? ['御人之妻'] : ['廉頗藺相如列傳'];
-    const topicList = document.getElementById('topicListSingle');
-    topicList.innerHTML = '';
-    topics.forEach(topic => {
-        const button = document.createElement('button');
-        button.textContent = topic;
-        button.className = 'topic-btn';
-        button.onclick = () => selectTopicSingle(topic);
-        topicList.appendChild(button);
-    });
-}
-
-// 選擇題庫
-function selectTopicSingle(topic) {
-    singlePlayerTopic = topic;
-    document.getElementById('topicSelectionSingle').style.display = 'none';
-    startCountdownSingle();
-}
-
-// 倒計時
-function startCountdownSingle() {
-    let countdown = 3;
-    const countdownElement = document.createElement('div');
-    countdownElement.id = 'countdownSingle';
-    countdownElement.style.position = 'fixed';
-    countdownElement.style.top = '0';
-    countdownElement.style.left = '0';
-    countdownElement.style.width = '100%';
-    countdownElement.style.height = '100%';
-    countdownElement.style.display = 'flex';
-    countdownElement.style.alignItems = 'center';
-    countdownElement.style.justifyContent = 'center';
-    countdownElement.style.background = 'rgba(45, 41, 38, 0.95)';
-    countdownElement.style.color = 'var(--gold)';
-    countdownElement.style.fontSize = '10rem';
-    countdownElement.style.zIndex = '10001';
-    document.body.appendChild(countdownElement);
-
-    function updateCountdown() {
-        if (countdown > 0) {
-            countdownElement.textContent = countdown;
-            countdown--;
-            setTimeout(updateCountdown, 1000);
-        } else {
-            countdownElement.remove();
-            startGameSingle();
-        }
-    }
-    updateCountdown();
-}
-
-// 開始遊戲
-function startGameSingle() {
-    singlePlayerHealth = 100;
-    enemyHealth = 100;
-    gameOverSingle = false;
-    answeredSingle = false;
-    document.getElementById('gameArea').style.display = 'block';
-    updateHealthDisplaySingle();
-    loadNewQuestionSingle();
-
-    // 根據難度啟動自動扣血計時器
-    const settings = difficultySettings[singlePlayerDifficulty];
-    clearInterval(timerSingle);
-    timerSingle = setInterval(() => {
-        if (Math.random() < settings.damageChance) {
-            singlePlayerHealth = Math.max(singlePlayerHealth - 10, 0);
-            updateHealthDisplaySingle();
-            if (singlePlayerHealth <= 0) {
-                handleGameOverSingle(false);
-            }
-        }
-    }, settings.damageInterval);
-}
-
-// 加載新問題
-function loadNewQuestionSingle() {
-    const grade = singlePlayerGrade;
-    const topic = singlePlayerTopic;
-    database.ref(`questions/${grade}/${topic}`).once('value').then(snapshot => {
-        const questions = snapshot.val();
-        const totalQuestions = questions.length;
-        const randomId = Math.floor(Math.random() * totalQuestions);
-        const originalQuestion = questions[randomId];
-
-        const optionsCopy = [...originalQuestion.options];
-        const correctAnswer = optionsCopy[originalQuestion.correctIndex];
-        const shuffledOptions = shuffleArray(optionsCopy);
-        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
-
-        const processedQuestion = {
-            question: originalQuestion.question,
-            options: shuffledOptions,
-            correctIndex: newCorrectIndex,
-            id: Date.now()
-        };
-
-        currentQuestionSingle = processedQuestion;
-        displayQuestionSingle(processedQuestion);
-    });
-}
-
-// 顯示問題
-function displayQuestionSingle(question) {
-    answeredSingle = false;
-    document.getElementById('question').textContent = question.question;
-    const optionsDiv = document.getElementById('options');
-    optionsDiv.innerHTML = '';
-
-    question.options.forEach((option, index) => {
-        const button = document.createElement('button');
-        button.textContent = option;
-        button.onclick = () => {
-            if (!answeredSingle) {
-                checkAnswerSingle(index === question.correctIndex, question.id);
-            }
-        };
-        optionsDiv.appendChild(button);
-    });
-    startTimerSingle();
-}
-
-// 開始計時
-function startTimerSingle() {
-    clearInterval(timerSingle);
-    timeLeftSingle = 15;
-    document.getElementById('timer').textContent = `🕒${timeLeftSingle}秒`;
-    timerSingle = setInterval(() => {
-        timeLeftSingle--;
-        document.getElementById('timer').textContent = `🕒${timeLeftSingle}秒`;
-        if (timeLeftSingle <= 0) checkAnswerSingle(false);
-    }, 1000);
-}
-
-// 檢查答案
-function checkAnswerSingle(isCorrect, questionId) {
-    if (answeredSingle || gameOverSingle) return;
-    answeredSingle = true;
-
-    clearInterval(timerSingle);
-
-    if (isCorrect) {
-        let damage = 10 * singlePlayerClass.attack;
-        if (singlePlayerClass.type === 'warrior' && Math.random() < 0.3) {
-            damage *= 2; // 裂空擊：30% 機率雙倍傷害
-        }
-        enemyHealth = Math.max(enemyHealth - damage, 0);
-        if (enemyHealth <= 0) {
-            handleGameOverSingle(true);
-        }
-    } else {
-        let damage = 10 / singlePlayerClass.defense;
-        if (singlePlayerClass.type === 'assassin' && Math.random() < 0.3) {
-            damage = 0; // 鬼影步：30% 機率閃避
-        } else if (singlePlayerClass.type === 'mage') {
-            damage *= 0.7; // 離火訣：傷害減少30%
-        }
-        singlePlayerHealth = Math.max(singlePlayerHealth - damage, 0);
-        if (singlePlayerHealth <= 0) {
-            handleGameOverSingle(false);
-        }
-    }
-
-    if (singlePlayerClass.type === 'tank' && !answeredSingle) {
-        singlePlayerHealth = Math.min(singlePlayerHealth + 2, 100); // 金鐘罩：恢復2點氣血
-    }
-
-    updateHealthDisplaySingle();
-
-    setTimeout(() => {
-        if (!gameOverSingle) loadNewQuestionSingle();
-    }, 1000);
-}
-
-// 更新血量顯示
-function updateHealthDisplaySingle() {
-    document.getElementById('myHealth').textContent = Math.round(singlePlayerHealth);
-    document.getElementById('myHealthBar').style.width = singlePlayerHealth + '%';
-    document.getElementById('opponentHealth').textContent = Math.round(enemyHealth);
-    document.getElementById('opponentHealthBar').style.width = enemyHealth + '%';
-}
-
-// 處理遊戲結束
-function handleGameOverSingle(isWinner) {
-    gameOverSingle = true;
-    clearInterval(timerSingle);
-    document.querySelectorAll('#options button').forEach(btn => btn.disabled = true);
-
-    const victoryOverlay = document.querySelector('.victory-overlay');
-    const victoryText = document.querySelector('.victory-text');
-    victoryText.textContent = isWinner ? "武道昌隆！" : "雖敗猶榮！";
-    victoryOverlay.style.display = 'flex';
-
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'rematch-buttons';
-    const restartBtn = document.createElement('button');
-    restartBtn.textContent = '再戰江湖';
-    const mainMenuBtn = document.createElement('button');
-    mainMenuBtn.textContent = '歸隱山林';
-    restartBtn.onclick = () => {
-        singlePlayerHealth = 100;
-        enemyHealth = 100;
-        gameOverSingle = false;
-        answeredSingle = false;
-        document.getElementById('gameArea').style.display = 'none';
-        document.getElementById('difficultySelection').style.display = 'block';
-        victoryOverlay.style.display = 'none';
-        buttonContainer.remove();
-    };
-    mainMenuBtn.onclick = () => {
-        window.location.reload();
-    };
-    buttonContainer.appendChild(restartBtn);
-    buttonContainer.appendChild(mainMenuBtn);
-    victoryOverlay.appendChild(buttonContainer);
-}
-
-// 洗牌函數（若文件中尚未定義）
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
-
-        
 
         // 玩家重新進入提示保持不變
         const opponentReentered = isHost ? room.player2?.reentered : room.player1?.reentered;
