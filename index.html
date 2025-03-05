@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html>
     
@@ -2802,7 +2801,7 @@ function selectSinglePlayerTopic(topic) {
 }
 
    function startSinglePlayerCountdown() {
-    console.log('Starting countdown');
+    console.log('Starting countdown'); // 添加日誌，確認倒數開始
     let countdown = 3;
     const countdownElement = document.createElement('div');
     countdownElement.id = 'countdown';
@@ -2828,42 +2827,19 @@ function selectSinglePlayerTopic(topic) {
         } else {
             countdownElement.remove();
             document.getElementById('gameArea').style.display = 'block';
+            // 確保所有其他遮擋元素被隱藏
             document.querySelectorAll('#roomControl, #difficultySelection, #singlePlayerClassSelection, #singlePlayerTopicSelection, #waitingArea, #classSelection, #topicSelection').forEach(el => {
                 el.style.display = 'none';
             });
-            const settings = difficultySettings[selectedDifficulty];
+            // 啟動扣血計時器
+            const settings = difficultySettings[selectedDifficulty]; // 使用全局變量
             if (!settings) {
                 console.error('難度設置未找到，selectedDifficulty:', selectedDifficulty);
                 return;
             }
             setInterval(() => {
                 if (Math.random() < settings.damageChance) {
-                    // 生成隨機基數 50-80
-                    const baseDamage = 50 + Math.random() * 30;
-
-                    // 獲取難度倍率
-                    const difficultyMultiplier = {
-                        easy: 0.8,
-                        normal: 1.0,
-                        hard: 1.2,
-                        hell: 1.5
-                    }[selectedDifficulty];
-
-                    // 計算防禦力影響
-                    let defenseReduction = singlePlayerClass.defense * (1 + (playerLevel - 1) * 0.05);
-
-                    // 根據職業特性調整防禦力
-                    if (singlePlayerClass.type === 'tank') {
-                        defenseReduction += 0.2; // 鐵甲宗防禦力加20%
-                    } else if (singlePlayerClass.type === 'assassin') {
-                        defenseReduction -= 0.1; // 影流教防禦力減10%
-                    }
-
-                    // 計算傷害
-                    let damageToPlayer = baseDamage * difficultyMultiplier;
-                    damageToPlayer = Math.max(Math.round(damageToPlayer * (1 - defenseReduction)), 50);
-
-                    singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0);
+                    singlePlayerHealth = Math.max(singlePlayerHealth - 10, 0);
                     updateSinglePlayerHealthDisplay();
                     if (singlePlayerHealth <= 0) {
                         handleSinglePlayerGameOver(false);
@@ -2974,7 +2950,7 @@ function displayQuestionSinglePlayer(question) {
 }
 
 // 單機模式答案檢查
-unction checkAnswerSinglePlayer(isCorrect, questionId) {
+function checkAnswerSinglePlayer(isCorrect, questionId) {
     if (answeredQuestions.has(questionId)) return;
     answeredQuestions.add(questionId);
 
