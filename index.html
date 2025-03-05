@@ -1995,10 +1995,10 @@ const soundEffects = {
 };
 
     const difficultySettings = {
-    easy: { enemyHealth: 1000, damageChance: 0.3, damageInterval: 10000 },
-    normal: { enemyHealth: 1500, damageChance: 0.5, damageInterval: 8000 },
-    hard: { enemyHealth: 2000, damageChance: 0.7, damageInterval: 6000 },
-    hell: { enemyHealth: 3000, damageChance: 0.9, damageInterval: 4000 }
+    easy: { enemyHealth: 1000, damageChance: 0.3, damageInterval: 6000 },
+    normal: { enemyHealth: 1500, damageChance: 0.5, damageInterval: 5000 },
+    hard: { enemyHealth: 2000, damageChance: 0.7, damageInterval: 4000 },
+    hell: { enemyHealth: 3000, damageChance: 0.9, damageInterval: 3000 }
 };
 
 // 修改重點 2：初始按鈕文字設定
@@ -2680,8 +2680,17 @@ function selectSinglePlayerClass(className) {
         mage: { attack: 1.1, defense: 1.0, dodge: 0, skill: 'counter' }
     };
 
-    singlePlayerClass = classData[className];
-    singlePlayerClass.type = className;
+    // 根據等級計算基礎屬性
+    const baseAttack = 1.0 + (playerLevel - 1) * 0.1; // 每級增加0.1攻擊力
+    const baseDefense = 1.0 + (playerLevel - 1) * 0.05; // 每級增加0.05防禦力
+
+    // 應用職業加成
+    singlePlayerClass = {
+        ...classData[className],
+        attack: baseAttack * classData[className].attack,
+        defense: baseDefense * classData[className].defense,
+        type: className
+    };
 
     // 選擇反饋
     document.querySelectorAll('#singlePlayerClassSelection .class-card').forEach(card => {
@@ -2699,7 +2708,6 @@ function selectSinglePlayerClass(className) {
     popupImage.style.display = 'block';
     setTimeout(() => {
         popupImage.style.display = 'none';
-        // 進入題庫選擇界面
         document.getElementById('singlePlayerClassSelection').style.display = 'none';
         document.getElementById('singlePlayerTopicSelection').style.display = 'block';
     }, 500);
