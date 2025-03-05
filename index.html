@@ -2680,6 +2680,13 @@ userRef.once('value', (snapshot) => {
                     <p>積分: ${userData.score || 0}</p>
                 `;
 
+                 if (userData.level > oldLevel) {
+                statsOverlay.innerHTML += `<p style="color: #FFD700; font-size: 1.5rem; animation: levelUp 1s infinite;">恭喜升級！</p>`;
+            } else if (isWinner) {
+                statsOverlay.innerHTML += `<p style="color: #4CAF50; font-size: 1.2rem;">獲得 ${expReward} 經驗值</p>`;
+            }
+
+
                 if (userData.exp >= expRequired) {
                     statsOverlay.innerHTML += `<p style="color: #FFD700; font-size: 1.5rem; animation: levelUp 1s infinite;">恭喜升級！</p>`;
                 }
