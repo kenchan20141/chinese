@@ -2321,7 +2321,7 @@ function loadNewQuestion() {
             const randomId = Math.floor(Math.random() * totalQuestions);
             
             // 加載特定問題
-            const questionRef = database.ref(`questions/${grade}/${topic}/${randomId}`);
+            const questionRef = database.ref(`questions/${selectGrade}/${topics}/${randomId}`);
             questionRef.once('value').then(snapshot => {
                 const originalQuestion = snapshot.val();
                 if (!originalQuestion) {
@@ -2606,12 +2606,12 @@ function loadNewQuestionSinglePlayer() {
         const grade = room.selectedGrade;
         const topic = room.selectedTopic;
 
-        database.ref(`questions/${grade}/${topic}`).once('value').then(snapshot => {
+        database.ref(`questions/${selectGrade}/${topics}`).once('value').then(snapshot => {
             const questions = snapshot.val();
             const totalQuestions = Object.keys(questions).length;
             const randomId = Math.floor(Math.random() * totalQuestions);
 
-            const questionRef = database.ref(`questions/${grade}/${topic}/${randomId}`);
+            const questionRef = database.ref(`questions/${selectGrade}/${topics}/${randomId}`);
             questionRef.once('value').then(snapshot => {
                 const originalQuestion = snapshot.val();
                 if (!originalQuestion) {
