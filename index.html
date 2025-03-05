@@ -1,6 +1,5 @@
 
 
-
 <!DOCTYPE html>
 <html>
     
@@ -1135,10 +1134,6 @@
     
 <script>
 
-    let isSinglePlayer = false; // 標誌單機模式
-let selectedGrade = null;   // 儲存單機模式選中的年級
-let selectedTopic = null;   // 儲存單機模式選中的題庫
-
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1320,10 +1315,33 @@ function selectClass(className) {
         mage: { attack: 1.1, defense: 1, dodge: 0, skill: 'counter' }
     };
 
-    window.playerClass = classData[className]; // 儲存角色數據到全局變量
-    window.playerClass.type = className;
+    playerClass = classData[className];
+    playerClass.type = className;
 
-    // 選擇反饋
+    // 根據等級調整屬性
+    const user = auth.currentUser;
+    if (user) {
+        database.ref('users/' + user.uid).once('value', (snapshot) => {
+            const userData = snapshot.val() || { level: 1, exp: 0 };
+            playerLevel = userData.level;
+            playerExp = userData.exp;
+            playerClass.attack += (playerLevel - 1) * 0.1;  // 每級增加 0.1 攻擊力
+            playerClass.defense += (playerLevel - 1) * 0.1;  // 每級增加 0.1 防禦力
+            const maxHealth = 1000 + (playerLevel - 1) * 100;  // 每級增加 100 氣血
+const playerPath = isHost ? 'player1' : 'player2';
+database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
+    class: className,
+    health: maxHealth,
+    maxHealth: maxHealth,
+    attack: playerClass.attack,
+    defense: playerClass.defense,
+    dodge: playerClass.dodge,
+    level: playerLevel || 1 // 確保等級被存儲
+});
+        });
+    }
+
+    // 選擇反饋（保持不變）
     document.querySelectorAll('.class-card').forEach(card => {
         card.classList.remove('selected');
         card.querySelector('.selected-tick').style.display = 'none';
@@ -1333,6 +1351,7 @@ function selectClass(className) {
     selectedCard.querySelector('.selected-tick').style.display = 'flex';
     document.getElementById('selectedClassInfo').innerHTML = `
         <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${selectedCard.querySelector('h3').textContent}</p>
+        <p>等待對手選擇流派...</p>
     `;
 
     const popupImage = selectedCard.querySelector('.popup-image');
@@ -1340,35 +1359,6 @@ function selectClass(className) {
     setTimeout(() => {
         popupImage.style.display = 'none';
     }, 500);
-
-    // 根據模式決定下一步
-    if (isSinglePlayer) {
-        document.getElementById('classSelection').style.display = 'none';
-        document.getElementById('topicSelection').style.display = 'block';
-    } else {
-        // 多人模式邏輯保持不變
-        const user = auth.currentUser;
-        if (user) {
-            database.ref('users/' + user.uid).once('value', (snapshot) => {
-                const userData = snapshot.val() || { level: 1, exp: 0 };
-                playerLevel = userData.level;
-                playerExp = userData.exp;
-                window.playerClass.attack += (playerLevel - 1) * 0.1;
-                window.playerClass.defense += (playerLevel - 1) * 0.1;
-                const maxHealth = 1000 + (playerLevel - 1) * 100;
-                const playerPath = isHost ? 'player1' : 'player2';
-                database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
-                    class: className,
-                    health: maxHealth,
-                    maxHealth: maxHealth,
-                    attack: window.playerClass.attack,
-                    defense: window.playerClass.defense,
-                    dodge: window.playerClass.dodge,
-                    level: playerLevel || 1
-                });
-            });
-        }
-    }
 }
 
     
@@ -1391,84 +1381,21 @@ function selectClass(className) {
     });
 }
 
-function startSinglePlayerCountdown() {
-    let countdown = 3;
-    const countdownElement = document.createElement('div');
-    countdownElement.id = 'countdown';
-    countdownElement.style.position = 'fixed';
-    countdownElement.style.top = '0';
-    countdownElement.style.left = '0';
-    countdownElement.style.width = '100%';
-    countdownElement.style.height = '100%';
-    countdownElement.style.display = 'flex';
-    countdownElement.style.alignItems = 'center';
-    countdownElement.style.justifyContent = 'center';
-    countdownElement.style.background = 'rgba(45, 41, 38, 0.95)';
-    countdownElement.style.color = 'var(--gold)';
-    countdownElement.style.fontSize = '10rem';
-    countdownElement.style.zIndex = '10001';
-    document.body.appendChild(countdownElement);
-
-    function updateCountdown() {
-        if (countdown > 0) {
-            countdownElement.textContent = countdown;
-            countdown--;
-            setTimeout(updateCountdown, 1000);
-        } else {
-            countdownElement.remove();
-            startSinglePlayerGame();
-        }
-    }
-    updateCountdown();
-}
-
-    function startSinglePlayerGame() {
-    singlePlayerHealth = 100;
-    enemyHealth = 100;
-    gameOver = false;
-    answered = false;
-
-    document.getElementById('gameArea').style.display = 'block';
-    const victoryOverlay = document.querySelector('.victory-overlay');
-    victoryOverlay.style.display = 'none';
-
-    updateSinglePlayerHealthDisplay();
-
-    clearInterval(timer);
-    setInterval(() => {
-        if (Math.random() < window.singlePlayerSettings.damageChance) {
-            singlePlayerHealth = Math.max(singlePlayerHealth - 10, 0);
-            updateSinglePlayerHealthDisplay();
-            if (singlePlayerHealth <= 0) {
-                handleSinglePlayerGameOver(false);
-            }
-        }
-    }, window.singlePlayerSettings.damageInterval);
-
-    loadNewQuestionSinglePlayer();
-}
-
-
-    
 function selectTopic(topic) {
     selectedTopic = topic;
-    if (isSinglePlayer) {
+    database.ref(`rooms/${currentRoomId}`).update({
+        selectedGrade: selectedGrade,
+        selectedTopic: selectedTopic,
+        topicSelected: true
+    }).then(() => {
         document.getElementById('topicSelection').style.display = 'none';
-        startSinglePlayerCountdown();
-    } else {
-        database.ref(`rooms/${currentRoomId}`).update({
-            selectedGrade: selectedGrade,
-            selectedTopic: selectedTopic,
-            topicSelected: true
-        }).then(() => {
-            document.getElementById('topicSelection').style.display = 'none';
-            const waitingMessage = document.getElementById('waitingForTopic');
-            if (waitingMessage) waitingMessage.remove();
-            startCountdown();
-        }).catch(error => {
-            console.error('更新題庫選擇失敗:', error);
-        });
-    }
+        // 移除任何可能的等待信息
+        const waitingMessage = document.getElementById('waitingForTopic');
+        if (waitingMessage) waitingMessage.remove();
+        startCountdown();
+    }).catch(error => {
+        console.error('更新題庫選擇失敗:', error);
+    });
 }
     
  function startCountdown() {
@@ -2631,15 +2558,8 @@ userRef.once('value', (snapshot) => {
 
     // 啟動單機模式
 function startSinglePlayer() {
-    isSinglePlayer = true; // 設置單機模式標誌
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('difficultySelection').style.display = 'block';
-    // 重置選擇狀態
-    selectedGrade = null;
-    selectedTopic = null;
-    document.getElementById('topicSelection').style.display = 'none';
-    document.getElementById('gradeSelection').style.display = 'grid';
-    document.getElementById('topicDetail').style.display = 'none';
 }
 
 // 選擇難度並啟動遊戲
@@ -2647,12 +2567,34 @@ function selectDifficulty(difficulty) {
     const settings = difficultySettings[difficulty];
     if (!settings) return;
 
-    // 儲存難度設定
-    window.singlePlayerSettings = settings;
+    // 初始化单机模式
+    singlePlayerHealth = 100;
+    enemyHealth = 100;
+    gameOver = false;
+    answered = false;
 
-    // 隱藏難度選擇，顯示角色選擇
+    // 显示游戏区域
     document.getElementById('difficultySelection').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
+    document.getElementById('gameArea').style.display = 'block';
+    const victoryOverlay = document.querySelector('.victory-overlay');
+    victoryOverlay.style.display = 'none';
+
+    // 更新初始气血显示
+    updateSinglePlayerHealthDisplay();
+
+    // 开始扣血计时器
+    clearInterval(timer);
+    setInterval(() => {
+        if (Math.random() < settings.damageChance) {
+            singlePlayerHealth = Math.max(singlePlayerHealth - 10, 0);
+            updateSinglePlayerHealthDisplay();
+            if (singlePlayerHealth <= 0) {
+                handleSinglePlayerGameOver(false);
+            }
+        }
+    }, settings.damageInterval);
+
+    loadNewQuestionSinglePlayer();
 }
 
 function updateSinglePlayerHealthDisplay() {
@@ -2667,42 +2609,38 @@ function updateSinglePlayerHealthDisplay() {
 
 // 單機模式問題加載
 function loadNewQuestionSinglePlayer() {
-    database.ref(`questions/${selectedGrade}/${selectedTopic}`).once('value').then(snapshot => {
-        const questions = snapshot.val();
-        const totalQuestions = Object.keys(questions).length;
-        const randomId = Math.floor(Math.random() * totalQuestions);
+    const totalQuestions = 622;
+    const randomId = Math.floor(Math.random() * totalQuestions);
 
-        const questionRef = database.ref(`questions/${selectedGrade}/${selectedTopic}/${randomId}`);
-        questionRef.once('value').then(snapshot => {
-            const originalQuestion = snapshot.val();
-            if (!originalQuestion) {
-                console.error('無法找到該問題數據');
-                return;
-            }
+    const questionRef = database.ref(`questions/${randomId}`);
+    questionRef.once('value').then(snapshot => {
+        const originalQuestion = snapshot.val();
+        if (!originalQuestion) {
+            console.error('無法找到該問題數據');
+            return;
+        }
 
-            const optionsCopy = [...originalQuestion.options];
-            const correctAnswer = optionsCopy[originalQuestion.correctIndex];
-            const shuffledOptions = shuffleArray(optionsCopy);
-            const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+        const optionsCopy = [...originalQuestion.options];
+        const correctAnswer = optionsCopy[originalQuestion.correctIndex];
+        const shuffledOptions = shuffleArray(optionsCopy);
+        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
 
-            const processedQuestion = {
-                question: originalQuestion.question,
-                options: shuffledOptions,
-                correctIndex: newCorrectIndex,
-                id: Date.now()
-            };
+        const processedQuestion = {
+            question: originalQuestion.question,
+            options: shuffledOptions,
+            correctIndex: newCorrectIndex,
+            id: Date.now()
+        };
 
-            currentQuestionId = processedQuestion.id;
-            // 移除 Firebase 更新
-            // database.ref('rooms/' + currentRoomId + '/player1').update({
-            //     currentQuestion: processedQuestion
-            // });
-
-            answered = false;
-            displayQuestionSinglePlayer(processedQuestion);
-        }).catch(error => {
-            console.error('下載問題數據時出錯:', error);
+        currentQuestionId = processedQuestion.id;
+        database.ref('rooms/' + currentRoomId + '/player1').update({
+            currentQuestion: processedQuestion
         });
+
+        answered = false;
+        displayQuestionSinglePlayer(processedQuestion);
+    }).catch(error => {
+        console.error('下載問題數據時出錯:', error);
     });
 }
 
@@ -2752,9 +2690,14 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     let damage = 0;
     if (isCorrect) {
-        enemyHealth = Math.max(enemyHealth - 10, 0);
-        updateSinglePlayerHealthDisplay();
+        // 增加扣减敌方气血的逻辑，假设敌方气血初始为100，每次答对扣10点
+        const enemyHealthElement = document.getElementById('opponentHealth');
+        const enemyHealth = parseInt(enemyHealthElement.textContent, 10);
+        const newEnemyHealth = enemyHealth - 10;
+        enemyHealthElement.textContent = newEnemyHealth;
+        document.getElementById('opponentHealthBar').style.width = newEnemyHealth + '%';
 
+        // 添加答对时的音效和震动
         const soundEffects = {
             attack: new Audio('https://taira-komori.jpn.org/sound_os2/jidaigeki01/Chinese_blade2.mp3')
         };
@@ -2763,13 +2706,17 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
         if (navigator.vibrate) navigator.vibrate(200);
 
-        if (enemyHealth <= 0) {
-            handleSinglePlayerGameOver(true);
+        // 检查敌方气血是否归零
+        if (newEnemyHealth <= 0) {
+            handleSinglePlayerGameOver(true); // 传递参数表示胜利
         }
     } else {
-        damage = 10;
-        singlePlayerHealth = Math.max(singlePlayerHealth - damage, 0);
-        updateSinglePlayerHealthDisplay();
+        damage = 10; // 答错扣 10 点气血
+        database.ref('rooms/' + currentRoomId + '/player1/health').set(
+            firebase.database.ServerValue.increment(-damage)
+        );
+        // 答错时仅震动
+        navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
         if (navigator.vibrate) navigator.vibrate(200);
     }
 
@@ -3072,5 +3019,4 @@ if (room.hostRematch && room.clientRematch) {
 
     
 </html>
-
 
