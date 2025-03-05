@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html>
     
@@ -1926,7 +1925,8 @@ appId: "1:948613965375:web:ae966d7dd461e328093a8a"
 };
 firebase.initializeApp(firebaseConfig);
   
-
+// Firebase 初始化（假設已存在於您的代碼中）
+const auth = firebase.auth();
 // 登入按鈕事件（假設綁定在 loginBtn 上）
 document.getElementById('loginBtn').onclick = function() {
     const email = prompt('請輸入郵箱'); // 簡單示例，實際應使用輸入框
@@ -2009,7 +2009,6 @@ document.getElementById('logoutBtn').onclick = function() {
             alert("登出失敗：" + error.message);
         });
 };
-
 
     
     const auth = firebase.auth();
