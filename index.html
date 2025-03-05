@@ -2784,16 +2784,19 @@ function selectSinglePlayerTopic(topic) {
 }
 
 function updateSinglePlayerHealthDisplay() {
-    // 更新己方气血
-    document.getElementById('myHealth').textContent = `${singlePlayerHealth} / 100`;
-    document.getElementById('myHealthBar').style.width = `${singlePlayerHealth}%`;
-    
-    // 更新敌方气血
-    document.getElementById('opponentHealth').textContent = `${enemyHealth} / 100`;
-    document.getElementById('opponentHealthBar').style.width = `${enemyHealth}%`;
-    
-    // 添加血条冲击特效
-    const healthBar = singlePlayerHealth < 30 ? 'myHealthBar' : 'opponentHealthBar';
+    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100; // 動態計算己方最大氣血
+    const maxEnemyHealth = difficultySettings[selectedDifficulty].enemyHealth; // 動態敵方最大氣血
+
+    // 更新己方氣血
+    document.getElementById('myHealth').textContent = `${singlePlayerHealth} / ${maxPlayerHealth}`;
+    document.getElementById('myHealthBar').style.width = `${(singlePlayerHealth / maxPlayerHealth) * 100}%`;
+
+    // 更新敵方氣血
+    document.getElementById('opponentHealth').textContent = `${enemyHealth} / ${maxEnemyHealth}`;
+    document.getElementById('opponentHealthBar').style.width = `${(enemyHealth / maxEnemyHealth) * 100}%`;
+
+    // 添加血條衝擊波特效
+    const healthBar = singlePlayerHealth < maxPlayerHealth * 0.3 ? 'myHealthBar' : 'opponentHealthBar';
     const wave = document.createElement('div');
     wave.className = 'health-wave';
     document.getElementById(healthBar).appendChild(wave);
