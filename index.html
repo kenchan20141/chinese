@@ -2025,7 +2025,24 @@ document.getElementById('logoutBtn').onclick = function() {
         });
 };
 
-    
+
+const auth = firebase.auth();
+   auth.onAuthStateChanged((user) => {
+    const userInfo = document.getElementById('userInfo');
+    const userName = document.getElementById('userName');
+    const userScore = document.getElementById('userScore');
+    const userLevel = document.getElementById('userLevel');
+    const expFill = document.getElementById('expFill');
+
+    if (user) {
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('registerBtn').style.display = 'none';
+        document.getElementById('logoutContainer').style.display = 'block';
+        userInfo.style.display = 'block';
+        userName.textContent = user.displayName || '未命名玩家';
+
+
+
     const auth = firebase.auth();
    auth.onAuthStateChanged((user) => {
     if (user) {
