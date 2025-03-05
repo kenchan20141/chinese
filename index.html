@@ -2768,6 +2768,25 @@ function selectSinglePlayerTopic(topic) {
     updateCountdown();
 }
 
+function updateSinglePlayerHealthDisplay() {
+    // 更新己方气血
+    document.getElementById('myHealth').textContent = `${singlePlayerHealth} / 100`;
+    document.getElementById('myHealthBar').style.width = `${singlePlayerHealth}%`;
+    
+    // 更新敌方气血
+    document.getElementById('opponentHealth').textContent = `${enemyHealth} / 100`;
+    document.getElementById('opponentHealthBar').style.width = `${enemyHealth}%`;
+    
+    // 添加血条冲击特效
+    const healthBar = singlePlayerHealth < 30 ? 'myHealthBar' : 'opponentHealthBar';
+    const wave = document.createElement('div');
+    wave.className = 'health-wave';
+    document.getElementById(healthBar).appendChild(wave);
+    setTimeout(() => wave.remove(), 500);
+}
+
+
+    
     function loadNewQuestionSinglePlayer() {
     // 從選中的年級和題庫中加載問題
     const grade = singlePlayerSelectedGrade;
@@ -2848,17 +2867,10 @@ function displayQuestionSinglePlayer(question) {
 
 // 單機模式答案檢查
 function checkAnswerSinglePlayer(isCorrect, questionId) {
-    console.log('Checking answer for question ID:', questionId, 'isCorrect:', isCorrect); // 添加日誌
-    if (answeredQuestions.has(questionId)) {
-        console.log('Question already answered'); // 添加日誌
-        return;
-    }
+    if (answeredQuestions.has(questionId)) return;
     answeredQuestions.add(questionId);
 
-    if (answered || gameOver) {
-        console.log('Already answered or game over'); // 添加日誌
-        return;
-    }
+    if (answered || gameOver) return;
     answered = true;
 
     clearInterval(timer);
@@ -2876,26 +2888,34 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    let damage = 10;
+    const difficultyDamage = {
+        easy: 8,
+        normal: 12,
+        hard: 15,
+        hell: 20
+    };
+    let damage = difficultyDamage[selectedDifficulty];
+
     if (isCorrect) {
         let attackMultiplier = singlePlayerClass.attack;
         if (singlePlayerClass.type === 'warrior' && Math.random() < 0.3) {
-            attackMultiplier *= 2; // 裂空擊：30%機率雙倍傷害
+            attackMultiplier *= 2;
             showEffect('sword-flash');
         }
         enemyHealth = Math.max(enemyHealth - (damage * attackMultiplier), 0);
         updateSinglePlayerHealthDisplay();
         if (enemyHealth <= 0) {
             handleSinglePlayerGameOver(true);
+            return;
         }
     } else {
         let actualDamage = damage * singlePlayerClass.defense;
         if (singlePlayerClass.type === 'assassin' && Math.random() < singlePlayerClass.dodge) {
-            actualDamage = 0; // 鬼影步：閃避傷害
+            actualDamage = 0;
             document.getElementById('dodgeText').style.display = 'block';
             setTimeout(() => document.getElementById('dodgeText').style.display = 'none', 1000);
         } else if (singlePlayerClass.type === 'mage') {
-            actualDamage *= 0.7; // 離火訣：錯答傷害減少30%
+            actualDamage *= 0.7;
             document.getElementById('reduceDamageText').style.display = 'block';
             setTimeout(() => document.getElementById('reduceDamageText').style.display = 'none', 1200);
         }
@@ -2903,12 +2923,13 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         updateSinglePlayerHealthDisplay();
         if (singlePlayerHealth <= 0) {
             handleSinglePlayerGameOver(false);
+            return;
         }
     }
 
     if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
         hasHealedThisTurn = true;
-        singlePlayerHealth = Math.min(singlePlayerHealth + 2, 100); // 金鐘罩：恢復2點氣血
+        singlePlayerHealth = Math.min(singlePlayerHealth + 2, 100);
         updateSinglePlayerHealthDisplay();
         document.getElementById('healText').style.display = 'block';
         setTimeout(() => document.getElementById('healText').style.display = 'none', 1000);
@@ -2920,7 +2941,9 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
             btn.style.pointerEvents = 'auto';
         });
         answered = false;
-        loadNewQuestionSinglePlayer();
+        if (!gameOver) {
+            loadNewQuestionSinglePlayer();
+        }
     }, 700);
 }
 
