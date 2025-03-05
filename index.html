@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html>
     
@@ -1275,8 +1276,6 @@
     
 <script>
 
-    let damageInterval = null;
-
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -2081,7 +2080,7 @@ function toggleMusic() {
     isMusicPlaying ? bgMusic.play() : bgMusic.pause();
     
     // 反轉按鈕顯示文字
-    document.querySelector('.music-control').textContent = isMusicPlaying ? '🎵' : '🔇';
+    document.querySelector('.music-control').textContent = isMusicPlaying ? '🎵' : '';
 }
 
 function createRoom() {
@@ -2837,44 +2836,44 @@ function selectSinglePlayerTopic(topic) {
                 console.error('難度設置未找到，selectedDifficulty:', selectedDifficulty);
                 return;
             }
-            damageInterval = setInterval(() => {
-    if (Math.random() < settings.damageChance) {
-        // 生成隨機基數 50-80
-        const baseDamage = 50 + Math.random() * 30;
+            setInterval(() => {
+                if (Math.random() < settings.damageChance) {
+                    // 生成隨機基數 50-80
+                    const baseDamage = 50 + Math.random() * 30;
 
-        // 獲取難度倍率
-        const difficultyMultiplier = {
-            easy: 0.8,
-            normal: 1.0,
-            hard: 1.2,
-            hell: 1.5
-        }[selectedDifficulty];
+                    // 獲取難度倍率
+                    const difficultyMultiplier = {
+                        easy: 0.8,
+                        normal: 1.0,
+                        hard: 1.2,
+                        hell: 1.5
+                    }[selectedDifficulty];
 
-        // 計算防禦力調整
-        let defenseAdjustment = 0;
-        if (singlePlayerClass.type === 'warrior' || singlePlayerClass.type === 'assassin') {
-            defenseAdjustment = -0.1; // 霸刀流和影流教防禦減少10%
-        } else if (singlePlayerClass.type === 'tank') {
-            defenseAdjustment = 0.2; // 鐵甲宗防禦增加20%
-        }
+                    // 計算防禦力調整
+                    let defenseAdjustment = 0;
+                    if (singlePlayerClass.type === 'warrior' || singlePlayerClass.type === 'assassin') {
+                        defenseAdjustment = -0.1; // 霸刀流和影流教防禦減少10%
+                    } else if (singlePlayerClass.type === 'tank') {
+                        defenseAdjustment = 0.2; // 鐵甲宗防禦增加20%
+                    }
 
-        // 等級防禦調整（每級增加5%防禦）
-        const levelDefenseAdjustment = (playerLevel - 1) * 0.05;
+                    // 等級防禦調整（每級增加5%防禦）
+                    const levelDefenseAdjustment = (playerLevel - 1) * 0.05;
 
-        // 總防禦調整
-        const totalDefenseAdjustment = defenseAdjustment + levelDefenseAdjustment;
+                    // 總防禦調整
+                    const totalDefenseAdjustment = defenseAdjustment + levelDefenseAdjustment;
 
-        // 計算最終扣血量
-        let damageToPlayer = baseDamage * difficultyMultiplier * (1 - totalDefenseAdjustment);
-        damageToPlayer = Math.max(Math.round(damageToPlayer), 0);
+                    // 計算最終扣血量
+                    let damageToPlayer = baseDamage * difficultyMultiplier * (1 - totalDefenseAdjustment);
+                    damageToPlayer = Math.max(Math.round(damageToPlayer), 0);
 
-        singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0);
-        updateSinglePlayerHealthDisplay();
-        if (singlePlayerHealth <= 0) {
-            handleSinglePlayerGameOver(false);
-        }
-    }
-}, settings.damageInterval);
+                    singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0);
+                    updateSinglePlayerHealthDisplay();
+                    if (singlePlayerHealth <= 0) {
+                        handleSinglePlayerGameOver(false);
+                    }
+                }
+            }, settings.damageInterval);
             loadNewQuestionSinglePlayer();
         }
     }
@@ -3089,12 +3088,7 @@ function showEffect(className) {
     setTimeout(() => effect.remove(), 400);
 }
 
-  function handleSinglePlayerGameOver(isWinner) {
-    // 清除健康扣減計時器
-    if (damageInterval) {
-        clearInterval(damageInterval);
-        damageInterval = null;
-    }
+    function handleSinglePlayerGameOver() {
     if (gameOver) return;
     gameOver = true;
 
@@ -3103,10 +3097,11 @@ function showEffect(className) {
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    victoryText.textContent = isWinner ? "武道昌隆！" : "雖敗猶榮！";
+    const isWinner = /* 判断是否为胜方的逻辑，这里假设敌方气血先归零则为胜方，你可能需要根据实际情况调整 */ document.getElementById('opponentHealth').textContent <= 0;
+victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
     victoryOverlay.style.display = 'flex';
 
-    // 處理經驗值增加（僅在獲勝時）
+// 處理經驗值增加（僅在獲勝時）
     const expRewards = {
         easy: 10,
         normal: 30,
@@ -3118,18 +3113,19 @@ function showEffect(className) {
         const userRef = database.ref('users/' + user.uid);
         userRef.transaction((userData) => {
             if (!userData) userData = { level: 1, exp: 0, score: 0 };
-            userData.exp += expRewards[selectedDifficulty];
+            userData.exp += expRewards[selectedDifficulty]; // 增加經驗值
             const expRequired = 100 * userData.level;
             if (userData.exp >= expRequired) {
                 userData.level += 1;
                 userData.exp -= expRequired;
-                playerLevel = userData.level;
+                playerLevel = userData.level; // 更新全局變數
             }
             return userData;
         }).then(() => {
             alert(`恭喜！你獲得了 ${expRewards[selectedDifficulty]} 點經驗值。`);
         });
     }
+        
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'rematch-buttons';
@@ -3140,34 +3136,21 @@ function showEffect(className) {
     mainMenuBtn.textContent = '歸隱山林';
 
     restartBtn.onclick = () => {
-        // 重置所有相關變數
-        singlePlayerSelectedGrade = null;
-        singlePlayerSelectedTopic = null;
-        singlePlayerClass = null;
-        selectedDifficulty = null; // 確保難度被重置
-        gameOver = false;
-        answered = false;
-        answeredQuestions.clear();
+        database.ref('rooms/' + currentRoomId).remove();
+        const victoryOverlay = document.querySelector('.victory-overlay');
+const buttons = victoryOverlay.querySelector('.rematch-buttons');
+if (buttons) buttons.remove();
+victoryOverlay.style.display = 'none';
 
-        // 重置玩家氣血
-        const baseHealth = 1000;
-        const healthPerLevel = 100;
-        singlePlayerHealth = baseHealth + (playerLevel - 1) * healthPerLevel;
-        // enemyHealth 在選擇難度時會重新設置，因此這裡不設置
 
-        // 更新氣血顯示
-        updateSinglePlayerHealthDisplay();
+// 初始化敌方气血
+        const enemyInitialHealth = 100;
+        document.getElementById('opponentHealth').textContent = enemyInitialHealth;
+        document.getElementById('opponentHealthBar').style.width = enemyInitialHealth + '%';
 
-        // 隱藏遊戲區域和勝利畫面
-        document.getElementById('gameArea').style.display = 'none';
-        victoryOverlay.style.display = 'none';
-        const buttons = victoryOverlay.querySelector('.rematch-buttons');
-        if (buttons) buttons.remove();
-
-        // 顯示難度選擇界面（而非職業選擇）
-        document.getElementById('difficultySelection').style.display = 'block';
+        
+        startSinglePlayer();
     };
-
     mainMenuBtn.onclick = () => {
         database.ref('rooms/' + currentRoomId).remove();
         window.location.reload();
@@ -3176,6 +3159,10 @@ function showEffect(className) {
     buttonContainer.appendChild(restartBtn);
     buttonContainer.appendChild(mainMenuBtn);
     victoryOverlay.appendChild(buttonContainer);
+
+    // 新增逻辑：在点击“再战江湖”时，清除可能存在的遮挡画面
+    const waitingForRematch = document.getElementById('waitingForRematch');
+    if (waitingForRematch) waitingForRematch.remove();
 }
 
 document.getElementById('showLeaderboardBtn').onclick = function() {
