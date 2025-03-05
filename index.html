@@ -1285,6 +1285,22 @@
     
 <script>
 
+    function updateAuthButtons(isLoggedIn) {
+    if (isLoggedIn) {
+        document.getElementById('registerBtn').style.display = 'none';
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('logoutContainer').style.display = 'block';
+    } else {
+        document.getElementById('registerBtn').style.display = 'block';
+        document.getElementById('loginBtn').style.display = 'block';
+        document.getElementById('logoutContainer').style.display = 'none';
+    }
+}
+
+    
+
+    
+
     // 在代码开头定义不同难度的经验奖励
 const expRewards = {
     easy: 10,
@@ -1292,8 +1308,6 @@ const expRewards = {
     hard: 30,
     hell: 50
 };
-
-    let damageInterval;
 
 // Canvas 動畫代碼
 window.onload = function() {
@@ -1423,6 +1437,7 @@ window.onload = function() {
 };
     
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
+    let damageInterval;
 let singlePlayerClass = null; // 單機模式選中的職業
 let singlePlayerSelectedGrade = null; // 單機模式選中的年級
     let selectedDifficulty = null;
