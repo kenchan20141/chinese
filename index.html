@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html>
     
@@ -2743,7 +2742,6 @@ function selectDifficulty(difficulty) {
         document.getElementById('singlePlayerClassSelection').style.display = 'block';
     }, 500);
 }
-    
 function selectSinglePlayerClass(className) {
     const classData = {
         warrior: { attack: 1.2, defense: 0.9, dodge: 0, skill: 'doubleDamage' },
@@ -2771,11 +2769,9 @@ function selectSinglePlayerClass(className) {
     popupImage.style.display = 'block';
     setTimeout(() => {
         popupImage.style.display = 'none';
-        // 進入年級選擇界面
+        // 進入題庫選擇界面
         document.getElementById('singlePlayerClassSelection').style.display = 'none';
         document.getElementById('singlePlayerTopicSelection').style.display = 'block';
-        document.getElementById('singlePlayerGradeSelection').style.display = 'grid'; // 顯示年級選擇
-        document.getElementById('singlePlayerTopicDetail').style.display = 'none';    // 隱藏題庫選擇
     }, 500);
 }
 
@@ -3100,11 +3096,11 @@ function showEffect(className) {
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    const isWinner = enemyHealth <= 0; // 敵方氣血 <= 0 則為勝方
-    victoryText.textContent = isWinner ? "武道昌隆！" : "雖敗猶榮！";
+    const isWinner = /* 判断是否为胜方的逻辑，这里假设敌方气血先归零则为胜方，你可能需要根据实际情况调整 */ document.getElementById('opponentHealth').textContent <= 0;
+victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
     victoryOverlay.style.display = 'flex';
 
-    // 處理經驗值增加（僅在獲勝時）
+// 處理經驗值增加（僅在獲勝時）
     const expRewards = {
         easy: 10,
         normal: 30,
@@ -3112,58 +3108,23 @@ function showEffect(className) {
         hell: 200
     };
     const user = auth.currentUser;
-    if (user) {
+    if (isWinner && user) {
         const userRef = database.ref('users/' + user.uid);
         userRef.transaction((userData) => {
             if (!userData) userData = { level: 1, exp: 0, score: 0 };
-            if (isWinner) {
-                userData.exp += expRewards[selectedDifficulty]; // 增加經驗值
-                const expRequired = 100 * userData.level;
-                while (userData.exp >= expRequired) {
-                    userData.level += 1;
-                    userData.exp -= expRequired;
-                    // 更新 expRequired 為新一級的經驗需求
-                    expRequired = 100 * userData.level;
-                }
+            userData.exp += expRewards[selectedDifficulty]; // 增加經驗值
+            const expRequired = 100 * userData.level;
+            if (userData.exp >= expRequired) {
+                userData.level += 1;
+                userData.exp -= expRequired;
                 playerLevel = userData.level; // 更新全局變數
             }
             return userData;
         }).then(() => {
-            // 獲取更新後的用戶數據並顯示彈出視窗
-            userRef.once('value', (snapshot) => {
-                const userData = snapshot.val();
-                const expRequired = 100 * userData.level;
-                const expPercentage = (userData.exp / expRequired) * 100;
-
-                // 創建彈出視窗顯示經驗值 BAR
-                const statsOverlay = document.createElement('div');
-                statsOverlay.style.cssText = `
-                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                    background: rgba(45, 41, 38, 0.95); padding: 2rem; border: 3px solid var(--gold);
-                    border-radius: 15px; z-index: 10000; color: white; text-align: center;
-                    width: 80%; max-width: 400px;
-                `;
-                statsOverlay.innerHTML = `
-                    <h2>遊戲結束</h2>
-                    <p>等級: ${userData.level}</p>
-                    <p>經驗值: ${userData.exp} / ${expRequired}</p>
-                    <div style="width: 100%; height: 20px; background: #333; border-radius: 5px; margin: 1rem 0;">
-                        <div style="height: 100%; background: #4CAF50; width: ${expPercentage}%; transition: width 1s ease;"></div>
-                    </div>
-                    <p>積分: ${userData.score || 0}</p>
-                `;
-                if (isWinner && userData.exp >= expRequired) {
-                    statsOverlay.innerHTML += `<p style="color: #FFD700; font-size: 1.5rem; animation: levelUp 1s infinite;">恭喜升級！</p>`;
-                }
-                document.body.appendChild(statsOverlay);
-
-                // 5 秒後移除彈出視窗
-                setTimeout(() => {
-                    statsOverlay.remove();
-                }, 5000);
-            });
+            alert(`恭喜！你獲得了 ${expRewards[selectedDifficulty]} 點經驗值。`);
         });
     }
+        
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'rematch-buttons';
@@ -3174,76 +3135,33 @@ function showEffect(className) {
     mainMenuBtn.textContent = '歸隱山林';
 
     restartBtn.onclick = () => {
-        // 重置玩家和敵方氣血
-        const baseHealth = 1000;
-        const healthPerLevel = 100;
-        const user = auth.currentUser;
-        if (user) {
-            database.ref('users/' + user.uid).once('value', (snapshot) => {
-                const userData = snapshot.val() || { level: 1, exp: 0 };
-                playerLevel = userData.level;
-                singlePlayerHealth = baseHealth + (playerLevel - 1) * healthPerLevel;
-                enemyHealth = difficultySettings[selectedDifficulty].enemyHealth;
-                updateSinglePlayerHealthDisplay();
-                // 重置遊戲狀態
-                gameOver = false;
-                answered = false;
-                // 加載新問題
-                loadNewQuestionSinglePlayer();
-            });
-        } else {
-            singlePlayerHealth = baseHealth;
-            enemyHealth = difficultySettings[selectedDifficulty].enemyHealth;
-            updateSinglePlayerHealthDisplay();
-            // 重置遊戲狀態
-            gameOver = false;
-            answered = false;
-            // 加載新問題
-            loadNewQuestionSinglePlayer();
-        }
-        // 隱藏勝利畫面
-        victoryOverlay.style.display = 'none';
-        buttonContainer.remove();
-    };
+        database.ref('rooms/' + currentRoomId).remove();
+        const victoryOverlay = document.querySelector('.victory-overlay');
+const buttons = victoryOverlay.querySelector('.rematch-buttons');
+if (buttons) buttons.remove();
+victoryOverlay.style.display = 'none';
 
+
+// 初始化敌方气血
+        const enemyInitialHealth = 100;
+        document.getElementById('opponentHealth').textContent = enemyInitialHealth;
+        document.getElementById('opponentHealthBar').style.width = enemyInitialHealth + '%';
+
+        
+        startSinglePlayer();
+    };
     mainMenuBtn.onclick = () => {
+        database.ref('rooms/' + currentRoomId).remove();
         window.location.reload();
     };
 
     buttonContainer.appendChild(restartBtn);
     buttonContainer.appendChild(mainMenuBtn);
     victoryOverlay.appendChild(buttonContainer);
-}
 
-    function resetSinglePlayerGame() {
-    // 重置遊戲狀態
-    gameOver = false;
-    answered = false;
-    singlePlayerHealth = 1000 + (playerLevel - 1) * 100; // 重置玩家氣血
-    enemyHealth = difficultySettings[selectedDifficulty].enemyHealth; // 重置敵方氣血
-    updateSinglePlayerHealthDisplay();
-
-    // 清除舊問題顯示
-    document.getElementById('question').textContent = '';
-    document.getElementById('options').innerHTML = '';
-
-    // 隱藏勝利畫面並移除按鈕
-    const victoryOverlay = document.querySelector('.victory-overlay');
-    victoryOverlay.style.display = 'none';
-    const buttons = victoryOverlay.querySelector('.rematch-buttons');
-    if (buttons) buttons.remove();
-
-    // 重置答案按鈕狀態
-    document.querySelectorAll('#options button').forEach(btn => {
-        btn.disabled = false;
-        btn.style.pointerEvents = 'auto';
-        btn.style.opacity = '1';
-    });
-
-    // 返回難度選擇界面
-    document.getElementById('difficultySelection').style.display = 'block';
-    document.getElementById('gameArea').style.display = 'none';
-    document.getElementById('singlePlayerTopicSelection').style.display = 'none';
+    // 新增逻辑：在点击“再战江湖”时，清除可能存在的遮挡画面
+    const waitingForRematch = document.getElementById('waitingForRematch');
+    if (waitingForRematch) waitingForRematch.remove();
 }
 
 document.getElementById('showLeaderboardBtn').onclick = function() {
@@ -3472,4 +3390,5 @@ if (room.hostRematch && room.clientRematch) {
 
     
 </html>
+
 
