@@ -1276,6 +1276,9 @@
     
 <script>
 
+    const BASE_MAXHEALTH = 1000; // 基礎最大氣血值
+let MAXHEALTH = BASE_MAXHEALTH; // 初始值，隨後根據等級更新
+
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -2805,6 +2808,8 @@ function selectSinglePlayerTopic(topic) {
 }
 
   function startSinglePlayerCountdown() {
+      MAXHEALTH = BASE_MAXHEALTH + (playerLevel - 1) * 100; // 初始化 MAXHEALTH
+    singlePlayerHealth = MAXHEALTH; // 設置初始氣血
     console.log('Starting countdown');
     let countdown = 3;
     const countdownElement = document.createElement('div');
@@ -3149,6 +3154,10 @@ function showEffect(className) {
 }
 
     function resetSinglePlayerGame() {
+
+// 更新 MAXHEALTH 根據當前玩家等級
+    MAXHEALTH = BASE_MAXHEALTH + (playerLevel - 1) * 100;
+        
     // 重置遊戲狀態
     gameOver = false;
     answered = false;
