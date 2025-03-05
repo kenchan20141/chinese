@@ -2801,8 +2801,8 @@ function selectSinglePlayerTopic(topic) {
     startSinglePlayerCountdown();
 }
 
-  function startSinglePlayerCountdown() {
-    console.log('Starting countdown');
+   function startSinglePlayerCountdown() {
+    console.log('Starting countdown'); // 添加日誌，確認倒數開始
     let countdown = 3;
     const countdownElement = document.createElement('div');
     countdownElement.id = 'countdown';
@@ -2820,6 +2820,31 @@ function selectSinglePlayerTopic(topic) {
     countdownElement.style.zIndex = '10001';
     document.body.appendChild(countdownElement);
 
+       // 修改後
+const baseDamage = Math.floor(Math.random() * 31) + 50; // 隨機50-80
+let defenseAdjustment = 1.0;
+
+// 職業特性調整
+switch(singlePlayerClass.type) {
+    case 'assassin': 
+        defenseAdjustment *= 0.9; // 防禦-10%
+        break;
+    case 'tank': 
+        defenseAdjustment *= 1.2; // 防禦+20%
+        break;
+}
+
+// 難度係數調整
+const difficultyDefense = {
+    easy: 1.0,
+    normal: 1.1,
+    hard: 1.2,
+    hell: 1.3
+}[selectedDifficulty];
+
+const totalDefense = defenseAdjustment * difficultyDefense;
+const finalDamage = Math.round(baseDamage * (1 - totalDefense));
+
     function updateCountdown() {
         if (countdown > 0) {
             countdownElement.textContent = countdown;
@@ -2828,33 +2853,19 @@ function selectSinglePlayerTopic(topic) {
         } else {
             countdownElement.remove();
             document.getElementById('gameArea').style.display = 'block';
+            // 確保所有其他遮擋元素被隱藏
             document.querySelectorAll('#roomControl, #difficultySelection, #singlePlayerClassSelection, #singlePlayerTopicSelection, #waitingArea, #classSelection, #topicSelection').forEach(el => {
                 el.style.display = 'none';
             });
-            const settings = difficultySettings[selectedDifficulty];
+            // 啟動扣血計時器
+            const settings = difficultySettings[selectedDifficulty]; // 使用全局變量
             if (!settings) {
                 console.error('難度設置未找到，selectedDifficulty:', selectedDifficulty);
                 return;
             }
             setInterval(() => {
                 if (Math.random() < settings.damageChance) {
-                    let baseDamage = 50 + Math.random() * 30; // 隨機 50-80
-                    let difficultyMultiplier = {
-                        easy: 0.8,
-                        normal: 1.0,
-                        hard: 1.2,
-                        hell: 1.5
-                    }[selectedDifficulty];
-                    let defenseAdjustment = 1.0;
-                    if (singlePlayerClass.type === 'assassin') {
-                        defenseAdjustment = 0.9; // 影流教防禦減 10%
-                    } else if (singlePlayerClass.type === 'tank') {
-                        defenseAdjustment = 1.2; // 鐵甲宗防禦加 20%
-                    }
-                    let totalDefense = singlePlayerClass.defense * defenseAdjustment;
-                    let damageToPlayer = baseDamage * difficultyMultiplier * (1 - totalDefense);
-                    damageToPlayer = Math.max(Math.round(damageToPlayer), 50); // 最低 50 點
-                    singlePlayerHealth = Math.max(singlePlayerHealth - damageToPlayer, 0);
+                    singlePlayerHealth = Math.max(singlePlayerHealth - 10, 0);
                     updateSinglePlayerHealthDisplay();
                     if (singlePlayerHealth <= 0) {
                         handleSinglePlayerGameOver(false);
@@ -2987,13 +2998,28 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    let baseDamage = 50 + Math.random() * 30; // 隨機 50-80
-    let difficultyMultiplier = {
-        easy: 0.8,
-        normal: 1.0,
-        hard: 1.2,
-        hell: 1.5
-    }[selectedDifficulty];
+    const baseDamage = Math.floor(Math.random() * 31) + 50; // 隨機50-80
+let defenseAdjustment = 1.0;
+    // 職業特性調整
+switch(singlePlayerClass.type) {
+    case 'assassin': 
+        defenseAdjustment *= 0.9; // 防禦-10%
+        break;
+    case 'tank': 
+        defenseAdjustment *= 1.2; // 防禦+20%
+        break;
+}
+
+// 難度係數調整
+const difficultyDefense = {
+    easy: 1.0,
+    normal: 1.1,
+    hard: 1.2,
+    hell: 1.3
+}[selectedDifficulty];
+
+const totalDefense = defenseAdjustment * difficultyDefense;
+const finalDamage = Math.round(baseDamage * (1 - totalDefense));
 
     if (isCorrect) {
         soundEffects.attack.play();
@@ -3005,8 +3031,8 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
             attackMultiplier *= 2;
             showEffect('sword-flash');
         }
-        const damageToEnemy = Math.round(baseDamage * attackMultiplier);
-        enemyHealth = Math.max(Math.round(enemyHealth - damageToEnemy), 0);
+        const damageToEnemy = Math.round(baseDamage * attackMultiplier); // 確保整數
+        enemyHealth = Math.max(Math.round(enemyHealth - damageToEnemy), 0); // 確保整數
         updateSinglePlayerHealthDisplay();
         if (enemyHealth <= 0) {
             handleSinglePlayerGameOver(true);
@@ -3015,18 +3041,25 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
     } else {
         soundEffects.defeat.play();
         if (navigator.vibrate) {
-            navigator.vibrate(200); // 答錯震動 200ms
+            navigator.vibrate(200); // 答錯震動 500ms
         }
-        let defenseAdjustment = 1.0;
-        if (singlePlayerClass.type === 'assassin') {
-            defenseAdjustment = 0.9; // 影流教防禦減 10%
-        } else if (singlePlayerClass.type === 'tank') {
-            defenseAdjustment = 1.2; // 鐵甲宗防禦加 20%
+        let defenseReduction = singlePlayerClass.defense * (1 + (playerLevel - 1) * 0.05); // 等級每升1級，防禦力增加5%
+        let damageToPlayer = baseDamage * difficultyMultiplier; // 初始傷害 = 基礎傷害 * 難度倍率
+
+        if (singlePlayerClass.type === 'assassin' && Math.random() < singlePlayerClass.dodge) {
+            damageToPlayer = 0; // 刺客閃避成功，扣血為0
+            document.getElementById('dodgeText').style.display = 'block';
+            setTimeout(() => document.getElementById('dodgeText').style.display = 'none', 1000);
+        } else {
+            if (singlePlayerClass.type === 'tank') {
+                damageToPlayer *= 0.8; // 鐵甲宗減傷20%
+                document.getElementById('reduceDamageText').style.display = 'block';
+                setTimeout(() => document.getElementById('reduceDamageText').style.display = 'none', 1200);
+            }
+            damageToPlayer = Math.max(Math.round(damageToPlayer * (1 - defenseReduction)), 50); // 確保最低50點
         }
-        let totalDefense = singlePlayerClass.defense * defenseAdjustment;
-        let damageToPlayer = baseDamage * difficultyMultiplier * (1 - totalDefense);
-        damageToPlayer = Math.max(Math.round(damageToPlayer), 50); // 最低 50 點
-        singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0);
+
+        singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0); // 確保整數
         updateSinglePlayerHealthDisplay();
         if (singlePlayerHealth <= 0) {
             handleSinglePlayerGameOver(false);
@@ -3036,7 +3069,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
         hasHealedThisTurn = true;
-        singlePlayerHealth = Math.min(Math.round(singlePlayerHealth + 2), 1000 + (playerLevel - 1) * 100);
+        singlePlayerHealth = Math.min(Math.round(singlePlayerHealth + 2), 1000 + (playerLevel - 1) * 100); // 確保整數
         updateSinglePlayerHealthDisplay();
         document.getElementById('healText').style.display = 'block';
         setTimeout(() => document.getElementById('healText').style.display = 'none', 1000);
