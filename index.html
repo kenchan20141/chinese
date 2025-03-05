@@ -2801,7 +2801,7 @@ function selectSinglePlayerTopic(topic) {
     startSinglePlayerCountdown();
 }
 
-   function startSinglePlayerCountdown() {
+  function startSinglePlayerCountdown() {
     console.log('Starting countdown');
     let countdown = 3;
     const countdownElement = document.createElement('div');
@@ -2838,8 +2838,8 @@ function selectSinglePlayerTopic(topic) {
             }
             setInterval(() => {
                 if (Math.random() < settings.damageChance) {
-                    const baseDamage = 50 + Math.random() * 30; // 基礎傷害50-80
-                    const difficultyMultiplier = {
+                    let baseDamage = 50 + Math.random() * 30; // 隨機 50-80
+                    let difficultyMultiplier = {
                         easy: 0.8,
                         normal: 1.0,
                         hard: 1.2,
@@ -2847,15 +2847,13 @@ function selectSinglePlayerTopic(topic) {
                     }[selectedDifficulty];
                     let defenseAdjustment = 1.0;
                     if (singlePlayerClass.type === 'assassin') {
-                        defenseAdjustment = 0.9; // 影流教防禦減10%
+                        defenseAdjustment = 0.9; // 影流教防禦減 10%
                     } else if (singlePlayerClass.type === 'tank') {
-                        defenseAdjustment = 1.2; // 鐵甲宗防禦加20%
+                        defenseAdjustment = 1.2; // 鐵甲宗防禦加 20%
                     }
-                    const levelDefenseBonus = 1 + (playerLevel - 1) * 0.05;
-                    const totalDefense = singlePlayerClass.defense * defenseAdjustment * levelDefenseBonus;
+                    let totalDefense = singlePlayerClass.defense * defenseAdjustment;
                     let damageToPlayer = baseDamage * difficultyMultiplier * (1 - totalDefense);
-                    damageToPlayer = Math.max(Math.round(damageToPlayer), 50); // 最低50點
-
+                    damageToPlayer = Math.max(Math.round(damageToPlayer), 50); // 最低 50 點
                     singlePlayerHealth = Math.max(singlePlayerHealth - damageToPlayer, 0);
                     updateSinglePlayerHealthDisplay();
                     if (singlePlayerHealth <= 0) {
@@ -2989,8 +2987,8 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    const baseDamage = 50 + Math.random() * 30; // 基數 50-80
-    const difficultyMultiplier = {
+    let baseDamage = 50 + Math.random() * 30; // 隨機 50-80
+    let difficultyMultiplier = {
         easy: 0.8,
         normal: 1.0,
         hard: 1.2,
@@ -3007,8 +3005,8 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
             attackMultiplier *= 2;
             showEffect('sword-flash');
         }
-        const damageToEnemy = Math.round(baseDamage * attackMultiplier); // 確保整數
-        enemyHealth = Math.max(Math.round(enemyHealth - damageToEnemy), 0); // 確保整數
+        const damageToEnemy = Math.round(baseDamage * attackMultiplier);
+        enemyHealth = Math.max(Math.round(enemyHealth - damageToEnemy), 0);
         updateSinglePlayerHealthDisplay();
         if (enemyHealth <= 0) {
             handleSinglePlayerGameOver(true);
@@ -3017,26 +3015,17 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
     } else {
         soundEffects.defeat.play();
         if (navigator.vibrate) {
-            navigator.vibrate(200); // 答錯震動 500ms
+            navigator.vibrate(200); // 答錯震動 200ms
         }
         let defenseAdjustment = 1.0;
         if (singlePlayerClass.type === 'assassin') {
-            defenseAdjustment = 0.9; // 影流教防禦減10%
+            defenseAdjustment = 0.9; // 影流教防禦減 10%
         } else if (singlePlayerClass.type === 'tank') {
-            defenseAdjustment = 1.2; // 鐵甲宗防禦加20%
+            defenseAdjustment = 1.2; // 鐵甲宗防禦加 20%
         }
-        const levelDefenseBonus = 1 + (playerLevel - 1) * 0.05; // 每級增加5%防禦
-        const totalDefense = singlePlayerClass.defense * defenseAdjustment * levelDefenseBonus;
+        let totalDefense = singlePlayerClass.defense * defenseAdjustment;
         let damageToPlayer = baseDamage * difficultyMultiplier * (1 - totalDefense);
-
-        if (singlePlayerClass.type === 'assassin' && Math.random() < singlePlayerClass.dodge) {
-            damageToPlayer = 0; // 刺客閃避成功
-            document.getElementById('dodgeText').style.display = 'block';
-            setTimeout(() => document.getElementById('dodgeText').style.display = 'none', 1000);
-        } else {
-            damageToPlayer = Math.max(Math.round(damageToPlayer), 50); // 最低50點
-        }
-
+        damageToPlayer = Math.max(Math.round(damageToPlayer), 50); // 最低 50 點
         singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0);
         updateSinglePlayerHealthDisplay();
         if (singlePlayerHealth <= 0) {
@@ -3047,7 +3036,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
         hasHealedThisTurn = true;
-        singlePlayerHealth = Math.min(Math.round(singlePlayerHealth + 2), 1000 + (playerLevel - 1) * 100); // 確保整數
+        singlePlayerHealth = Math.min(Math.round(singlePlayerHealth + 2), 1000 + (playerLevel - 1) * 100);
         updateSinglePlayerHealthDisplay();
         document.getElementById('healText').style.display = 'block';
         setTimeout(() => document.getElementById('healText').style.display = 'none', 1000);
