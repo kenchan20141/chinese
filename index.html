@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html>
     
@@ -1134,8 +1135,6 @@
     
 <script>
 
-    
-
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1264,13 +1263,12 @@ window.onload = function() {
 };
     
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
-    let isSinglePlayer = false; // 標誌單機模式
+
+let isSinglePlayer = false; // 標誌單機模式
 let selectedGrade = null;   // 儲存單機模式選中的年級
 let selectedTopic = null;   // 儲存單機模式選中的題庫
+    
     let playerLevel = 1;  // 預設等級為 1
-    let singlePlayerHealth = 100;  // 玩家氣血
-let enemyHealth = 100;         // 敵人氣血
-let currentQuestion = null;    // 當前問題
 let playerExp = 0;    // 預設經驗值為 0
 let opponentJoinedMessage = null;
     let isRematching = false;
@@ -2563,15 +2561,8 @@ userRef.once('value', (snapshot) => {
 
     // 啟動單機模式
 function startSinglePlayer() {
-    isSinglePlayer = true; // 設置單機模式標誌
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('difficultySelection').style.display = 'block';
-    // 重置選擇狀態
-    selectedGrade = null;
-    selectedTopic = null;
-    document.getElementById('topicSelection').style.display = 'none';
-    document.getElementById('gradeSelection').style.display = 'grid';
-    document.getElementById('topicDetail').style.display = 'none';
 }
 
 // 選擇難度並啟動遊戲
@@ -2580,44 +2571,62 @@ function selectDifficulty(difficulty) {
     if (!settings) return;
 
     // 初始化单机模式
-    singlePlayerHealth = 100;
-    enemyHealth = 100;
+    currentRoomId ='single_' + Date.now();
+    isHost = true;
     gameOver = false;
     answered = false;
+    playerClass = null; // 单机模式不需要职业
+
+    // 设置玩家气血
+    const initialHealth = 100;
+    // 添加敌方初始气血设置
+    const enemyInitialHealth = 100;
+    database.ref('rooms/' + currentRoomId).set({
+        player1: { health: initialHealth },
+        enemy: { health: enemyInitialHealth }, // 添加敌方气血
+        gameStarted: true,
+        gameEnded: false,
+        winner: null
+    });
 
     // 显示游戏区域
     document.getElementById('difficultySelection').style.display = 'none';
     document.getElementById('gameArea').style.display = 'block';
     const victoryOverlay = document.querySelector('.victory-overlay');
-    victoryOverlay.style.display = 'none';
+victoryOverlay.style.display = 'none';
 
-    // 更新初始气血显示
-    updateSinglePlayerHealthDisplay();
-
-    // 开始扣血计时器
-    clearInterval(timer);
+    // 开始扣血计时器，确保按照难度设置的时间间距扣血
+    clearInterval(timer); // 清除可能存在的旧计时器
     setInterval(() => {
         if (Math.random() < settings.damageChance) {
-            singlePlayerHealth = Math.max(singlePlayerHealth - 10, 0);
-            updateSinglePlayerHealthDisplay();
-            if (singlePlayerHealth <= 0) {
-                handleSinglePlayerGameOver(false);
-            }
+            const damage = 10; // 每次扣减 10 点气血
+            database.ref('rooms/' + currentRoomId + '/player1/health').set(
+                firebase.database.ServerValue.increment(-damage)
+            );
         }
     }, settings.damageInterval);
 
+    // 监听气血变化
+    listenToSinglePlayerHealth();
     loadNewQuestionSinglePlayer();
 }
 
-function updateSinglePlayerHealthDisplay() {
-    document.getElementById('myHealth').textContent = singlePlayerHealth;
-    document.getElementById('myHealthBar').style.width = singlePlayerHealth + '%';
-    document.getElementById('opponentHealth').textContent = enemyHealth;
-    document.getElementById('opponentHealthBar').style.width = enemyHealth + '%';
+// 監聽單機模式氣血
+function listenToSinglePlayerHealth() {
+    const roomRef = database.ref('rooms/' + currentRoomId);
+    roomRef.on('value', (snapshot) => {
+        const room = snapshot.val();
+        if (!room) return;
+
+        const health = room.player1.health;
+        document.getElementById('myHealth').textContent = Math.max(health, 0);
+        document.getElementById('myHealthBar').style.width = Math.max(health, 0) + '%';
+
+        if (health <= 0) {
+            handleSinglePlayerGameOver();
+        }
+    });
 }
-
-    
-
 
 // 單機模式問題加載
 function loadNewQuestionSinglePlayer() {
@@ -3031,4 +3040,5 @@ if (room.hostRematch && room.clientRematch) {
 
     
 </html>
+
 
