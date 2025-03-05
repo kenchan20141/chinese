@@ -1155,24 +1155,44 @@
     <h2 style="color: var(--gold); margin-bottom: 2rem;">選擇難度</h2>
     <div class="difficulty-grid">
         <div class="difficulty-card" onclick="selectDifficulty('easy')">
+            <img src="https://example.com/difficulty-easy.png" class="difficulty-icon">
+            <div class="selected-tick">✓</div>
             <h3>容易</h3>
             <p>敵方氣血: 100</p>
             <p>答中率: 80%</p>
+            <div class="popup-image" style="display: none;">
+                <img src="https://example.com/difficulty-easy-full.png" alt="容易難度全圖">
+            </div>
         </div>
         <div class="difficulty-card" onclick="selectDifficulty('normal')">
+            <img src="https://example.com/difficulty-normal.png" class="difficulty-icon">
+            <div class="selected-tick">✓</div>
             <h3>普通</h3>
             <p>敵方氣血: 150</p>
             <p>答中率: 60%</p>
+            <div class="popup-image" style="display: none;">
+                <img src="https://example.com/difficulty-normal-full.png" alt="普通難度全圖">
+            </div>
         </div>
         <div class="difficulty-card" onclick="selectDifficulty('hard')">
+            <img src="https://example.com/difficulty-hard.png" class="difficulty-icon">
+            <div class="selected-tick">✓</div>
             <h3>困難</h3>
             <p>敵方氣血: 200</p>
             <p>答中率: 40%</p>
+            <div class="popup-image" style="display: none;">
+                <img src="https://example.com/difficulty-hard-full.png" alt="困難難度全圖">
+            </div>
         </div>
         <div class="difficulty-card" onclick="selectDifficulty('hell')">
+            <img src="https://example.com/difficulty-hell.png" class="difficulty-icon">
+            <div class="selected-tick">✓</div>
             <h3>地獄</h3>
             <p>敵方氣血: 250</p>
             <p>答中率: 20%</p>
+            <div class="popup-image" style="display: none;">
+                <img src="https://example.com/difficulty-hell-full.png" alt="地獄難度全圖">
+            </div>
         </div>
     </div>
     <div id="selectedDifficultyInfo" style="margin-top: 2rem;"></div>
