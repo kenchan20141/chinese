@@ -16,6 +16,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
 
+        /* 彈出容器樣式 */
+#popupContainer {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5); /* 半透明背景 */
+    z-index: 10000; /* 高於其他層 */
+    display: flex; /* 使用 flex 居中 */
+    justify-content: center;
+    align-items: center;
+}
+
+/* 彈出圖片樣式 */
+#popupContainer .popup-image {
+    position: relative; /* 移除 fixed，因為父容器已處理定位 */
+    animation: popImage 0.3s ease-out; /* 應用動畫，0.3秒完成 */
+}
+
+/* 圖片尺寸限制 */
+#popupContainer .popup-image img {
+    max-width: 80vw; /* 限制寬度為螢幕的80% */
+    max-height: 80vh; /* 限制高度為螢幕的80% */
+}
+
+/* 更新動畫關鍵幀 */
+@keyframes popImage {
+    0% { transform: scale(0); opacity: 0; } /* 從無到有 */
+    100% { transform: scale(1); opacity: 1; } /* 放大至正常大小 */
+}
+
 .difficulty-icon {
     width: 140px;
     height: 140px;
@@ -1284,6 +1317,13 @@
     
     
 <script>
+
+    const difficultyImages = {
+    easy: 'https://i.ibb.co/TqwmNJN2/image.png',
+    normal: 'https://i.ibb.co/spz2tv88/3.png',
+    hard: 'https://i.ibb.co/B5SqSkqs/image.png',
+    hell: 'https://i.ibb.co/1G8nGFC2/4.png'
+};
 
     // 在代码开头定义不同难度的经验奖励
 const expRewards = {
@@ -2743,6 +2783,7 @@ function selectDifficulty(difficulty) {
         updateSinglePlayerHealthDisplay();
     }
 
+    // 更新選擇狀態
     document.querySelectorAll('.difficulty-card').forEach(card => {
         card.classList.remove('selected');
     });
@@ -2752,10 +2793,18 @@ function selectDifficulty(difficulty) {
         <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${selectedCard.querySelector('h3').textContent}</p>
     `;
 
+    // 顯示彈出圖片
+    const popupImage = document.getElementById('popupImage');
+    popupImage.src = difficultyImages[difficulty]; // 設置對應圖片
+    const popupContainer = document.getElementById('popupContainer');
+    popupContainer.style.display = 'flex'; // 顯示彈出容器
+
+    // 動畫完成後切換界面
     setTimeout(() => {
+        popupContainer.style.display = 'none'; // 隱藏彈出容器
         document.getElementById('difficultySelection').style.display = 'none';
         document.getElementById('singlePlayerClassSelection').style.display = 'block';
-    }, 500);
+    }, 300); // 等待0.3秒，與動畫時長一致
 }
     
 function selectSinglePlayerClass(className) {
@@ -3450,6 +3499,13 @@ if (room.hostRematch && room.clientRematch) {
 
 <!-- 新增减伤提示 -->
 <div id="reduceDamageText" style="display:none; position:fixed; top:40%; left:50%; transform:translate(-50%,-50%); font-size:2rem; color:#00ffff; text-shadow:0 0 10px rgba(0,255,255,0.5);">🔥 離火護體 傷害減少30%</div>
+
+
+<div id="popupContainer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000;">
+    <div class="popup-image">
+        <img id="popupImage" src="" alt="難度全圖">
+    </div>
+</div>
     
 </body>
 
