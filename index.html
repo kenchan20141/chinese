@@ -1135,6 +1135,11 @@
     
 <script>
 
+
+    let isSinglePlayer = false; // 標誌單機模式
+let selectedGrade = null;   // 儲存單機模式選中的年級
+let selectedTopic = null;   // 儲存單機模式選中的題庫
+
 // Canvas 動畫代碼
 window.onload = function() {
     const canvas = document.getElementById('animationCanvas');
@@ -1263,11 +1268,6 @@ window.onload = function() {
 };
     
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
-
-let isSinglePlayer = false; // 標誌單機模式
-let selectedGrade = null;   // 儲存單機模式選中的年級
-let selectedTopic = null;   // 儲存單機模式選中的題庫
-    
     let playerLevel = 1;  // 預設等級為 1
 let playerExp = 0;    // 預設經驗值為 0
 let opponentJoinedMessage = null;
