@@ -124,13 +124,6 @@
     box-shadow: 0 0 15px rgba(0,0,0,0.3);
 }
 
-/* 移除重複定義，統一使用以下動畫 */
-@keyframes popImage {
-    0% { transform: scale(0); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* 確保 #popupContainer 內的 .popup-image 應用動畫 */
 #popupContainer {
     display: none;
     position: fixed;
@@ -144,15 +137,19 @@
     align-items: center;
 }
 
-#popupContainer .popup-image {
+#popupImage.popup-image {
     animation: popImage 0.3s ease-out;
+    max-width: 80vw; /* 限制圖片寬度為視窗寬度的 80% */
+    max-height: 80vh; /* 限制圖片高度為視窗高度的 80% */
+    width: auto; /* 確保圖片按比例縮放 */
+    height: auto; /* 確保圖片按比例縮放 */
+    object-fit: contain; /* 可選：確保圖片完整顯示並保持比例 */
 }
 
-/* 限制圖片大小 */
-#popupContainer .popup-image img {
-    max-width: 80vw;
-    max-height: 80vh;
-}  
+@keyframes popImage {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
         
 
 
