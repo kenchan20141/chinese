@@ -202,11 +202,6 @@
     75% { transform: translateX(-3px); }
     100% { transform: translateX(0); }
 }
-
-@keyframes fadeOut {
-    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
-}
         
         /* 新增动画效果 */
     @keyframes fadeInUp {
@@ -943,12 +938,12 @@
     
     <!-- 用戶信息區域 -->
    <div id="userInfo" class="info-box" style="display: none;">
-   <span id="userName">${user.displayName}</span> | 積分: <span id="userScore">${userData.score || 0}</span> | 等級: <span id="userLevel">${userData.level}</span>
-                <div>經驗值: ${userData.exp} / ${expRequired} (${expPercentage}%) 升級還需: ${remainingExp} 經驗
-                    <div id="expBar" style="width: 100px; height: 10px; background: #333; border-radius: 5px; display: inline-block;">
-                        <div id="expFill" style="height: 100%; background: #4CAF50; width: ${expPercentage}%; transition: width 0.5s ease;"></div>
-                    </div>
-                </div>
+    <span id="userName"></span> | 積分: <span id="userScore">0</span> | 等級: <span id="userLevel">1</span>
+    <div>經驗值: 
+        <div id="expBar" style="width: 100px; height: 10px; background: #333; border-radius: 5px; display: inline-block;">
+            <div id="expFill" style="height: 100%; background: #4CAF50; width: 0%; transition: width 0.5s ease;"></div>
+        </div>
+    </div>
 </div>
     
     <!-- 強化標題 -->
@@ -2886,8 +2881,8 @@ function selectSinglePlayerTopic(topic) {
     updateCountdown();
 }
 
-function updateSinglePlayerHealthDisplay(damageToPlayer = 0, damageToEnemy = 0) {
-    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100;
+function updateSinglePlayerHealthDisplay() {
+    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100; // 動態計算最大氣血
     const maxEnemyHealth = difficultySettings[selectedDifficulty].enemyHealth;
 
     document.getElementById('myHealth').textContent = `${singlePlayerHealth} / ${maxPlayerHealth}`;
@@ -2896,22 +2891,7 @@ function updateSinglePlayerHealthDisplay(damageToPlayer = 0, damageToEnemy = 0) 
     document.getElementById('opponentHealth').textContent = `${enemyHealth} / ${maxEnemyHealth}`;
     document.getElementById('opponentHealthBar').style.width = `${(enemyHealth / maxEnemyHealth) * 100}%`;
 
-    if (damageToPlayer > 0) {
-        const damageText = document.createElement('div');
-        damageText.textContent = `-${damageToPlayer}`;
-        damageText.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: red; font-size: 2rem; animation: fadeOut 1s forwards;`;
-        document.getElementById('myHealthContainer').appendChild(damageText);
-        setTimeout(() => damageText.remove(), 1000);
-    }
-
-    if (damageToEnemy > 0) {
-        const damageText = document.createElement('div');
-        damageText.textContent = `-${damageToEnemy}`;
-        damageText.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: red; font-size: 2rem; animation: fadeOut 1s forwards;`;
-        document.getElementById('enemyHealthContainer').appendChild(damageText);
-        setTimeout(() => damageText.remove(), 1000);
-    }
-
+    // 添加動畫效果
     const healthBar = singlePlayerHealth < maxPlayerHealth * 0.3 ? 'myHealthBar' : 'opponentHealthBar';
     const wave = document.createElement('div');
     wave.className = 'health-wave';
