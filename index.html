@@ -1,4 +1,8 @@
+現時我的遊戲系統有兩個問題：
+其一，玩家登入後無法登出，因為「登出」鍵沒有在頁面顯示；
+其二，玩家登入後，「註冊」和「登入」等按鈕沒有消失
 
+請替我檢查清楚，不要用添加日誌方式處理，要明確指引我具體要刪甚麼、加甚麼或是替代甚麼才能修復這個問題。
 
 <!DOCTYPE html>
 <html>
@@ -2026,6 +2030,7 @@ document.getElementById('logoutBtn').onclick = function() {
 };
 
 
+
 const auth = firebase.auth();
    auth.onAuthStateChanged((user) => {
     const userInfo = document.getElementById('userInfo');
@@ -2041,6 +2046,26 @@ const auth = firebase.auth();
         userInfo.style.display = 'block';
         userName.textContent = user.displayName || '未命名玩家';
 
+ // 從資料庫獲取資料
+      database.ref('users/' + user.uid).once('value', (snapshot) => {
+    const userData = snapshot.val() || { level: 1, exp: 0 };
+    playerLevel = userData.level; // 設置全局變量
+    userLevel.textContent = userData.level;
+    const expPercentage = (userData.exp / (100 * userData.level)) * 100;
+    expFill.style.width = expPercentage + '%';
+});
+
+        database.ref('leaderboard/' + user.uid).once('value', (snapshot) => {
+            const data = snapshot.val();
+            userScore.textContent = data ? data.score : 0;
+        });
+    } else {
+        document.getElementById('loginBtn').style.display = 'inline-block';
+        document.getElementById('registerBtn').style.display = 'inline-block';
+        document.getElementById('logoutContainer').style.display = 'none';
+        userInfo.style.display = 'none';
+    }
+});
 
 
     const auth = firebase.auth();
