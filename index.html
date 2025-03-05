@@ -1329,11 +1329,12 @@ function selectClass(className) {
 const playerPath = isHost ? 'player1' : 'player2';
 database.ref(`rooms/${currentRoomId}/${playerPath}`).update({
     class: className,
-    health: maxHealth,  // 根據等級設置初始氣血
-    maxHealth: maxHealth,  // 儲存最大氣血值
+    health: maxHealth,
+    maxHealth: maxHealth,
     attack: playerClass.attack,
     defense: playerClass.defense,
-    dodge: playerClass.dodge
+    dodge: playerClass.dodge,
+    level: playerLevel || 1 // 確保等級被存儲
 });
         });
     }
@@ -1871,12 +1872,13 @@ document.getElementById('logoutBtn').onclick = function() {
         userName.textContent = user.displayName || '未命名玩家';
 
         // 從資料庫獲取資料
-        database.ref('users/' + user.uid).once('value', (snapshot) => {
-            const userData = snapshot.val() || { level: 1, exp: 0 };
-            userLevel.textContent = userData.level;
-            const expPercentage = (userData.exp / (100 * userData.level)) * 100;
-            expFill.style.width = expPercentage + '%';
-        });
+      database.ref('users/' + user.uid).once('value', (snapshot) => {
+    const userData = snapshot.val() || { level: 1, exp: 0 };
+    playerLevel = userData.level; // 設置全局變量
+    userLevel.textContent = userData.level;
+    const expPercentage = (userData.exp / (100 * userData.level)) * 100;
+    expFill.style.width = expPercentage + '%';
+});
 
         database.ref('leaderboard/' + user.uid).once('value', (snapshot) => {
             const data = snapshot.val();
@@ -1967,22 +1969,52 @@ function joinRoom() {
     document.getElementById('waitingArea').style.display = 'block';
     document.getElementById('displayRoomId').textContent = currentRoomId;
 
+    const user = auth.currentUser;
+if (user) {
     database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null },
-        player2: { health: 100, class: null, currentQuestion: null },
+        player1: {
+            userId: user.uid,
+            name: user.displayName || '未知玩家',
+            level: playerLevel || 1,
+            health: 100,
+            class: null,
+            currentQuestion: null
+        },
+        player2: null,
         gameStarted: false,
         gameEnded: false,
         winner: null
     });
+} else {
+    alert('請先登入！');
+    return;
+}
     listenToRoomChanges();
 }
 
 function joinRoomWithId(roomId) {
     currentRoomId = roomId;
-    isHost = false; // 注意這裡與 createRoomWithId 的區別
+    isHost = false;
     document.getElementById('roomControl').style.display = 'none';
     document.getElementById('classSelection').style.display = 'block';
     listenToRoomChanges();
+    const user = auth.currentUser;
+    if (user) {
+        const player2Ref = database.ref('rooms/' + currentRoomId + '/player2');
+        player2Ref.set({
+            userId: user.uid,
+            name: user.displayName || '未知玩家',
+            level: playerLevel || 1,
+            health: 100,
+            class: null,
+            currentQuestion: null
+        }).catch((error) => {
+            console.error("設置 player2 失敗:", error);
+        });
+    } else {
+        alert('請先登入！');
+        return;
+    }
 }
 
     function joinWaitingQueue() {
@@ -2149,57 +2181,37 @@ function startNewGameSession() {
     
 function updateHealthDisplay(room) {
     const user = auth.currentUser;
-    if (user) {
-        document.getElementById('myHealthContainer').innerHTML = `
-            <div>${user.displayName} 氣血: <span id="myHealth">${Math.max(isHost ? room.player1.health : (room.player2?.health || 100), 0)}</span></div>
-            <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
-        `;
-    }
-     // 在原有代码前添加职业头像显示
-    const myClass = isHost ? room.player1.class : (room.player2?.class || '');
-    const opponentClass = isHost ? (room.player2?.class || '') : room.player1.class;
+    if (!user) return;
 
- // 添加职业头像
+    const playerPath = isHost ? 'player1' : 'player2';
+    const opponentPath = isHost ? 'player2' : 'player1';
+
+    const myMaxHealth = room[playerPath]?.maxHealth || 1000;
+    const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
+    const myHealth = Math.max(room[playerPath]?.health || 0, 0);
+    const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
+
+    const myHealthPercentage = (myHealth / myMaxHealth) * 100;
+    const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
+
+    // 更新己方顯示
     document.getElementById('myHealthContainer').innerHTML = `
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="https://example.com/${myClass}.png" style="width:50px; height:50px; border-radius:50%;">
-            <div>🏹 你的氣血: <span id="myHealth">100</span></div>
-        </div>
-        <div class="health-bar"><div class="health-fill" id="myHealthBar"></div></div>
+        <div>${user.displayName || '未知玩家'} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
+        <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
     `;
-    
-    document.getElementById('enemyHealthContainer').innerHTML = `
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="https://example.com/${opponentClass}.png" style="width:50px; height:50px; border-radius:50%;">
-            <div>🗡 敵方氣血: <span id="opponentHealth">100</span></div>
-        </div>
-        <div class="health-bar"><div class="health-fill" id="opponentHealthBar"></div></div>
-    `;
-    
 
-    if (user) {
-        const playerPath = isHost ? 'player1' : 'player2';
-        const opponentPath = isHost ? 'player2' : 'player1';
-
-        // 從房間數據中獲取各自的 maxHealth 和 health
-        const myMaxHealth = room[playerPath]?.maxHealth || 1000;
-        const opponentMaxHealth = room[opponentPath]?.maxHealth || 1000;
-        const myHealth = Math.max(room[playerPath]?.health || 0, 0);
-        const opponentHealth = Math.max(room[opponentPath]?.health || 0, 0);
-
-        // 計算氣血百分比
-        const myHealthPercentage = (myHealth / myMaxHealth) * 100;
-        const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
-
-        // 更新己方氣血條顯示
-        document.getElementById('myHealthContainer').innerHTML = `
-            <div>${user.displayName} 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
-            <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
-        `;
-
-        // 更新敵方氣血條顯示
+    // 更新敵方顯示
+    const opponentData = room[opponentPath];
+    if (opponentData) {
+        const opponentName = opponentData.name || '未知玩家';
+        const opponentLevel = opponentData.level || 1;
         document.getElementById('enemyHealthContainer').innerHTML = `
-            <div>敵方氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div>${opponentName} (等級 ${opponentLevel}) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+            <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+        `;
+    } else {
+        document.getElementById('enemyHealthContainer').innerHTML = `
+            <div>等待玩家加入... 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
     }
