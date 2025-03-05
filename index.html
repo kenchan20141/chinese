@@ -1627,6 +1627,64 @@ function checkAnswer(isCorrect, questionId) {
     if (answeredQuestions.has(questionId)) return; // 如果已回答，則不執行
     answeredQuestions.add(questionId); // 記錄已回答的問題ID
 
+
+if (selectedDifficulty) {
+        const settings = difficultySettings[selectedDifficulty];
+        clearInterval(enemyAttackInterval); // 清除之前的定时器
+        enemyAttackInterval = setInterval(() => {
+            // 模拟敌方攻击，减少玩家气血
+            if (Math.random() < settings.damageChance) {
+                const baseDamage = Math.floor(Math.random() * 31) + 50;
+                let damage = Math.floor(baseDamage / playerClass.defense);
+                if (playerClass.type === 'mage') {
+                    damage = Math.floor(damage * 0.7);
+                    const reduceDisplay = document.getElementById('reduceDamageText');
+                    reduceDisplay.style.display = 'block';
+                    setTimeout(() => reduceDisplay.style.display = 'none', 1200);
+                }
+
+                const playerPath = isHost ? 'player1' : 'player2';
+                database.ref('rooms/' + currentRoomId + '/' + playerPath + '/health').set(
+                    firebase.database.ServerValue.increment(-damage)
+                );
+
+                // 添加攻击特效和动画
+                const targetElement = document.getElementById('myHealthBar');
+                targetElement.classList.add('damage-flash');
+                document.getElementById('gameArea').classList.add('screen-shake');
+                document.querySelectorAll('.health-fill').forEach(bar => bar.classList.add('damage-effect'));
+
+                navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+                if (navigator.vibrate) navigator.vibrate(200);
+
+                setTimeout(() => {
+                    targetElement.classList.remove('damage-flash');
+                    document.getElementById('gameArea').classList.remove('screen-shake');
+                    document.querySelectorAll('.health-fill').forEach(bar => bar.classList.remove('damage-effect'));
+                }, 500);
+
+                const wave = document.createElement('div');
+                wave.className = 'health-wave';
+                wave.style.background = `linear-gradient(90deg, transparent 0%, rgba(231,76,60,0.3) 50%, transparent 100%)`;
+                targetElement.appendChild(wave);
+                setTimeout(() => wave.remove(), 500);
+
+                const hitText = document.createElement('div');
+                hitText.className = 'hit-marker';
+                hitText.textContent = `-${damage}`;
+                const myHealthContainer = document.getElementById('myHealthContainer');
+                hitText.style.position = 'absolute';
+                hitText.style.left = `${Math.random() * myHealthContainer.offsetWidth + myHealthContainer.offsetLeft}px`;
+                hitText.style.top = `${myHealthContainer.offsetTop + myHealthContainer.offsetHeight / 2 - hitText.offsetHeight / 2}px`;
+                myHealthContainer.appendChild(hitText);
+                setTimeout(() => hitText.remove(), 300);
+
+                checkGameOver();
+            }
+        }, settings.damageInterval);
+    }
+    
+
     // 在傷害計算後添加特效元素
     let effectElement = document.createElement('div');
     if (playerClass.type === 'warrior' && isCorrect) {
