@@ -1131,6 +1131,80 @@
     </div>
 </div>
 
+
+    <!-- 單機模式職業選擇界面 -->
+<div id="singlePlayerClassSelection" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); padding: 0rem; z-index: 9999; overflow-y: auto;">
+    <h2 style="color: var(--gold); margin-bottom: 2rem;">選擇你的武道流派</h2>
+    <div class="class-grid">
+        <!-- 戰士 -->
+        <div class="class-card" onclick="selectSinglePlayerClass('warrior')">
+            <img src="https://i.ibb.co/XfWY2Lgc/1.png" class="class-icon">
+            <div class="selected-tick">✓</div>
+            <h3>霸刀流</h3>
+            <p>攻擊+20% 防禦-10%</p>
+            <ul class="class-stats">
+                <li>⚔️ 裂空擊：命中後有30%機率造成雙倍傷害</li>
+            </ul>
+            <div class="popup-image" style="display: none;">
+                <img src="https://i.ibb.co/XfWY2Lgc/1.png" alt="霸刀流全圖">
+            </div>
+        </div>
+        <!-- 坦克 -->
+        <div class="class-card" onclick="selectSinglePlayerClass('tank')">
+            <img src="https://i.ibb.co/ZR4Z2ZDT/image.png" class="class-icon">
+            <div class="selected-tick">✓</div>
+            <h3>鐵甲宗</h3>
+            <p>防禦+20% 攻擊-10%</p>
+            <ul class="class-stats">
+                <li>🛡️ 金鐘罩：每回合自動恢復2點氣血</li>
+            </ul>
+            <div class="popup-image" style="display: none;">
+                <img src="https://i.ibb.co/ZR4Z2ZDT/image.png" alt="鐵甲宗全圖">
+            </div>
+        </div>
+        <!-- 刺客 -->
+        <div class="class-card" onclick="selectSinglePlayerClass('assassin')">
+            <img src="https://i.ibb.co/W4V5bX8X/image.png" class="class-icon">
+            <div class="selected-tick">✓</div>
+            <h3>影流教</h3>
+            <p>閃避+30% 防禦-10%</p>
+            <ul class="class-stats">
+                <li>🎯 鬼影步：30%機率完全閃避傷害</li>
+            </ul>
+            <div class="popup-image" style="display: none;">
+                <img src="https://i.ibb.co/W4V5bX8X/image.png" alt="影流教全圖">
+            </div>
+        </div>
+        <!-- 法師 -->
+        <div class="class-card" onclick="selectSinglePlayerClass('mage')">
+            <img src="https://i.ibb.co/tM82mXtr/3.png" class="class-icon">
+            <div class="selected-tick">✓</div>
+            <h3>玄天閣</h3>
+            <p>攻擊+10%</p>
+            <ul class="class-stats">
+                <li>🔥 離火訣：錯答傷害扣減30%</li>
+            </ul>
+            <div class="popup-image" style="display: none;">
+                <img src="https://i.ibb.co/tM82mXtr/3.png" alt="玄天閣全圖">
+            </div>
+        </div>
+    </div>
+    <div id="singlePlayerSelectedClassInfo" style="margin-top: 2rem;"></div>
+</div>
+
+<!-- 單機模式題庫選擇界面 -->
+<div id="singlePlayerTopicSelection" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(45, 41, 38, 0.95); padding: 2rem; border: none; border-radius: 0; z-index: 9999; overflow-y: auto;">
+    <h2 style="color: #d4af37; text-align: center;">選擇題庫</h2>
+    <div id="singlePlayerGradeSelection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; width: 300px;">
+        <button onclick="selectSinglePlayerGrade('中一')" class="grade-btn">中一</button>
+        <button onclick="selectSinglePlayerGrade('中五')" class="grade-btn">中五</button>
+    </div>
+    <div id="singlePlayerTopicDetail" style="display: none; margin-top: 1rem;">
+        <h3 id="singlePlayerSelectedGrade" style="color: #d4af37; text-align: center;"></h3>
+        <div id="singlePlayerTopicList" style="display: grid; grid-template-columns: repeat(1, 1fr); gap: 1rem; margin-top: 1rem;"></div>
+    </div>
+</div>
+
     
     
 <script>
@@ -1263,6 +1337,10 @@ window.onload = function() {
 };
     
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
+let singlePlayerClass = null; // 單機模式選中的職業
+let singlePlayerSelectedGrade = null; // 單機模式選中的年級
+let singlePlayerSelectedTopic = null; // 單機模式選中的題庫
+    
     let playerLevel = 1;  // 預設等級為 1
 let playerExp = 0;    // 預設經驗值為 0
 let opponentJoinedMessage = null;
