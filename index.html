@@ -1284,7 +1284,7 @@
     
     
 <script>
-    
+
     // 在代码开头定义不同难度的经验奖励
 const expRewards = {
     easy: 10,
@@ -1925,41 +1925,6 @@ appId: "1:948613965375:web:ae966d7dd461e328093a8a"
 
 };
 firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-const database = firebase.database();
-
-// 監聽認證狀態並更新按鈕顯示
-firebase.auth().onAuthStateChanged(function(user) {
-    const registerBtn = document.getElementById('registerBtn');
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutContainer = document.getElementById('logoutContainer');
-
-    if (user) {
-        // 使用者已登入
-        document.getElementById('userInfo').style.display = 'block';
-        document.getElementById('userName').textContent = user.displayName || '未知玩家';
-        // 隱藏註冊和登入按鈕，顯示登出按鈕
-        registerBtn.style.display = 'none';
-        loginBtn.style.display = 'none';
-        logoutContainer.style.display = 'block';
-    } else {
-        // 使用者未登入
-        document.getElementById('userInfo').style.display = 'none';
-        // 顯示註冊和登入按鈕，隱藏登出按鈕
-        registerBtn.style.display = 'block';
-        loginBtn.style.display = 'block';
-        logoutContainer.style.display = 'none';
-    }
-});
-
-// 登出按鈕的事件監聽器
-document.getElementById('logoutBtn').addEventListener('click', function() {
-    firebase.auth().signOut().then(() => {
-        console.log('登出成功');
-    }).catch((error) => {
-        console.error('登出失敗:', error);
-    });
-});
   
 
 // 「登入」按鈕事件
