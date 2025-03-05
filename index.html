@@ -1338,6 +1338,7 @@ window.onload = function() {
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
 let singlePlayerClass = null; // 單機模式選中的職業
 let singlePlayerSelectedGrade = null; // 單機模式選中的年級
+    let selectedDifficulty = null;
 let singlePlayerSelectedTopic = null; // 單機模式選中的題庫
     
     let playerLevel = 1;  // 預設等級為 1
@@ -2639,6 +2640,7 @@ function startSinglePlayer() {
 
 // 選擇難度並啟動遊戲
 function selectDifficulty(difficulty) {
+    selectedDifficulty = difficulty; // 設置全局難度
     const settings = difficultySettings[difficulty];
     if (!settings) return;
 
@@ -2655,19 +2657,7 @@ function selectDifficulty(difficulty) {
     // 隱藏難度選擇，顯示職業選擇
     document.getElementById('difficultySelection').style.display = 'none';
     document.getElementById('singlePlayerClassSelection').style.display = 'block';
-
-    // 重置遊戲區域和勝利畫面
-    document.getElementById('gameArea').style.display = 'none';
-    const victoryOverlay = document.querySelector('.victory-overlay');
-    victoryOverlay.style.display = 'none';
-
-    // 更新初始氣血顯示
-    updateSinglePlayerHealthDisplay();
-
-    // 開始扣血計時器（稍後在遊戲開始時啟動）
-    clearInterval(timer);
 }
-
 function selectSinglePlayerClass(className) {
     const classData = {
         warrior: { attack: 1.2, defense: 0.9, dodge: 0, skill: 'doubleDamage' },
@@ -2726,7 +2716,8 @@ function selectSinglePlayerTopic(topic) {
     startSinglePlayerCountdown();
 }
 
-    function startSinglePlayerCountdown() {
+   function startSinglePlayerCountdown() {
+    console.log('Starting countdown'); // 添加日誌，確認倒數開始
     let countdown = 3;
     const countdownElement = document.createElement('div');
     countdownElement.id = 'countdown';
@@ -2753,7 +2744,11 @@ function selectSinglePlayerTopic(topic) {
             countdownElement.remove();
             document.getElementById('gameArea').style.display = 'block';
             // 啟動扣血計時器
-            const settings = difficultySettings[document.querySelector('#difficultySelection button[onclick^="selectDifficulty"]:last-child').textContent.toLowerCase()];
+            const settings = difficultySettings[selectedDifficulty]; // 使用全局變量
+            if (!settings) {
+                console.error('難度設置未找到，selectedDifficulty:', selectedDifficulty);
+                return;
+            }
             setInterval(() => {
                 if (Math.random() < settings.damageChance) {
                     singlePlayerHealth = Math.max(singlePlayerHealth - 10, 0);
@@ -2822,42 +2817,7 @@ function listenToSinglePlayerHealth() {
     });
 }
 
-// 單機模式問題加載
-function loadNewQuestionSinglePlayer() {
-    const totalQuestions = 622;
-    const randomId = Math.floor(Math.random() * totalQuestions);
 
-    const questionRef = database.ref(`questions/${randomId}`);
-    questionRef.once('value').then(snapshot => {
-        const originalQuestion = snapshot.val();
-        if (!originalQuestion) {
-            console.error('無法找到該問題數據');
-            return;
-        }
-
-        const optionsCopy = [...originalQuestion.options];
-        const correctAnswer = optionsCopy[originalQuestion.correctIndex];
-        const shuffledOptions = shuffleArray(optionsCopy);
-        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
-
-        const processedQuestion = {
-            question: originalQuestion.question,
-            options: shuffledOptions,
-            correctIndex: newCorrectIndex,
-            id: Date.now()
-        };
-
-        currentQuestionId = processedQuestion.id;
-        database.ref('rooms/' + currentRoomId + '/player1').update({
-            currentQuestion: processedQuestion
-        });
-
-        answered = false;
-        displayQuestionSinglePlayer(processedQuestion);
-    }).catch(error => {
-        console.error('下載問題數據時出錯:', error);
-    });
-}
 
 // 顯示單機模式問題
 function displayQuestionSinglePlayer(question) {
