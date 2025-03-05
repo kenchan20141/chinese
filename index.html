@@ -2902,16 +2902,17 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     });
 
-    const baseDamage = 50 + Math.random() * 30; // 隨機基數 50-80
-    const levelMultiplier = 1 + playerLevel * 0.1; // 等級調整
+    const baseDamage = 50 + Math.random() * 30;
+    const levelMultiplier = 1 + playerLevel * 0.1;
     const difficultyMultiplier = {
         easy: 0.8,
         normal: 1.0,
         hard: 1.2,
         hell: 1.5
-    }[selectedDifficulty]; // 難度係數
+    }[selectedDifficulty];
 
     if (isCorrect) {
+        soundEffects.attack.play(); // 添加攻擊音效
         let attackMultiplier = singlePlayerClass.attack;
         if (singlePlayerClass.type === 'warrior' && Math.random() < 0.3) {
             attackMultiplier *= 2;
@@ -2925,6 +2926,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
             return;
         }
     } else {
+        soundEffects.defeat.play(); // 添加失敗音效
         let defenseReduction = singlePlayerClass.defense;
         if (singlePlayerClass.type === 'assassin' && Math.random() < singlePlayerClass.dodge) {
             defenseReduction = 0;
@@ -2946,7 +2948,7 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
         hasHealedThisTurn = true;
-        singlePlayerHealth = Math.min(singlePlayerHealth + 2, 1000 + (playerLevel - 1) * 100); // 考慮等級調整最大氣血
+        singlePlayerHealth = Math.min(singlePlayerHealth + 2, 1000 + (playerLevel - 1) * 100);
         updateSinglePlayerHealthDisplay();
         document.getElementById('healText').style.display = 'block';
         setTimeout(() => document.getElementById('healText').style.display = 'none', 1000);
