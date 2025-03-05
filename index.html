@@ -3143,10 +3143,14 @@ function showEffect(className) {
     gameOver = false;
     answered = false;
     
-    // 根據玩家等級計算最大氣血值
-    const maxPlayerHealth = 1000 + (playerLevel - 1) * 100; // 每級增加 100 點氣血
+    // 获取当前玩家等级对应的最大气血
+    const baseHealth = 1000;
+    const healthPerLevel = 100;
+    const maxHealth = baseHealth + (playerLevel - 1) * healthPerLevel;
+      
     singlePlayerHealth = maxPlayerHealth; // 設置為滿血
     enemyHealth = difficultySettings[selectedDifficulty].enemyHealth; // 重置敵方氣血
+      
     updateSinglePlayerHealthDisplay();
 
     // 清除舊問題顯示
