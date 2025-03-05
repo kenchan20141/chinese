@@ -2970,7 +2970,7 @@ function showEffect(className) {
     setTimeout(() => effect.remove(), 400);
 }
 
-    function handleSinglePlayerGameOver() {
+   function handleSinglePlayerGameOver(isWinner) {
     if (gameOver) return;
     gameOver = true;
 
@@ -2979,10 +2979,35 @@ function showEffect(className) {
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    const isWinner = /* 判断是否为胜方的逻辑，这里假设敌方气血先归零则为胜方，你可能需要根据实际情况调整 */ document.getElementById('opponentHealth').textContent <= 0;
-victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
+    victoryText.textContent = isWinner ? "武道昌隆！" : "雖敗猶榮！";
     victoryOverlay.style.display = 'flex';
 
+    // 處理經驗值增加（僅在獲勝時）
+    const expRewards = {
+        easy: 10,
+        normal: 20,
+        hard: 50,
+        hell: 100
+    };
+    const user = auth.currentUser;
+    if (isWinner && user) {
+        const userRef = database.ref('users/' + user.uid);
+        userRef.transaction((userData) => {
+            if (!userData) userData = { level: 1, exp: 0, score: 0 };
+            userData.exp += expRewards[selectedDifficulty]; // 增加經驗值
+            const expRequired = 100 * userData.level;
+            if (userData.exp >= expRequired) {
+                userData.level += 1;
+                userData.exp -= expRequired;
+                playerLevel = userData.level; // 更新全局變數
+            }
+            return userData;
+        }).then(() => {
+            alert(`恭喜！你獲得了 ${expRewards[selectedDifficulty]} 點經驗值。`);
+        });
+    }
+
+    // 重賽和返回主菜單按鈕
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'rematch-buttons';
 
@@ -2992,11 +3017,19 @@ victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
     mainMenuBtn.textContent = '歸隱山林';
 
     restartBtn.onclick = () => {
-        database.ref('rooms/' + currentRoomId).remove();
         const victoryOverlay = document.querySelector('.victory-overlay');
-const buttons = victoryOverlay.querySelector('.rematch-buttons');
-if (buttons) buttons.remove();
-victoryOverlay.style.display = 'none';
+        const buttons = victoryOverlay.querySelector('.rematch-buttons');
+        if (buttons) buttons.remove();
+        victoryOverlay.style.display = 'none';
+        startSinglePlayer(); // 重啟單機模式
+    };
+    mainMenuBtn.onclick = () => {
+        window.location.reload(); // 返回主菜單
+    };
+
+    buttonContainer.appendChild(restartBtn);
+    buttonContainer.appendChild(mainMenuBtn);
+    victoryOverlay.appendChild(buttonContainer);
 
 
 // 初始化敌方气血
