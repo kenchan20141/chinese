@@ -1264,6 +1264,9 @@ window.onload = function() {
     
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
     let playerLevel = 1;  // 預設等級為 1
+    let singlePlayerHealth = 100;  // 玩家氣血
+let enemyHealth = 100;         // 敵人氣血
+let currentQuestion = null;    // 當前問題
 let playerExp = 0;    // 預設經驗值為 0
 let opponentJoinedMessage = null;
     let isRematching = false;
@@ -2566,43 +2569,32 @@ function selectDifficulty(difficulty) {
     if (!settings) return;
 
     // 初始化单机模式
-    currentRoomId ='single_' + Date.now();
-    isHost = true;
+    singlePlayerHealth = 100;
+    enemyHealth = 100;
     gameOver = false;
     answered = false;
-    playerClass = null; // 单机模式不需要职业
-
-    // 设置玩家气血
-    const initialHealth = 100;
-    // 添加敌方初始气血设置
-    const enemyInitialHealth = 100;
-    database.ref('rooms/' + currentRoomId).set({
-        player1: { health: initialHealth },
-        enemy: { health: enemyInitialHealth }, // 添加敌方气血
-        gameStarted: true,
-        gameEnded: false,
-        winner: null
-    });
 
     // 显示游戏区域
     document.getElementById('difficultySelection').style.display = 'none';
     document.getElementById('gameArea').style.display = 'block';
     const victoryOverlay = document.querySelector('.victory-overlay');
-victoryOverlay.style.display = 'none';
+    victoryOverlay.style.display = 'none';
 
-    // 开始扣血计时器，确保按照难度设置的时间间距扣血
-    clearInterval(timer); // 清除可能存在的旧计时器
+    // 更新初始气血显示
+    updateSinglePlayerHealthDisplay();
+
+    // 开始扣血计时器
+    clearInterval(timer);
     setInterval(() => {
         if (Math.random() < settings.damageChance) {
-            const damage = 10; // 每次扣减 10 点气血
-            database.ref('rooms/' + currentRoomId + '/player1/health').set(
-                firebase.database.ServerValue.increment(-damage)
-            );
+            singlePlayerHealth = Math.max(singlePlayerHealth - 10, 0);
+            updateSinglePlayerHealthDisplay();
+            if (singlePlayerHealth <= 0) {
+                handleSinglePlayerGameOver(false);
+            }
         }
     }, settings.damageInterval);
 
-    // 监听气血变化
-    listenToSinglePlayerHealth();
     loadNewQuestionSinglePlayer();
 }
 
