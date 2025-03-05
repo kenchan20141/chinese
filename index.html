@@ -2743,6 +2743,7 @@ function selectDifficulty(difficulty) {
         document.getElementById('singlePlayerClassSelection').style.display = 'block';
     }, 500);
 }
+    
 function selectSinglePlayerClass(className) {
     const classData = {
         warrior: { attack: 1.2, defense: 0.9, dodge: 0, skill: 'doubleDamage' },
@@ -2770,9 +2771,11 @@ function selectSinglePlayerClass(className) {
     popupImage.style.display = 'block';
     setTimeout(() => {
         popupImage.style.display = 'none';
-        // 進入題庫選擇界面
+        // 進入年級選擇界面
         document.getElementById('singlePlayerClassSelection').style.display = 'none';
         document.getElementById('singlePlayerTopicSelection').style.display = 'block';
+        document.getElementById('singlePlayerGradeSelection').style.display = 'grid'; // 顯示年級選擇
+        document.getElementById('singlePlayerTopicDetail').style.display = 'none';    // 隱藏題庫選擇
     }, 500);
 }
 
@@ -3088,7 +3091,7 @@ function showEffect(className) {
     setTimeout(() => effect.remove(), 400);
 }
 
-    function handleSinglePlayerGameOver() {
+    function handleSinglePlayerGameOver(isWinner) {
     if (gameOver) return;
     gameOver = true;
 
@@ -3097,11 +3100,10 @@ function showEffect(className) {
 
     const victoryOverlay = document.querySelector('.victory-overlay');
     const victoryText = document.querySelector('.victory-text');
-    const isWinner = /* 判断是否为胜方的逻辑，这里假设敌方气血先归零则为胜方，你可能需要根据实际情况调整 */ document.getElementById('opponentHealth').textContent <= 0;
-victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
+    victoryText.textContent = isWinner ? "武道昌隆！" : "雖敗猶榮！";
     victoryOverlay.style.display = 'flex';
 
-// 處理經驗值增加（僅在獲勝時）
+    // 處理經驗值增加（僅在獲勝時）
     const expRewards = {
         easy: 10,
         normal: 30,
@@ -3125,7 +3127,6 @@ victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
             alert(`恭喜！你獲得了 ${expRewards[selectedDifficulty]} 點經驗值。`);
         });
     }
-        
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'rematch-buttons';
@@ -3136,33 +3137,15 @@ victoryText.textContent = isWinner? "武道昌隆！" : "雖敗猶榮！";
     mainMenuBtn.textContent = '歸隱山林';
 
     restartBtn.onclick = () => {
-        database.ref('rooms/' + currentRoomId).remove();
-        const victoryOverlay = document.querySelector('.victory-overlay');
-const buttons = victoryOverlay.querySelector('.rematch-buttons');
-if (buttons) buttons.remove();
-victoryOverlay.style.display = 'none';
-
-
-// 初始化敌方气血
-        const enemyInitialHealth = 100;
-        document.getElementById('opponentHealth').textContent = enemyInitialHealth;
-        document.getElementById('opponentHealthBar').style.width = enemyInitialHealth + '%';
-
-        
-        startSinglePlayer();
+        resetSinglePlayerGame(); // 調用重置函數
     };
     mainMenuBtn.onclick = () => {
-        database.ref('rooms/' + currentRoomId).remove();
-        window.location.reload();
+        window.location.reload(); // 返回主菜單
     };
 
     buttonContainer.appendChild(restartBtn);
     buttonContainer.appendChild(mainMenuBtn);
     victoryOverlay.appendChild(buttonContainer);
-
-    // 新增逻辑：在点击“再战江湖”时，清除可能存在的遮挡画面
-    const waitingForRematch = document.getElementById('waitingForRematch');
-    if (waitingForRematch) waitingForRematch.remove();
 }
 
 document.getElementById('showLeaderboardBtn').onclick = function() {
