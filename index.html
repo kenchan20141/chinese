@@ -2560,50 +2560,32 @@ function startSinglePlayer() {
     document.getElementById('difficultySelection').style.display = 'block';
 }
 
-// 選擇難度並啟動遊戲
 function selectDifficulty(difficulty) {
     const settings = difficultySettings[difficulty];
     if (!settings) return;
 
-    // 初始化单机模式
-    currentRoomId ='single_' + Date.now();
+    currentRoomId = 'single_' + Date.now();
     isHost = true;
     gameOver = false;
     answered = false;
-    playerClass = null; // 单机模式不需要职业
+    playerClass = null;
 
-    // 设置玩家气血
     const initialHealth = 100;
-    // 添加敌方初始气血设置
     const enemyInitialHealth = 100;
     database.ref('rooms/' + currentRoomId).set({
-        player1: { health: initialHealth },
-        enemy: { health: enemyInitialHealth }, // 添加敌方气血
-        gameStarted: true,
+        player1: { health: initialHealth, maxHealth: initialHealth, class: null },
+        enemy: { health: enemyInitialHealth, maxHealth: enemyInitialHealth },
+        isSinglePlayer: true,
+        gameStarted: false,
         gameEnded: false,
         winner: null
     });
 
-    // 显示游戏区域
     document.getElementById('difficultySelection').style.display = 'none';
-    document.getElementById('gameArea').style.display = 'block';
-    const victoryOverlay = document.querySelector('.victory-overlay');
-victoryOverlay.style.display = 'none';
+    document.getElementById('classSelection').style.display = 'block';
 
-    // 开始扣血计时器，确保按照难度设置的时间间距扣血
-    clearInterval(timer); // 清除可能存在的旧计时器
-    setInterval(() => {
-        if (Math.random() < settings.damageChance) {
-            const damage = 10; // 每次扣减 10 点气血
-            database.ref('rooms/' + currentRoomId + '/player1/health').set(
-                firebase.database.ServerValue.increment(-damage)
-            );
-        }
-    }, settings.damageInterval);
-
-    // 监听气血变化
+    // 啟動單機模式氣血監聽
     listenToSinglePlayerHealth();
-    loadNewQuestionSinglePlayer();
 }
 
 // 監聽單機模式氣血
