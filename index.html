@@ -3011,8 +3011,8 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
             document.getElementById('dodgeText').style.display = 'block';
             setTimeout(() => document.getElementById('dodgeText').style.display = 'none', 1000);
         } else {
-            if (singlePlayerClass.type === 'mage') {
-                damageToPlayer *= 0.7; // 法師減傷30%
+            if (singlePlayerClass.type === 'tank') {
+                damageToPlayer *= 0.8; // 鐵甲宗減傷20%
                 document.getElementById('reduceDamageText').style.display = 'block';
                 setTimeout(() => document.getElementById('reduceDamageText').style.display = 'none', 1200);
             }
