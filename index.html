@@ -2819,14 +2819,20 @@ function selectDifficulty(difficulty) {
 
     document.querySelectorAll('.difficulty-card').forEach(card => {
         card.classList.remove('selected');
+        card.querySelector('.selected-tick').style.display = 'none'; // 隱藏勾號
     });
     const selectedCard = document.querySelector(`.difficulty-card[onclick="selectDifficulty('${difficulty}')"]`);
     selectedCard.classList.add('selected');
+    selectedCard.querySelector('.selected-tick').style.display = 'flex'; // 顯示勾號
     document.getElementById('selectedDifficultyInfo').innerHTML = `
         <p style="font-size:1.5em;color:#2ecc71;">✓ 已選擇：${selectedCard.querySelector('h3').textContent}</p>
     `;
 
+    // 添加彈出效果
+    const popupImage = selectedCard.querySelector('.popup-image');
+    popupImage.style.display = 'block';
     setTimeout(() => {
+        popupImage.style.display = 'none';
         document.getElementById('difficultySelection').style.display = 'none';
         document.getElementById('singlePlayerClassSelection').style.display = 'block';
     }, 500);
