@@ -16,7 +16,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
 
-
+.difficulty-icon {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    margin-bottom: 1rem;
+}
+        
 .difficulty-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -936,13 +944,14 @@
     <!-- 新增裝飾性邊框 -->
     <div class="main-border"></div>
     
-    <!-- 用戶信息區域 -->
-   <div id="userInfo" class="info-box" style="display: none;">
+    <!-- 修改1: 在用户信息部分添加百分比和升级所需 -->
+<div id="userInfo" class="info-box" style="display: none;">
     <span id="userName"></span> | 積分: <span id="userScore">0</span> | 等級: <span id="userLevel">1</span>
     <div>經驗值: 
         <div id="expBar" style="width: 100px; height: 10px; background: #333; border-radius: 5px; display: inline-block;">
             <div id="expFill" style="height: 100%; background: #4CAF50; width: 0%; transition: width 0.5s ease;"></div>
-        </div>
+        </div><span id="expText">0/0 (0.0%)</span>
+        <div id="expRemaining" style="display: inline-block; margin-left: 0px;">升級還需：0 經驗值</div>
     </div>
 </div>
     
@@ -1197,7 +1206,6 @@
     </div>
     <div id="selectedDifficultyInfo" style="margin-top: 2rem;"></div>
 </div>
-
 
 
     <!-- 單機模式職業選擇界面 -->
@@ -2018,7 +2026,9 @@ document.getElementById('logoutBtn').onclick = function() {
 };
 
     
-    const auth = firebase.auth();
+
+
+const auth = firebase.auth();
    auth.onAuthStateChanged((user) => {
     const userInfo = document.getElementById('userInfo');
     const userName = document.getElementById('userName');
@@ -2053,6 +2063,7 @@ document.getElementById('logoutBtn').onclick = function() {
         userInfo.style.display = 'none';
     }
 });
+
 const database = firebase.database();
 
 let currentRoomId = null;
@@ -2095,32 +2106,53 @@ function toggleMusic() {
 }
 
 function createRoom() {
-    currentRoomId = document.getElementById('roomId').value || Math.floor(1000 + Math.random() * 9000);
+    const roomIdInput = document.getElementById('roomId').value.trim();
+    if (roomIdInput.length !== 4) {
+        alert('請輸入四位戰場編號');
+        return;
+    }
+    const userId = generateUserId();
+    const player1Ref = database.ref('rooms/' + roomIdInput + '/player1');
+    player1Ref.set({ userId: userId, health: 100, class: null, currentQuestion: null });
+    player1Ref.onDisconnect().remove();
+    currentRoomId = roomIdInput;
     isHost = true;
     document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
     document.getElementById('waitingArea').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = currentRoomId;
-
-    // 隨機決定題庫選擇者
-    const topicSelector = Math.random() < 0.5 ? 'player1' : 'player2';
-
-    database.ref('rooms/' + currentRoomId).set({
-        player1: { health: 100, class: null, currentQuestion: null },
-        player2: { health: 100, class: null, currentQuestion: null },
-        gameStarted: false,
-        gameEnded: false,
-        winner: null,
-        topicSelector: topicSelector // 新增字段
-    });
+    document.getElementById('displayRoomId').textContent = roomIdInput;
+    document.getElementById('classSelection').style.display = 'block';
     listenToRoomChanges();
 }
 
 function joinRoom() {
-    currentRoomId = document.getElementById('roomId').value;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    listenToRoomChanges();
+    const roomId = document.getElementById('roomId').value.trim();
+    if (roomId.length !== 4) {
+        alert('請輸入四位戰場編號');
+        return;
+    }
+    const userId = generateUserId();
+    const roomRef = database.ref('rooms/' + roomId);
+    roomRef.once('value').then(snapshot => {
+        if (snapshot.exists()) {
+            const room = snapshot.val();
+            if (room.player2) {
+                alert('戰場已滿');
+                return;
+            }
+            const player2Ref = database.ref('rooms/' + roomId + '/player2');
+            player2Ref.set({ userId: userId, health: 100, class: null, currentQuestion: null });
+            player2Ref.onDisconnect().remove();
+            currentRoomId = roomId;
+            isHost = false;
+            document.getElementById('roomControl').style.display = 'none';
+            document.getElementById('waitingArea').style.display = 'block';
+            document.getElementById('displayRoomId').textContent = roomId;
+            document.getElementById('classSelection').style.display = 'block';
+            listenToRoomChanges();
+        } else {
+            alert('戰場不存在');
+        }
+    });
 }
 
     function createRoomWithId(roomId) {
@@ -2179,29 +2211,8 @@ function joinRoomWithId(roomId) {
     }
 }
 
-    function joinWaitingQueue() {
-    const user = firebase.auth().currentUser;
-    if (!user) {
-        alert("請先登入！");
-        return;
-    }
 
-    const waitingRef = database.ref('waitingRooms');
-    const userId = user.uid;
-
-    // 檢查是否已在等待隊列中
-    waitingRef.child(userId).once('value', (snapshot) => {
-        if (!snapshot.exists()) {
-            // 加入等待隊列
-            waitingRef.child(userId).set({
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-            checkForMatch();
-        } else {
-            alert("您已在等待中，請稍候！");
-        }
-    });
-}
+   
 
 function checkForMatch() {
     const waitingRef = database.ref('waitingRooms');
@@ -3447,6 +3458,9 @@ if (room.hostRematch && room.clientRematch) {
 
 <!-- 新增减伤提示 -->
 <div id="reduceDamageText" style="display:none; position:fixed; top:40%; left:50%; transform:translate(-50%,-50%); font-size:2rem; color:#00ffff; text-shadow:0 0 10px rgba(0,255,255,0.5);">🔥 離火護體 傷害減少30%</div>
+
+
+
     
 </body>
 
