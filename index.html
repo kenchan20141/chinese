@@ -674,18 +674,13 @@
             100% { transform: scale(1); }
         }
 
-       /* 在 <style> 標籤內，找到並替換原有的 @keyframes screenShake 和 .screen-shake */
-@keyframes screenShake {
-    0% { transform: translate(0); }
-    25% { transform: translate(-5px, 5px); }
-    50% { transform: translate(5px, -5px); }
-    75% { transform: translate(-5px, -5px); }
-    100% { transform: translate(0); }
-}
-
-.screen-shake {
-    animation: screenShake 0.5s ease-in-out;
-}
+        @keyframes screenShake {
+            0% { transform: translate(0); }
+            25% { transform: translate(-10px, 10px); }
+            50% { transform: translate(10px, -10px); }
+            75% { transform: translate(-10px, -10px); }
+            100% { transform: translate(0); }
+        }
 
         @keyframes victoryPulse {
             0% { opacity: 0; transform: scale(0); }
@@ -1440,7 +1435,6 @@ window.onload = function() {
 };
     
 // 在代码开头部分，添加一个新的变量用于存储提示信息的元素
-    let previousMyHealth = null;  // 原有可能是 let previousMyHealth = 1000;
 let singlePlayerClass = null; // 單機模式選中的職業
 let singlePlayerSelectedGrade = null; // 單機模式選中的年級
     let selectedDifficulty = null;
@@ -1877,6 +1871,9 @@ if (isCorrect) {
     
 // 修改 updateHealthDisplay 函數
 function updateHealthDisplay(room) {
+    const user = auth.currentUser;
+    if (!user) return;
+
     const playerPath = isHost ? 'player1' : 'player2';
     const opponentPath = isHost ? 'player2' : 'player1';
 
@@ -1888,35 +1885,38 @@ function updateHealthDisplay(room) {
     const myHealthPercentage = (myHealth / myMaxHealth) * 100;
     const opponentHealthPercentage = (opponentHealth / opponentMaxHealth) * 100;
 
-    // 更新己方氣血顯示
+    // 更新己方顯示
     document.getElementById('myHealthContainer').innerHTML = `
         <div>${user.displayName || '未知玩家'} (等級 ${playerLevel || 1}) 氣血: <span id="myHealth">${myHealth} / ${myMaxHealth}</span></div>
         <div class="health-bar"><div class="health-fill" id="myHealthBar" style="width: ${myHealthPercentage}%"></div></div>
     `;
 
-    // 更新敵方氣血顯示
+    // 更新敵方顯示
     const opponentData = room[opponentPath];
-    if (opponentData) {
-        const opponentName = opponentData.name || '未知玩家';
-        const opponentLevel = opponentData.level || 1;
-        document.getElementById('enemyHealthContainer').innerHTML = `
-            <div>${opponentName} (等級 ${opponentLevel}) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
-            <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
-        `;
+    if (opponentData && opponentData.userId) {
+        // 從 Firebase 用戶數據庫獲取對方名稱和等級
+        database.ref('users/' + opponentData.userId).once('value').then(snapshot => {
+            const userData = snapshot.val() || {};
+            const opponentName = userData.displayName || opponentData.name || '未知玩家';
+            const opponentLevel = userData.level || opponentData.level || 1;
+
+            document.getElementById('enemyHealthContainer').innerHTML = `
+                <div>${opponentName} (等級 ${opponentLevel}) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+                <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+            `;
+        }).catch(error => {
+            console.error('獲取對方用戶數據失敗:', error);
+            document.getElementById('enemyHealthContainer').innerHTML = `
+                <div>未知玩家 (等級 1) 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
+                <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
+            `;
+        });
     } else {
         document.getElementById('enemyHealthContainer').innerHTML = `
             <div>等待玩家加入... 氣血: <span id="opponentHealth">${opponentHealth} / ${opponentMaxHealth}</span></div>
             <div class="health-bar"><div class="health-fill" id="opponentHealthBar" style="width: ${opponentHealthPercentage}%"></div></div>
         `;
     }
-
-    // 檢查氣血減少並觸發抖動
-    if (previousMyHealth !== null && myHealth < previousMyHealth) {
-        const gameArea = document.getElementById('gameArea');
-        gameArea.classList.add('screen-shake');
-        setTimeout(() => gameArea.classList.remove('screen-shake'), 500);
-    }
-    previousMyHealth = myHealth;  // 更新上一次氣血值
 }
     
 
@@ -2797,21 +2797,6 @@ function startSinglePlayer() {
     document.getElementById('difficultySelection').style.display = 'block';
 }
 
-    function deductHealth(amount, isOpponent) {
-    if (isOpponent) {
-        // 對方答對，己方氣血扣減，觸發抖動
-        singlePlayerHealth = Math.max(singlePlayerHealth - amount, 0);
-        updateSinglePlayerHealthDisplay();
-        const gameArea = document.getElementById('gameArea');
-        gameArea.classList.add('screen-shake');
-        setTimeout(() => gameArea.classList.remove('screen-shake'), 500); // 動畫持續 500 毫秒
-    } else {
-        // 玩家答錯，對敵方造成傷害，不觸發抖動
-        enemyHealth = Math.max(enemyHealth - amount, 0);
-        updateSinglePlayerHealthDisplay();
-    }
-}
-
 // 選擇難度並啟動遊戲
 function selectDifficulty(difficulty) {
     selectedDifficulty = difficulty;
@@ -3115,16 +3100,17 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
         const baseDamage = 50 + Math.random() * 30; // 基數 50-80
         const damageToEnemy = Math.round(baseDamage * attackMultiplier);
-        deductHealth(damageToEnemy, false); // 玩家答對，對敵方造成傷害，不抖動
-        showDamageAnimation(damageToEnemy, 'enemy');
+        enemyHealth = Math.max(Math.round(enemyHealth - damageToEnemy), 0);
+        updateSinglePlayerHealthDisplay();
+        showDamageAnimation(damageToEnemy, 'enemy'); // 添加敵方扣減動畫
         if (enemyHealth <= 0) {
             handleSinglePlayerGameOver(true);
             return;
         }
     } else {
-        if (navigator.vibrate) {
-            navigator.vibrate(200); // 答錯震動 200ms
-        }
+    if (navigator.vibrate) {
+        navigator.vibrate(200); // 答錯震動 200ms
+    }
         const baseDamage = 50 + Math.random() * 30;
         const difficultyMultiplier = {
             easy: 0.8,
@@ -3142,14 +3128,16 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         const totalDefenseAdjustment = defenseAdjustment + levelDefenseAdjustment;
         let damageToPlayer = baseDamage * difficultyMultiplier * (1 - totalDefenseAdjustment);
         damageToPlayer = Math.max(Math.round(damageToPlayer), 0);
-        deductHealth(damageToPlayer, true); // 玩家答錯，敵方對玩家造成傷害，抖動
-        showDamageAnimation(damageToPlayer, 'player');
+        singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0);
+        updateSinglePlayerHealthDisplay();
+        showDamageAnimation(damageToPlayer, 'player'); // 添加玩家扣減動畫
         if (singlePlayerHealth <= 0) {
             handleSinglePlayerGameOver(false);
             return;
         }
     }
 
+    // 後續代碼保持不變
     if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
         hasHealedThisTurn = true;
         singlePlayerHealth = Math.min(Math.round(singlePlayerHealth + 2), 1000 + (playerLevel - 1) * 100);
