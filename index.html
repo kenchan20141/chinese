@@ -2001,12 +2001,12 @@ firebase.initializeApp(firebaseConfig);
 // 「登入」按鈕事件
 document.getElementById('loginBtn').onclick = function() {
     const email = prompt("請輸入郵箱");
-    const password = prompt("請輸入密碼");
+    const password = prompt("請設置遊戲密碼");
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
             const user = userCredential.user;
             if (!user.displayName) {
-                const displayName = prompt("請輸入您的顯示名稱");
+                const displayName = prompt("請設置您的顯示名稱");
                 if (displayName) {
                     user.updateProfile({
                         displayName: displayName
