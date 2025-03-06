@@ -1469,6 +1469,45 @@ joinRoomBtn.onclick = function() {
 };
 
     
+// 在 <script> 內添加此函數，建議放在全局變數定義之後
+function updateExpDisplay() {
+    const user = firebase.auth().currentUser; // 注意這裡使用 firebase.auth()，因為代碼中使用了 Firebase v8
+    if (!user) {
+        console.log("用戶未登入，無法更新經驗值顯示");
+        return;
+    }
+
+    const userRef = firebase.database().ref('users/' + user.uid);
+    userRef.once('value', (snapshot) => {
+        const userData = snapshot.val();
+        if (!userData) {
+            console.log("用戶數據不存在，使用默認值");
+            return;
+        }
+
+        // 從資料庫獲取當前經驗值和等級，若無數據則設為默認值
+        const exp = userData.exp || 0;
+        const level = userData.level || 1;
+
+        // 假設每級所需經驗值為 100 * 等級（可根據實際需求調整）
+        const expRequired = 100 * level;
+
+        // 計算經驗值百分比
+        const percentage = (exp / expRequired) * 100;
+
+        // 計算升級還需的經驗值
+        const remainingExp = expRequired - exp;
+
+        // 更新頁面上的顯示
+        document.getElementById('expText').textContent = `${exp}/${expRequired} (${percentage.toFixed(1)}%)`;
+        document.getElementById('expRemaining').textContent = `升級還需：${remainingExp} 經驗值`;
+        document.getElementById('expFill').style.width = `${percentage}%`;
+    }).catch((error) => {
+        console.error("獲取用戶數據失敗:", error);
+    });
+}
+
+
     
 function selectClass(className) {
     const classData = {
