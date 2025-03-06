@@ -2137,6 +2137,15 @@ const auth = firebase.auth();
 
 const database = firebase.database();
 
+    // 上傳問題時更新計數器
+function uploadQuestions(grade, topic, questions) {
+    const totalQuestions = questions.length;
+    database.ref(`questions/${grade}/${topic}/count`).set(totalQuestions);
+    questions.forEach((question, index) => {
+        database.ref(`questions/${grade}/${topic}/${index}`).set(question);
+    });
+}
+
 let currentRoomId = null;
 let isHost = false;
 let timer;
@@ -2559,22 +2568,26 @@ function loadNewQuestion() {
         const grade = room.selectedGrade;
         const topic = room.selectedTopic;
         
-        // 獲取該題庫的問題數量
-        database.ref(`questions/${grade}/${topic}`).once('value').then(snapshot => {
-            const questions = snapshot.val();
-            const totalQuestions = Object.keys(questions).length;
+        // 獲取問題總數
+        database.ref(`questions/${grade}/${topic}/count`).once('value').then(snapshot => {
+            const totalQuestions = snapshot.val();
+            if (!totalQuestions || totalQuestions <= 0) {
+                console.error('題庫中無問題或計數器未設置');
+                return;
+            }
+            
+            // 隨機選擇一個問題 ID
             const randomId = Math.floor(Math.random() * totalQuestions);
             
-            // 加載特定問題
-            const questionRef = database.ref(`questions/${grade}/${topic}/${randomId}`);
-            questionRef.once('value').then(snapshot => {
+            // 加載單個問題
+            database.ref(`questions/${grade}/${topic}/${randomId}`).once('value').then(snapshot => {
                 const originalQuestion = snapshot.val();
                 if (!originalQuestion) {
                     console.error('無法找到該問題數據');
                     return;
                 }
                 
-                // 在客戶端處理問題數據（打亂選項等）
+                // 處理問題數據
                 const optionsCopy = [...originalQuestion.options];
                 const correctAnswer = optionsCopy[originalQuestion.correctIndex];
                 const shuffledOptions = shuffleArray(optionsCopy);
@@ -2584,22 +2597,24 @@ function loadNewQuestion() {
                     question: originalQuestion.question,
                     options: shuffledOptions,
                     correctIndex: newCorrectIndex,
-                    id: Date.now() // 生成唯一 ID 用於客戶端識別
+                    id: Date.now()
                 };
                 
-                // 更新當前問題 ID 和房間數據
+                // 更新當前問題
                 currentQuestionId = processedQuestion.id;
                 const playerPath = isHost ? 'player1' : 'player2';
                 database.ref('rooms/' + currentRoomId + '/' + playerPath).update({ 
                     currentQuestion: processedQuestion 
                 });
                 
-                // 重置答題狀態並顯示問題
+                // 顯示問題
                 isAnswered = false;
                 displayQuestion(processedQuestion);
             }).catch(error => {
                 console.error('下載問題數據時出錯:', error);
             });
+        }).catch(error => {
+            console.error('獲取問題總數時出錯:', error);
         });
     });
 }
@@ -2989,37 +3004,48 @@ function updateSinglePlayerHealthDisplay() {
 }
 
     
-    function loadNewQuestionSinglePlayer() {
-    // 從選中的年級和題庫中加載問題
+   function loadNewQuestionSinglePlayer() {
     const grade = singlePlayerSelectedGrade;
     const topic = singlePlayerSelectedTopic;
-    const questionRef = database.ref(`questions/${grade}/${topic}`);
-    questionRef.once('value').then(snapshot => {
-        const questions = snapshot.val();
-        if (!questions) {
-            console.error('無法找到該題庫數據');
+    
+    // 獲取問題總數
+    database.ref(`questions/${grade}/${topic}/count`).once('value').then(snapshot => {
+        const totalQuestions = snapshot.val();
+        if (!totalQuestions || totalQuestions <= 0) {
+            console.error('題庫中無問題或計數器未設置');
             return;
         }
-        const questionKeys = Object.keys(questions);
-        const randomId = questionKeys[Math.floor(Math.random() * questionKeys.length)];
-
-        const originalQuestion = questions[randomId];
-        const optionsCopy = [...originalQuestion.options];
-        const correctAnswer = optionsCopy[originalQuestion.correctIndex];
-        const shuffledOptions = shuffleArray(optionsCopy);
-        const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
-
-        currentQuestion = {
-            question: originalQuestion.question,
-            options: shuffledOptions,
-            correctIndex: newCorrectIndex,
-            id: Date.now()
-        };
-
-        answered = false;
-        displayQuestionSinglePlayer(currentQuestion);
+        
+        // 隨機選擇一個問題 ID
+        const randomId = Math.floor(Math.random() * totalQuestions);
+        
+        // 加載單個問題
+        database.ref(`questions/${grade}/${topic}/${randomId}`).once('value').then(snapshot => {
+            const originalQuestion = snapshot.val();
+            if (!originalQuestion) {
+                console.error('無法找到該問題數據');
+                return;
+            }
+            
+            const optionsCopy = [...originalQuestion.options];
+            const correctAnswer = optionsCopy[originalQuestion.correctIndex];
+            const shuffledOptions = shuffleArray(optionsCopy);
+            const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+            
+            currentQuestion = {
+                question: originalQuestion.question,
+                options: shuffledOptions,
+                correctIndex: newCorrectIndex,
+                id: Date.now()
+            };
+            
+            answered = false;
+            displayQuestionSinglePlayer(currentQuestion);
+        }).catch(error => {
+            console.error('下載問題數據時出錯:', error);
+        });
     }).catch(error => {
-        console.error('下載問題數據時出錯:', error);
+        console.error('獲取問題總數時出錯:', error);
     });
 }
 
