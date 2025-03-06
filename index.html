@@ -2346,11 +2346,7 @@ function startGameSession() {
 
 
   function randomMatch() {
-    const user = auth.currentUser;
-    if (!user) {
-        alert('請先登入！');
-        return;
-    }
+    
 
     console.log("randomMatch called");
     const waitingRef = database.ref('waitingRooms');
