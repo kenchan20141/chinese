@@ -1674,9 +1674,10 @@ function checkAnswer(isCorrect, questionId) {
     }
 
     // 鐵甲宗治療代碼
-    if (playerClass && playerClass.type === 'tank' && !hasHealedThisTurn) {
-        hasHealedThisTurn = true;
-        const healAmount = 2;
+    if (playerClass.type === 'tank' && !hasHealedThisTurn) {
+    hasHealedThisTurn = true;
+    const maxHealth = room[playerPath].maxHealth;  // 從資料庫獲取最大氣血
+    const healAmount = Math.round(maxHealth * playerClass.healPercentage);
         const playerPath = isHost ? 'player1' : 'player2';
         database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
             firebase.database.ServerValue.increment(healAmount)
@@ -3139,12 +3140,14 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 
     // 後續代碼保持不變
     if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
-        hasHealedThisTurn = true;
-        singlePlayerHealth = Math.min(Math.round(singlePlayerHealth + 2), 1000 + (playerLevel - 1) * 100);
-        updateSinglePlayerHealthDisplay();
-        document.getElementById('healText').style.display = 'block';
-        setTimeout(() => document.getElementById('healText').style.display = 'none', 1000);
-    }
+    hasHealedThisTurn = true;  // 確保每回合只恢復一次
+    const maxHealth = 1000 + (playerLevel - 1) * 100;  // 假設的最大氣血計算方式
+    const healAmount = Math.round(maxHealth * singlePlayerClass.healPercentage);  // 計算2%的恢復量
+    singlePlayerHealth = Math.min(singlePlayerHealth + healAmount, maxHealth);  // 應用恢復並限制不超過最大氣血
+    updateSinglePlayerHealthDisplay();  // 更新氣血顯示
+    document.getElementById('healText').style.display = 'block';  // 顯示恢復效果
+    setTimeout(() => document.getElementById('healText').style.display = 'none', 1000);  // 1秒後隱藏
+}
 
     setTimeout(() => {
         buttons.forEach(btn => {
