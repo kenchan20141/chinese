@@ -2258,10 +2258,7 @@ if (user) {
         gameEnded: false,
         winner: null
     });
-} else {
-    alert('請先登入！');
-    return;
-}
+
     listenToRoomChanges();
 }
 
@@ -2284,10 +2281,7 @@ function joinRoomWithId(roomId) {
         }).catch((error) => {
             console.error("設置 player2 失敗:", error);
         });
-    } else {
-        alert('請先登入！');
-        return;
-    }
+
 }
 
 
