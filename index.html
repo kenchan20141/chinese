@@ -1678,6 +1678,7 @@ function checkAnswer(isCorrect, questionId) {
     hasHealedThisTurn = true;
     const maxHealth = room[playerPath].maxHealth;  // 從資料庫獲取最大氣血
     const healAmount = Math.round(maxHealth * playerClass.healPercentage);
+        const newHealth = Math.min(room[playerPath].health + healAmount, maxHealth);  // 應用恢復
         const playerPath = isHost ? 'player1' : 'player2';
         database.ref(`rooms/${currentRoomId}/${playerPath}/health`).set(
             firebase.database.ServerValue.increment(healAmount)
