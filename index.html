@@ -3099,52 +3099,42 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         const damageToEnemy = Math.round(baseDamage * attackMultiplier);
         enemyHealth = Math.max(Math.round(enemyHealth - damageToEnemy), 0);
         updateSinglePlayerHealthDisplay();
+        showDamageAnimation(damageToEnemy, 'enemy'); // 添加敵方扣減動畫
         if (enemyHealth <= 0) {
             handleSinglePlayerGameOver(true);
             return;
         }
     } else {
-        soundEffects.defeat.play();
-        if (navigator.vibrate) {
-            navigator.vibrate(200); // 答錯震動 200ms
-        }
-        // 生成隨機基數 50-80
+    if (navigator.vibrate) {
+        navigator.vibrate(200); // 答錯震動 200ms
+    }
         const baseDamage = 50 + Math.random() * 30;
-
-        // 獲取難度倍率
         const difficultyMultiplier = {
             easy: 0.8,
             normal: 1.0,
             hard: 1.2,
             hell: 1.5
         }[selectedDifficulty];
-
-        // 計算防禦力調整
         let defenseAdjustment = 0;
         if (singlePlayerClass.type === 'warrior' || singlePlayerClass.type === 'assassin') {
-            defenseAdjustment = -0.1; // 霸刀流和影流教防禦減少10%
+            defenseAdjustment = -0.1;
         } else if (singlePlayerClass.type === 'tank') {
-            defenseAdjustment = 0.2; // 鐵甲宗防禦增加20%
+            defenseAdjustment = 0.2;
         }
-
-        // 等級防禦調整（每級增加5%防禦）
         const levelDefenseAdjustment = (playerLevel - 1) * 0.05;
-
-        // 總防禦調整
         const totalDefenseAdjustment = defenseAdjustment + levelDefenseAdjustment;
-
-        // 計算最終扣血量
         let damageToPlayer = baseDamage * difficultyMultiplier * (1 - totalDefenseAdjustment);
         damageToPlayer = Math.max(Math.round(damageToPlayer), 0);
-
         singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0);
         updateSinglePlayerHealthDisplay();
+        showDamageAnimation(damageToPlayer, 'player'); // 添加玩家扣減動畫
         if (singlePlayerHealth <= 0) {
             handleSinglePlayerGameOver(false);
             return;
         }
     }
 
+    // 後續代碼保持不變
     if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
         hasHealedThisTurn = true;
         singlePlayerHealth = Math.min(Math.round(singlePlayerHealth + 2), 1000 + (playerLevel - 1) * 100);
@@ -3164,6 +3154,24 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
         }
     }, 700);
 }
+
+function showDamageAnimation(damage, target) {
+    const healthContainer = target === 'enemy' ? document.getElementById('enemyHealthContainer') : document.getElementById('myHealthContainer');
+    const damageText = document.createElement('div');
+    damageText.textContent = `-${damage}`;
+    damageText.style.cssText = `
+        position: absolute;
+        color: ${target === 'enemy' ? '#ff0000' : '#ff5555'};
+        font-size: 2rem;
+        font-weight: bold;
+        text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+        animation: damageFloat 1s ease-out forwards;
+    `;
+    healthContainer.appendChild(damageText);
+    setTimeout(() => damageText.remove(), 1000);
+}
+
+    
 
 // 輔助函數：顯示特效
 function showEffect(className) {
