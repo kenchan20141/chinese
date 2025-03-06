@@ -1505,7 +1505,7 @@ function updateExpDisplay() {
     }).catch((error) => {
         console.error("獲取用戶數據失敗:", error);
     });
-}
+
 
 const auth = firebase.auth();
    auth.onAuthStateChanged((user) => {
@@ -1530,6 +1530,10 @@ const auth = firebase.auth();
     const expPercentage = (userData.exp / (100 * userData.level)) * 100;
     expFill.style.width = expPercentage + '%';
 });
+    
+}
+
+
 
     
     
