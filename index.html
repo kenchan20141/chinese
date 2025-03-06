@@ -2340,10 +2340,11 @@ function startGameSession() {
 
 
   function randomMatch() {
-    const user = auth.currentUser;
-    if (!user) {
-        alert('請先登入！');
-        return;
+    let userId;
+    if (auth.currentUser) {
+        userId = auth.currentUser.uid;
+    } else {
+        userId = 'anonymous_' + Date.now(); // 生成臨時用戶 ID
     }
 
     console.log("randomMatch called");
