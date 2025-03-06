@@ -2804,7 +2804,7 @@ function startSinglePlayer() {
         updateSinglePlayerHealthDisplay();
         const gameArea = document.getElementById('gameArea');
         gameArea.classList.add('screen-shake');
-        setTimeout(() => gameArea.classList.remove('screen-shake'), 500); // 與動畫時長一致
+        setTimeout(() => gameArea.classList.remove('screen-shake'), 500); // 動畫持續 500 毫秒
     } else {
         // 玩家答錯，對敵方造成傷害，不觸發抖動
         enemyHealth = Math.max(enemyHealth - amount, 0);
