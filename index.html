@@ -2347,7 +2347,9 @@ function startGameSession() {
 
   function randomMatch() {
     
-
+const playerId = auth.currentUser ? auth.currentUser.uid : 'guest_' + Date.now();
+joinWaitingQueue(playerId);
+      
     console.log("randomMatch called");
     const waitingRef = database.ref('waitingRooms');
     const userId = user.uid; // 使用真實用戶 ID
