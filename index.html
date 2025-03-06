@@ -3156,18 +3156,29 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
 }
 
 function showDamageAnimation(damage, target) {
-    const healthContainer = target === 'enemy' ? document.getElementById('enemyHealthContainer') : document.getElementById('myHealthContainer');
+    const healthContainerId = target === 'enemy' ? 'enemyHealthContainer' : 'myHealthContainer';
+    const healthContainer = document.getElementById(healthContainerId);
+    const healthBar = healthContainer.querySelector('.health-bar');
+    const rect = healthBar.getBoundingClientRect();
+
     const damageText = document.createElement('div');
     damageText.textContent = `-${damage}`;
-    damageText.style.cssText = `
-        position: absolute;
-        color: ${target === 'enemy' ? '#ff0000' : '#ff5555'};
-        font-size: 2rem;
-        font-weight: bold;
-        text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
-        animation: damageFloat 1s ease-out forwards;
-    `;
-    healthContainer.appendChild(damageText);
+    damageText.style.position = 'fixed';
+    damageText.style.color = target === 'enemy' ? '#ff0000' : '#ff5555';
+    damageText.style.fontSize = '2rem';
+    damageText.style.fontWeight = 'bold';
+    damageText.style.textShadow = '0 0 5px rgba(255, 0, 0, 0.5)';
+    damageText.style.zIndex = '9999';
+    damageText.style.animation = 'damageFloat 1s ease-out forwards';
+
+    // 計算隨機水平位置（在氣血條寬度範圍內）
+    const randomLeft = rect.left + Math.random() * rect.width;
+    // 垂直位置：敵方顯示在氣血條上方，己方顯示在氣血條下方
+    const topPosition = target === 'enemy' ? rect.top - 30 : rect.bottom + 10;
+    damageText.style.left = `${randomLeft}px`;
+    damageText.style.top = `${topPosition}px`;
+
+    document.body.appendChild(damageText);
     setTimeout(() => damageText.remove(), 1000);
 }
 
