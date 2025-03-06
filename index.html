@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html>
     
@@ -1469,73 +1470,6 @@ joinRoomBtn.onclick = function() {
 };
 
     
-// 在 <script> 內添加此函數，建議放在全局變數定義之後
-function updateExpDisplay() {
-    const user = firebase.auth().currentUser; // 注意這裡使用 firebase.auth()，因為代碼中使用了 Firebase v8
-    if (!user) {
-        console.log("用戶未登入，無法更新經驗值顯示");
-        return;
-    }
-
-    const userRef = firebase.database().ref('users/' + user.uid);
-    userRef.once('value', (snapshot) => {
-        const userData = snapshot.val();
-        if (!userData) {
-            console.log("用戶數據不存在，使用默認值");
-            return;
-        }
-
-        // 從資料庫獲取當前經驗值和等級，若無數據則設為默認值
-        const exp = userData.exp || 0;
-        const level = userData.level || 1;
-
-        // 假設每級所需經驗值為 100 * 等級（可根據實際需求調整）
-        const expRequired = 100 * level;
-
-        // 計算經驗值百分比
-        const percentage = (exp / expRequired) * 100;
-
-        // 計算升級還需的經驗值
-        const remainingExp = expRequired - exp;
-
-        // 更新頁面上的顯示
-        document.getElementById('expText').textContent = `${exp}/${expRequired} (${percentage.toFixed(1)}%)`;
-        document.getElementById('expRemaining').textContent = `升級還需：${remainingExp} 經驗值`;
-        document.getElementById('expFill').style.width = `${percentage}%`;
-    }).catch((error) => {
-        console.error("獲取用戶數據失敗:", error);
-    });
-
-
-const auth = firebase.auth();
-   auth.onAuthStateChanged((user) => {
-    const userInfo = document.getElementById('userInfo');
-    const userName = document.getElementById('userName');
-    const userScore = document.getElementById('userScore');
-    const userLevel = document.getElementById('userLevel');
-    const expFill = document.getElementById('expFill');
-
-    if (user) {
-        document.getElementById('loginBtn').style.display = 'none';
-        document.getElementById('registerBtn').style.display = 'none';
-        document.getElementById('logoutContainer').style.display = 'block';
-        userInfo.style.display = 'block';
-        userName.textContent = user.displayName || '未命名玩家';
-
-        // 從資料庫獲取資料
-      database.ref('users/' + user.uid).once('value', (snapshot) => {
-    const userData = snapshot.val() || { level: 1, exp: 0 };
-    playerLevel = userData.level; // 設置全局變量
-    userLevel.textContent = userData.level;
-    const expPercentage = (userData.exp / (100 * userData.level)) * 100;
-    expFill.style.width = expPercentage + '%';
-});
-    
-}
-
-
-
-    
     
 function selectClass(className) {
     const classData = {
@@ -2095,7 +2029,29 @@ document.getElementById('logoutBtn').onclick = function() {
     
 
 
+const auth = firebase.auth();
+   auth.onAuthStateChanged((user) => {
+    const userInfo = document.getElementById('userInfo');
+    const userName = document.getElementById('userName');
+    const userScore = document.getElementById('userScore');
+    const userLevel = document.getElementById('userLevel');
+    const expFill = document.getElementById('expFill');
 
+    if (user) {
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('registerBtn').style.display = 'none';
+        document.getElementById('logoutContainer').style.display = 'block';
+        userInfo.style.display = 'block';
+        userName.textContent = user.displayName || '未命名玩家';
+
+        // 從資料庫獲取資料
+      database.ref('users/' + user.uid).once('value', (snapshot) => {
+    const userData = snapshot.val() || { level: 1, exp: 0 };
+    playerLevel = userData.level; // 設置全局變量
+    userLevel.textContent = userData.level;
+    const expPercentage = (userData.exp / (100 * userData.level)) * 100;
+    expFill.style.width = expPercentage + '%';
+});
 
         database.ref('leaderboard/' + user.uid).once('value', (snapshot) => {
             const data = snapshot.val();
@@ -3514,3 +3470,4 @@ if (room.hostRematch && room.clientRematch) {
 
     
 </html>
+
