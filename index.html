@@ -2290,6 +2290,29 @@ function joinRoomWithId(roomId) {
     }
 }
 
+    function joinWaitingQueue() {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        alert("請先登入！");
+        return;
+    }
+
+    const waitingRef = database.ref('waitingRooms');
+    const userId = user.uid;
+
+    // 檢查是否已在等待隊列中
+    waitingRef.child(userId).once('value', (snapshot) => {
+        if (!snapshot.exists()) {
+            // 加入等待隊列
+            waitingRef.child(userId).set({
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            checkForMatch();
+        } else {
+            alert("您已在等待中，請稍候！");
+        }
+    });
+}
 
    
 
