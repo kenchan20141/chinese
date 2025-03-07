@@ -2186,52 +2186,67 @@ function toggleMusic() {
 }
 
 function createRoom() {
-    const roomIdInput = document.getElementById('roomId').value.trim();
-    if (roomIdInput.length !== 4) {
-        alert('請輸入四位戰場編號');
-        return;
+    let userId;
+    if (auth.currentUser) {
+        userId = auth.currentUser.uid;
+    } else {
+        userId = 'anonymous_' + Date.now(); // 生成臨時用戶 ID
     }
-    const userId = generateUserId();
-    const player1Ref = database.ref('rooms/' + roomIdInput + '/player1');
-    player1Ref.set({ userId: userId, health: 100, class: null, currentQuestion: null });
-    player1Ref.onDisconnect().remove();
-    currentRoomId = roomIdInput;
-    isHost = true;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('waitingArea').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = roomIdInput;
-    document.getElementById('classSelection').style.display = 'block';
-    listenToRoomChanges();
+    const roomId = generateRoomId(); // 假設 generateRoomId() 已定義
+    const roomRef = database.ref('rooms/' + roomId);
+    roomRef.set({
+        host: userId,
+        createdAt: Date.now(),
+        gameStarted: false,
+        player1: { id: userId, health: 100, class: null },
+        player2: null
+    }).then(() => {
+        currentRoomId = roomId;
+        isHost = true;
+        document.getElementById('waitingArea').style.display = 'block';
+        document.getElementById('displayRoomId').textContent = roomId;
+        listenToRoomChanges();
+    }).catch(error => {
+        console.error('創建房間失敗:', error);
+    });
 }
 
 function joinRoom() {
     const roomId = document.getElementById('roomId').value.trim();
-    if (roomId.length !== 4) {
-        alert('請輸入四位戰場編號');
+    if (!roomId) {
+        alert('請輸入房間 ID');
         return;
     }
-    const userId = generateUserId();
+    let userId;
+    if (auth.currentUser) {
+        userId = auth.currentUser.uid;
+    } else {
+        userId = 'anonymous_' + Date.now(); // 生成臨時用戶 ID
+    }
     const roomRef = database.ref('rooms/' + roomId);
     roomRef.once('value').then(snapshot => {
-        if (snapshot.exists()) {
-            const room = snapshot.val();
-            if (room.player2) {
-                alert('戰場已滿');
-                return;
-            }
-            const player2Ref = database.ref('rooms/' + roomId + '/player2');
-            player2Ref.set({ userId: userId, health: 100, class: null, currentQuestion: null });
-            player2Ref.onDisconnect().remove();
+        const room = snapshot.val();
+        if (!room) {
+            alert('房間不存在');
+            return;
+        }
+        if (room.player2) {
+            alert('房間已滿');
+            return;
+        }
+        roomRef.update({
+            player2: { id: userId, health: 100, class: null }
+        }).then(() => {
             currentRoomId = roomId;
             isHost = false;
-            document.getElementById('roomControl').style.display = 'none';
             document.getElementById('waitingArea').style.display = 'block';
             document.getElementById('displayRoomId').textContent = roomId;
-            document.getElementById('classSelection').style.display = 'block';
             listenToRoomChanges();
-        } else {
-            alert('戰場不存在');
-        }
+        }).catch(error => {
+            console.error('加入房間失敗:', error);
+        });
+    }).catch(error => {
+        console.error('檢查房間狀態失敗:', error);
     });
 }
 
