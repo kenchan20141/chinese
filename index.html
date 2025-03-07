@@ -3368,7 +3368,8 @@ document.getElementById('showLeaderboardBtn').onclick = function() {
         // 顯示排行榜
         let leaderboardHTML = '<h2 style="text-align: center; color: var(--gold);">🏆 排行榜 - 前十名</h2><ul>';
         leaderboard.forEach((entry, index) => {
-            leaderboardHTML += `<li style="font-size: 1.2rem; padding: 0.5rem;">${index + 1}. ${entry.name} - ${entry.score} 分</li>`;
+            const levelText = entry.level ? `Lv.${entry.level}` : 'Lv.1'; // 確保 level 存在，否則顯示 Lv.1
+            leaderboardHTML += `<li style="font-size: 1.2rem; padding: 0.5rem;">${index + 1}. ${entry.name} - ${levelText} - ${entry.score} 分</li>`;
         });
         leaderboardHTML += '</ul>';
         
