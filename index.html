@@ -2443,7 +2443,7 @@ function startGameSession() {
             // 存在等待中的房間，檢查 IP 地址
             const hostIp = waitingData.hostIp;
             if (hostIp === ip) {
-                alert('不能加入自己創建的房間（IP地址相同）');
+                alert('不能加入自己創建的房間');
                 return;
             }
 
