@@ -2739,7 +2739,8 @@ function handleGameEnd(winnerType) {
                     const leaderboardRef = database.ref('leaderboard/' + user.uid);
                     leaderboardRef.set({
                         name: user.displayName,
-                        score: userData.score
+                        score: userData.score,
+                        level: userData.level
                     });
                 });
 
