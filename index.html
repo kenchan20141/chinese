@@ -1319,34 +1319,6 @@ window.onload = function() {
     img.src = 'https://i.ibb.co/RWW0Xqc/image.png';
     img.crossOrigin = 'Anonymous';
 
-    // 定義粒子類
-    class Particle {
-        constructor(x, y, color) {
-            this.x = x;
-            this.y = y;
-            this.startX = x;
-            this.startY = y;
-            this.color = color;
-            this.vx = (Math.random() - 0.5) * 6; // 增加速度範圍
-            this.vy = (Math.random() - 0.5) * 6;
-            this.size = Math.random() * 4 + 1; // 隨機大小
-            this.alpha = 1;
-            this.life = 0; // 粒子生命週期
-        }
-        update(progress) {
-            this.life = progress;
-            this.x = this.startX + this.vx * progress * 30; // 調整分散距離
-            this.y = this.startY + this.vy * progress * 30;
-            this.alpha = 1 - progress; // 透明度隨進度減少
-        }
-        draw() {
-            ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
     img.onload = function() {
         // 全屏調整圖片大小（保持比例，覆蓋螢幕）
         let imgWidth, imgHeight, imgX, imgY;
@@ -1354,13 +1326,11 @@ window.onload = function() {
         const canvasRatio = canvas.width / canvas.height;
 
         if (aspectRatio > canvasRatio) {
-            // 圖片寬度超出畫布，按高度縮放
             imgHeight = canvas.height;
             imgWidth = imgHeight * aspectRatio;
             imgX = (canvas.width - imgWidth) / 2;
             imgY = 0;
         } else {
-            // 圖片高度超出畫布，按寬度縮放
             imgWidth = canvas.width;
             imgHeight = imgWidth / aspectRatio;
             imgX = 0;
@@ -1369,21 +1339,6 @@ window.onload = function() {
 
         // 初始繪製全屏圖片
         ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
-
-        // 創建粒子，覆蓋圖片區域
-        const particles = [];
-        const particleCount = 3000; // 增加粒子數量以模擬破碎效果
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
-        for (let i = 0; i < particleCount; i++) {
-            const x = imgX + Math.random() * imgWidth;
-            const y = imgY + Math.random() * imgHeight;
-            const pixelX = Math.floor(x);
-            const pixelY = Math.floor(y);
-            const pixelIndex = (pixelY * canvas.width + pixelX) * 4;
-            const color = `${imageData[pixelIndex]}, ${imageData[pixelIndex + 1]}, ${imageData[pixelIndex + 2]}`;
-            particles.push(new Particle(x, y, color));
-        }
 
         // 動畫邏輯
         let startTime = Date.now();
@@ -1396,24 +1351,10 @@ window.onload = function() {
             // 清除畫布
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 分階段控制圖片消失和粒子出現
-            if (progress < 0.3) {
-                // 前0.6秒顯示完整圖片
-                ctx.globalAlpha = 1;
-                ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
-            } else if (progress < 0.7) {
-                // 0.6-1.4秒模擬破碎（圖片部分顯示）
-                ctx.globalAlpha = 1 - (progress - 0.3) / 0.4; // 透明度從1到0
-                ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
-            }
-            // 後1.4秒只顯示粒子，圖片完全消失
-
-            // 更新並繪製粒子
-            ctx.globalAlpha = 1; // 恢復全局透明度
-            particles.forEach(particle => {
-                particle.update(progress);
-                particle.draw();
-            });
+            // 繪製圖片並漸變透明度
+            ctx.globalAlpha = 1 - progress; // 透明度從 1 到 0
+            ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
+            ctx.globalAlpha = 1; // 重置透明度
 
             if (progress < 1) {
                 requestAnimationFrame(animate);
