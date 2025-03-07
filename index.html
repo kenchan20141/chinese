@@ -2251,53 +2251,62 @@ function joinRoom() {
 }
 
     function createRoomWithId(roomId) {
-    currentRoomId = roomId;
-    isHost = true;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    document.getElementById('waitingArea').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = currentRoomId;
-
-    const user = auth.currentUser;
-
-    database.ref('rooms/' + currentRoomId).set({
-        player1: {
-            userId: user.uid,
-            name: user.displayName || '未知玩家',
-            level: playerLevel || 1,
-            health: 100,
-            class: null,
-            currentQuestion: null
-        },
-        player2: null,
+    let userId;
+    if (auth.currentUser) {
+        userId = auth.currentUser.uid;
+    } else {
+        userId = 'anonymous_' + Date.now(); // 生成臨時用戶 ID
+    }
+    const roomRef = database.ref('rooms/' + roomId);
+    roomRef.set({
+        host: userId,
+        createdAt: Date.now(),
         gameStarted: false,
-        gameEnded: false,
-        winner: null
+        player1: { id: userId, health: 100, class: null },
+        player2: null
+    }).then(() => {
+        currentRoomId = roomId;
+        isHost = true;
+        document.getElementById('waitingArea').style.display = 'block';
+        document.getElementById('displayRoomId').textContent = roomId;
+        listenToRoomChanges();
+    }).catch(error => {
+        console.error('創建房間失敗:', error);
     });
-
-    listenToRoomChanges();
 }
 
 function joinRoomWithId(roomId) {
-    currentRoomId = roomId;
-    isHost = false;
-    document.getElementById('roomControl').style.display = 'none';
-    document.getElementById('classSelection').style.display = 'block';
-    listenToRoomChanges();
-    const user = auth.currentUser;
-
-        const player2Ref = database.ref('rooms/' + currentRoomId + '/player2');
-        player2Ref.set({
-            userId: user.uid,
-            name: user.displayName || '未知玩家',
-            level: playerLevel || 1,
-            health: 100,
-            class: null,
-            currentQuestion: null
-        }).catch((error) => {
-            console.error("設置 player2 失敗:", error);
+    let userId;
+    if (auth.currentUser) {
+        userId = auth.currentUser.uid;
+    } else {
+        userId = 'anonymous_' + Date.now(); // 生成臨時用戶 ID
+    }
+    const roomRef = database.ref('rooms/' + roomId);
+    roomRef.once('value').then(snapshot => {
+        const room = snapshot.val();
+        if (!room) {
+            alert('房間不存在');
+            return;
+        }
+        if (room.player2) {
+            alert('房間已滿');
+            return;
+        }
+        roomRef.update({
+            player2: { id: userId, health: 100, class: null }
+        }).then(() => {
+            currentRoomId = roomId;
+            isHost = false;
+            document.getElementById('waitingArea').style.display = 'block';
+            document.getElementById('displayRoomId').textContent = roomId;
+            listenToRoomChanges();
+        }).catch(error => {
+            console.error('加入房間失敗:', error);
         });
-   
+    }).catch(error => {
+        console.error('檢查房間狀態失敗:', error);
+    });
 }
 
 
