@@ -16,6 +16,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>  
 
+@keyframes iconFlash {
+    0% { opacity: 0; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(0.8); }
+}
+
+        
 .difficulty-icon {
     width: 140px;
     height: 140px;
@@ -297,6 +304,18 @@
     z-index: 2;
 }
 
+<!-- 鐵甲宗恢復圖示 -->
+<div id="healIcon" style="display:none; position:absolute; font-size:1.5rem; color:#00ff00; text-shadow:0 0 10px rgba(0,255,0,0.5);">
+    <i class="fas fa-shield-alt"></i>
+</div>
+
+<!-- 玄天閣減傷圖示 -->
+<div id="reduceDamageIcon" style="display:none; position:absolute; font-size:1.5rem; color:#00ffff; text-shadow:0 0 10px rgba(0,255,255,0.5);">
+    <i class="fas fa-fire"></i>
+</div>
+
+
+        
 /* 問題區增加底部間距 */
 #question {
     margin: 5rem 0 2rem; /* 頂部留出敵方血條空間 */
@@ -3157,57 +3176,75 @@ function checkAnswerSinglePlayer(isCorrect, questionId) {
             return;
         }
     } else {
-        if (navigator.vibrate) {
-            navigator.vibrate(200); // 答錯震動 200ms
-        }
-        const baseDamage = 50 + Math.random() * 30;
-        const difficultyMultiplier = {
-            easy: 0.8,
-            normal: 1.0,
-            hard: 1.2,
-            hell: 1.5
-        }[selectedDifficulty];
-        let defenseAdjustment = 0;
-        if (singlePlayerClass.type === 'warrior' || singlePlayerClass.type === 'assassin') {
-            defenseAdjustment = -0.1;
-        } else if (singlePlayerClass.type === 'tank') {
-            defenseAdjustment = 0.2;
-        }
-        const levelDefenseAdjustment = (playerLevel - 1) * 0.05;
-        const totalDefenseAdjustment = defenseAdjustment + levelDefenseAdjustment;
-        let damageToPlayer = baseDamage * difficultyMultiplier * (1 - totalDefenseAdjustment);
-        damageToPlayer = Math.max(Math.round(damageToPlayer), 0);
-        singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0);
-        updateSinglePlayerHealthDisplay();
-        showDamageAnimation(damageToPlayer, 'player'); // 添加玩家扣減動畫
-        if (singlePlayerHealth <= 0) {
-            handleSinglePlayerGameOver(false);
-            return;
-        }
+    if (navigator.vibrate) {
+        navigator.vibrate(200); // 答錯震動 200ms
     }
+    const baseDamage = 50 + Math.random() * 30;
+    const difficultyMultiplier = {
+        easy: 0.8,
+        normal: 1.0,
+        hard: 1.2,
+        hell: 1.5
+    }[selectedDifficulty];
+    let defenseAdjustment = 0;
+    if (singlePlayerClass.type === 'warrior' || singlePlayerClass.type === 'assassin') {
+        defenseAdjustment = -0.1;
+    } else if (singlePlayerClass.type === 'tank') {
+        defenseAdjustment = 0.2;
+    }
+    const levelDefenseAdjustment = (playerLevel - 1) * 0.05;
+    let totalDefenseAdjustment = defenseAdjustment + levelDefenseAdjustment;
+    
+    let damageToPlayer = baseDamage * difficultyMultiplier * (1 - totalDefenseAdjustment);
+    // 玄天閣減傷效果
+    if (singlePlayerClass.type === 'mage') {
+        damageToPlayer *= 0.7; // 減傷30%
+        const reduceDamageIcon = document.getElementById('reduceDamageIcon');
+        const myHealthContainer = document.getElementById('myHealthContainer');
+        const rect = myHealthContainer.getBoundingClientRect();
+        reduceDamageIcon.style.left = `${rect.right + 10}px`;
+        reduceDamageIcon.style.top = `${rect.top + rect.height / 2}px`;
+        reduceDamageIcon.style.display = 'block';
+        // 可選：添加閃爍動畫
+        reduceDamageIcon.style.animation = 'iconFlash 1s ease-out';
+        setTimeout(() => {
+            reduceDamageIcon.style.display = 'none';
+            reduceDamageIcon.style.animation = ''; // 重置動畫
+        }, 1000);
+    }
+    damageToPlayer = Math.max(Math.round(damageToPlayer), 0);
+    singlePlayerHealth = Math.max(Math.round(singlePlayerHealth - damageToPlayer), 0);
+    updateSinglePlayerHealthDisplay();
+    showDamageAnimation(damageToPlayer, 'player');
+    if (singlePlayerHealth <= 0) {
+        handleSinglePlayerGameOver(false);
+        return;
+    }
+}
 
     // 鐵甲宗恢復效果
-    if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
-        hasHealedThisTurn = true; // 確保每回合只恢復一次
-        const maxHealth = 1000 + (playerLevel - 1) * 100; // 假設的最大氣血計算方式
-        const healPercentage = singlePlayerClass.healPercentage || 0; // 防錯，默認為 0
-        const healAmount = Math.round(maxHealth * healPercentage); // 計算 2% 的恢復量
-        singlePlayerHealth = Math.min(singlePlayerHealth + healAmount, maxHealth); // 應用恢復並限制不超過最大氣血
-        updateSinglePlayerHealthDisplay(); // 更新氣血顯示
-        document.getElementById('healText').style.display = 'block'; // 顯示恢復效果
-        setTimeout(() => document.getElementById('healText').style.display = 'none', 1000); // 1秒後隱藏
-    }
-
+   // 鐵甲宗恢復效果
+if (singlePlayerClass.type === 'tank' && !hasHealedThisTurn) {
+    hasHealedThisTurn = true;
+    const maxHealth = 1000 + (playerLevel - 1) * 100;
+    const healPercentage = singlePlayerClass.healPercentage || 0;
+    const healAmount = Math.round(maxHealth * healPercentage);
+    singlePlayerHealth = Math.min(singlePlayerHealth + healAmount, maxHealth);
+    updateSinglePlayerHealthDisplay();
+    
+    // 顯示恢復圖示
+    const healIcon = document.getElementById('healIcon');
+    const myHealthContainer = document.getElementById('myHealthContainer');
+    const rect = myHealthContainer.getBoundingClientRect();
+    healIcon.style.left = `${rect.right + 10}px`; // 氣血條右側 10px
+    healIcon.style.top = `${rect.top + rect.height / 2}px`; // 氣血條垂直居中
+    healIcon.style.display = 'block';
+    // 可選：添加閃爍動畫
+    healIcon.style.animation = 'iconFlash 1s ease-out';
     setTimeout(() => {
-        buttons.forEach(btn => {
-            btn.style.cssText = '';
-            btn.style.pointerEvents = 'auto';
-        });
-        answered = false;
-        if (!gameOver) {
-            loadNewQuestionSinglePlayer();
-        }
-    }, 700);
+        healIcon.style.display = 'none';
+        healIcon.style.animation = ''; // 重置動畫
+    }, 1000);
 }
 
     
